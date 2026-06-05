@@ -154,6 +154,7 @@ function staatGibt(betrag) {
 // ================================================================
 const MIETE                  = 650;
 const KRANKENKASSE_BEITRAG   = 120;      // €/Monat KV+PV-Pauschale, vom Staat übernommen
+const NEBENKOSTEN            = 200;      // €/Monat Strom, Internet, Handy (selbst zahlen)
 const ALG1_ZAHLUNG           = 1200;
 const ALG2_ZAHLUNG           = 563;
 const ALG2_VERMOEGENS_GRENZE = 50000;
@@ -176,7 +177,7 @@ const IMMO_EIGENKAPITAL    = 40000;      // € Anzahlung bei Kauf (aus Schwarzk
 const IMMO_LAUFZEIT        = 24;         // Monate Ratenzahlung
 const IMMO_RATE            = Math.round((IMMO_KAUFPREIS - IMMO_EIGENKAPITAL) / IMMO_LAUFZEIT); // 2.500 €/M
 const IMMO_MIETE           = 1250;       // €/Monat KdU bzw. Mieteinnahmen
-const IMMO_WERT_WACHSTUM   = 1.05;       // +5% Wert pro Monat
+const IMMO_WERT_WACHSTUM   = 1.02;       // +2% Wert pro Monat
 
 // Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
 //   erste 100 € frei, 100–520 € → 20% frei, 520–1000 € → 30% frei
@@ -2804,7 +2805,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       oeffneModal('🏘️ Immobilie gekauft!',
         `Über einen Strohmann erworben. Anzahlung: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
         + `Restschuld <strong>${formatEuro(restSchuld)}</strong> → Rate <strong>${formatEuro(IMMO_RATE)}/Monat</strong> über ${IMMO_LAUFZEIT} Monate (jederzeit sofort tilgbar).<br><br>`
-        + `Modus: <strong>Eigennutzung</strong> – im Bürgergeld zahlt das Amt die Miete (${formatEuro(IMMO_MIETE)}/M) in deine Schwarzkasse. Wert +5 %/Monat.<br><br>`
+        + `Modus: <strong>Eigennutzung</strong> – im Bürgergeld zahlt das Amt die Miete (${formatEuro(IMMO_MIETE)}/M) in deine Schwarzkasse. Wert +2 %/Monat.<br><br>`
         + '⚠️ Eigennutzung ist Leistungsbetrug → erhöhtes Risiko + Jobcenter-Prüfung.', []);
       logEvent(`🏘️ Immobilie gekauft. EK ${formatEuro(IMMO_EIGENKAPITAL)}, Restschuld ${formatEuro(restSchuld)}.`, 'warn');
       return;
@@ -3437,9 +3438,9 @@ function monatsAbschluss() {
       meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(zahlbar)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
       fehlt(rate - zahlbar, 'Immobilien-Rate');
     }
-    // Wertsteigerung +5 %/Monat
+    // Wertsteigerung +2 %/Monat
     gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
-    meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+5 %).`);
+    meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+2 %).`);
   }
 
   // ---- Mietkaution-Darlehen: Rate vom Konto ----
@@ -3590,6 +3591,14 @@ function monatsAbschluss() {
   // Krankenversicherung vom Staat übernommen (geldwerter Vorteil, kein Bargeld)
   staatGibt(KRANKENKASSE_BEITRAG);
   meldungen.push(`🏥 Krankenkasse vom Staat: +${formatEuro(KRANKENKASSE_BEITRAG)} (Beitrag übernommen).`);
+
+  // Laufende Lebenshaltung (Strom, Internet, Handy) – selbst zahlen
+  {
+    const zahlbar = Math.min(NEBENKOSTEN, Math.max(0, gs.kontostand));
+    gs.kontostand -= zahlbar;
+    meldungen.push(`💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
+    fehlt(NEBENKOSTEN - zahlbar, 'Nebenkosten');
+  }
 
   // Natürlicher Verfall
   gs.energie          = clamp(gs.energie - 5, 0, 100);
