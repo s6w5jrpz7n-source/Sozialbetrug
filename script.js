@@ -132,6 +132,9 @@ const gameState = {
   // ---- Zahlungsrückstand (universell) ----
   zahlungsRueckstand: 0,    // offene, nicht bezahlte Verpflichtungen
   rueckstandMonate: 0,      // aufeinanderfolgende Monate mit Rückstand → 3 = Game Over
+
+  // ---- Depot verschleiert (in der Schattenbank, für Amt unsichtbar) ----
+  depotVerschleiert: false, // kostet 5%/Monat, zählt dafür nicht zur Vermögensprüfung
 };
 
 // ================================================================
@@ -294,7 +297,8 @@ const ORTE_CONFIG = [
       { label: '🏘️  Immobilie kaufen (40.000 € EK + Rate)',                    id: 'immo_kaufen'   },
       { label: '🔑  Immobilie: Eigennutzung ⇄ Vermieten',                      id: 'immo_modus'    },
       { label: '🏦  Immobilie sofort abbezahlen (Restschuld tilgen)',          id: 'immo_tilgen'   },
-      { label: '💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)',   id: 'immo_verkaufen'}
+      { label: '💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)',   id: 'immo_verkaufen'},
+      { label: '📈  Depot verschleiern (für Amt unsichtbar, 5%/Monat)',        id: 'depot_verschleiern' }
     ]
   },
   {
@@ -2133,6 +2137,11 @@ function interact(ortId) {
       const netto = Math.max(0, Math.round(gs.immobilie.wert) - (gs.immobilie.restSchuld || 0));
       label = `💰  Immobilie verkaufen (netto ${formatEuro(netto)} → Schwarzkasse)`;
     }
+    if (ortId === 'schattenbank' && a.id === 'depot_verschleiern') {
+      label = gs.depotVerschleiert
+        ? '📈  Depot verschleiert AKTIV (wieder offiziell machen)'
+        : '📈  Depot verschleiern (Amt-unsichtbar, 5%/Monat)';
+    }
     // Wohnung: Kur / Schein-WG / Umzug
     if (ortId === 'wohnung' && a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
@@ -2725,6 +2734,25 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent(`💰 Immobilie verkauft: +${formatEuro(erloes)} Schwarzkasse.`, 'good');
       return;
     }
+    // ---- Depot verschleiern (vor dem Amt verstecken) ----
+    if (aktionsId === 'depot_verschleiern') {
+      if (gs.depotVerschleiert) {
+        gs.depotVerschleiert = false;
+        oeffneModal('📈 Depot wieder offiziell', 'Dein Depot läuft wieder auf deinen Namen – es zählt damit wieder zur Vermögensprüfung, kostet aber keine Gebühr mehr.', []);
+        logEvent('📈 Depot nicht mehr verschleiert.', '');
+        return;
+      }
+      if ((gs.depot || []).length === 0) {
+        oeffneModal('📈 Kein Depot', 'Du hast keine Wertpapiere, die du verschleiern könntest. Kaufe erst welche bei der Bank.', []);
+        return;
+      }
+      gs.depotVerschleiert = true;
+      oeffneModal('📈 Depot verschleiert',
+        'Deine Wertpapiere laufen jetzt über einen Strohmann der Schattenbank.<br><br>'
+        + 'Das Depot zählt <strong>nicht mehr zur Vermögensprüfung</strong> – die Schattenbank nimmt dafür <strong>5 % des Depotwerts pro Monat</strong>.', []);
+      logEvent('📈 Depot verschleiert (5%/Monat, Amt-unsichtbar).', 'warn');
+      return;
+    }
   }
 
   // --- SUPERMARKT ---
@@ -2881,29 +2909,28 @@ const AKTIEN_KATALOG = [
     id: 'msci_world',
     name: '🌍 MSCI World ETF',
     typ: 'etf',
-    beschreibung: 'Sicherer ETF. Ca. +5% pro Monat.',
+    beschreibung: 'Solide. +8% pro Monat, kein Verlustrisiko.',
     minKauf: 500,
-    renditeMin: 0.03,
-    renditeMax: 0.07,
+    fix: 0.08,
     startKurs: 100
-  },
-  {
-    id: 'techzock',
-    name: '🚀 TechZock AG',
-    typ: 'spekulation',
-    beschreibung: 'Hochriskant! -10% bis +150% pro Monat möglich.',
-    minKauf: 200,
-        renditeMin: -0.30,
-    renditeMax: 1.10, startKurs: 50
   },
   {
     id: 'kryptoXX',
     name: '₿ KryptoXX Coin',
     typ: 'spekulation',
-    beschreibung: 'Extremes Risiko. -10% bis +120% möglich.',
+    beschreibung: '50/50: +50% oder −25% pro Monat.',
     minKauf: 100,
-        renditeMin: -0.50,
-    renditeMax: 1.50, startKurs: 10
+    up: 0.50, down: -0.25, chanceUp: 0.5,
+    startKurs: 10
+  },
+  {
+    id: 'techzock',
+    name: '🚀 Risiko-Firma AG',
+    typ: 'spekulation',
+    beschreibung: '50/50: +100% oder −50% pro Monat.',
+    minKauf: 200,
+    up: 1.00, down: -0.50, chanceUp: 0.5,
+    startKurs: 50
   },
   {
     id: 'immofonds',
@@ -3006,6 +3033,10 @@ function kaufeAktie(aktie, stueck, kurs) {
       id:           aktie.id,
       name:         aktie.name,
       typ:          aktie.typ,
+      fix:          aktie.fix,
+      up:           aktie.up,
+      down:         aktie.down,
+      chanceUp:     aktie.chanceUp,
       renditeMin:   aktie.renditeMin,
       renditeMax:   aktie.renditeMax,
       anteile:      stueck,
@@ -3123,10 +3154,18 @@ function aktuelisiereDepotKurse() {
 
   let meldungen = [];
   gs.depot.forEach(pos => {
-    const min   = pos.renditeMin;
-    const max   = pos.renditeMax;
-    // Zufällige Rendite in [min, max]
-    const rendite = min + Math.random() * (max - min);
+    // Renditemodell je Wertpapier:
+    //   fix            -> deterministisch (z.B. MSCI +8%)
+    //   up/down/chanceUp -> 50/50-ähnliche Binärchance (Crypto, Risiko-Firma)
+    //   sonst renditeMin..renditeMax (gleichverteilt)
+    let rendite;
+    if (typeof pos.fix === 'number') {
+      rendite = pos.fix;
+    } else if (typeof pos.up === 'number') {
+      rendite = (Math.random() < (pos.chanceUp ?? 0.5)) ? pos.up : pos.down;
+    } else {
+      rendite = pos.renditeMin + Math.random() * (pos.renditeMax - pos.renditeMin);
+    }
     const alterKurs = pos.aktuellerKurs;
     pos.aktuellerKurs = Math.max(0.01, pos.aktuellerKurs * (1 + rendite));
     const pct   = (rendite * 100).toFixed(1);
@@ -3202,14 +3241,15 @@ function monatsAbschluss() {
       logEvent(`✅ ALG I +${formatEuro(auszahlung)}.`, 'good');
     }
   } else {
-    // ALG2: Vermögensprüfung – nur alle 3 Monate, zählt Konto + Depot
-    // (Gold im Garten und Schwarzkasse zählen NICHT zum prüfbaren Vermögen)
+    // ALG2: Vermögensprüfung – nur alle 3 Monate, zählt Konto + (sichtbares) Depot
+    // (Gold im Garten, Schwarzkasse und verschleiertes Depot zählen NICHT)
     const istPruefMonat  = (gs.monat % 3 === 0);
     const depotWert      = (gs.depot || []).reduce((s, p) => s + p.anteile * p.aktuellerKurs, 0);
-    const pruefVermoegen = gs.kontostand + depotWert;
+    const sichtbaresDepot = gs.depotVerschleiert ? 0 : depotWert;
+    const pruefVermoegen = gs.kontostand + sichtbaresDepot;
     if (istPruefMonat && pruefVermoegen > ALG2_VERMOEGENS_GRENZE) {
-      meldungen.push(`🛑 Vermögensprüfung (alle 3 Monate): Konto + Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`);
-      logEvent('🛑 Vermögensprüfung: zu viel Vermögen (Konto + Depot).', 'danger');
+      meldungen.push(`🛑 Vermögensprüfung (alle 3 Monate): Konto + sichtbares Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`);
+      logEvent('🛑 Vermögensprüfung: zu viel sichtbares Vermögen.', 'danger');
     } else {
       const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar);
       gs.kontostand += auszahlung;
@@ -3309,6 +3349,19 @@ function monatsAbschluss() {
   const depotMeldungen = aktuelisiereDepotKurse();
   if (depotMeldungen && depotMeldungen.length > 0) {
     meldungen.push('📊 <strong>Depot-Update:</strong><br>' + depotMeldungen.join('<br>'));
+  }
+  // ---- Schattenbank-Depotgebühr: 5% des Werts, wenn verschleiert ----
+  if (gs.depotVerschleiert && (gs.depot || []).length > 0) {
+    let fee = 0;
+    gs.depot.forEach(pos => {
+      fee += pos.anteile * pos.aktuellerKurs * 0.05;
+      pos.aktuellerKurs *= 0.95;
+    });
+    fee = Math.round(fee);
+    if (fee > 0) {
+      meldungen.push(`🏴 Schattenbank-Depotgebühr: -${formatEuro(fee)} (5% des verschleierten Depots).`);
+      logEvent(`🏴 Depotgebühr -${formatEuro(fee)}.`, 'warn');
+    }
   }
 
   // ---- Loan-Shark: Monatliche Zinsen 20% ----
@@ -4874,6 +4927,7 @@ class StartSzene extends Phaser.Scene {
         pauschalen: { erstausstattung: false, moebel: false },
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
+        depotVerschleiert: false,
       });
       this.scene.start('SpielSzene');
     });
