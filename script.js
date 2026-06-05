@@ -9,7 +9,7 @@
 // ================================================================
 const gameState = {
   // Finanzen
-  kontostand:    1800,
+  kontostand:    50000,
   schwarzeKasse: 0,
 
   // Wohlbefinden (0–100)
@@ -151,7 +151,7 @@ const EINSTIEGSGELD_ZUSCHUSS = 2000;     // einmaliger Investitions-Zuschuss
 const EINSTIEGSGELD_DAUER  = 6;          // Monate
 const SCHEINWG_BETRAG      = 200;        // €/Monat Schein-WG-Bonus
 const KAUTION_RATE         = 150;        // €/Monat Kaution-Darlehen-Rückzahlung
-const IMMO_KAUFPREIS       = 20000;      // € (aus Schwarzkasse)
+const IMMO_KAUFPREIS       = 100000;     // € (aus Schwarzkasse, Spätspiel-Ziel)
 const IMMO_MIETE           = 700;        // €/Monat KdU bzw. Mieteinnahmen
 const IMMO_WERT_WACHSTUM   = 1.05;       // +5% Wert pro Monat
 
@@ -4752,7 +4752,7 @@ class StartSzene extends Phaser.Scene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       Object.assign(gameState, {
-        kontostand: 1800, schwarzeKasse: 0, losesBargeld: 0,
+        kontostand: 50000, schwarzeKasse: 0, losesBargeld: 0,
         energie: 80, happinessSpieler: 70, happinessPartner: 70,
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
@@ -4766,6 +4766,14 @@ class StartSzene extends Phaser.Scene {
         lebensmittelDiesenMonat: null, billigKaeufeInFolge: 0,
         supermarktFaellig: false, schattenbankAktiv: false,
         bankEinzahlungDieseWoche: 0, gameOver: false,
+        // ---- neue Bürokratie-/Immobilien-Features zurücksetzen ----
+        verpfaendet: {},
+        mehrbedarf: { warmwasser: false, alleinerziehend: false, ernaehrung: false, but: false },
+        ernaehrungFake: false, einstiegsgeldMonate: 0, minijobLohn: 0,
+        unterhaltsTarnung: false, kurCooldownMonat: 0, scheinWG: false,
+        kautionRest: 0, umzugGemacht: false,
+        pauschalen: { erstausstattung: false, moebel: false },
+        bekleidungCooldownMonat: 0, immobilie: null,
       });
       this.scene.start('SpielSzene');
     });
