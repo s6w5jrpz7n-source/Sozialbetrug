@@ -124,6 +124,10 @@ const gameState = {
   // ---- Einmalige Pauschalen (Arbeitsamt) ----
   pauschalen: { erstausstattung: false, moebel: false },
   bekleidungCooldownMonat: 0,
+
+  // ---- Immobilie (Schattenbank / Strohmann) ----
+  // null oder { wert, miete, modus:'eigen'|'vermietet' }
+  immobilie: null,
 };
 
 // ================================================================
@@ -147,6 +151,9 @@ const EINSTIEGSGELD_ZUSCHUSS = 2000;     // einmaliger Investitions-Zuschuss
 const EINSTIEGSGELD_DAUER  = 6;          // Monate
 const SCHEINWG_BETRAG      = 200;        // €/Monat Schein-WG-Bonus
 const KAUTION_RATE         = 150;        // €/Monat Kaution-Darlehen-Rückzahlung
+const IMMO_KAUFPREIS       = 20000;      // € (aus Schwarzkasse)
+const IMMO_MIETE           = 700;        // €/Monat KdU bzw. Mieteinnahmen
+const IMMO_WERT_WACHSTUM   = 1.05;       // +5% Wert pro Monat
 
 // Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
 //   erste 100 € frei, 100–520 € → 20% frei, 520–1000 € → 30% frei
@@ -276,7 +283,10 @@ const ORTE_CONFIG = [
       { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 10%/Monat Gebühr)', id: 'alles_sichern'  },
       { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
       { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
-      { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' }
+      { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' },
+      { label: '🏘️  Immobilie kaufen (Strohmann, aus Schwarzkasse)',           id: 'immo_kaufen'   },
+      { label: '🔑  Immobilie: Eigennutzung ⇄ Vermieten',                      id: 'immo_modus'    },
+      { label: '💰  Immobilie verkaufen (Wert → Schwarzkasse)',                id: 'immo_verkaufen'}
     ]
   },
   {
@@ -2092,6 +2102,17 @@ function interact(ortId) {
         ? '🌍  Unterhalts-Tarnung AKTIV (abschalten)'
         : '🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)';
     }
+    if (ortId === 'schattenbank' && a.id === 'immo_kaufen' && gs.immobilie) {
+      label = `🏘️  Immobilie im Besitz (Wert ${formatEuro(gs.immobilie.wert)})`;
+    }
+    if (ortId === 'schattenbank' && a.id === 'immo_modus' && gs.immobilie) {
+      label = gs.immobilie.modus === 'eigen'
+        ? '🔑  Modus: Eigennutzung → auf Vermieten umschalten'
+        : '🔑  Modus: Vermietet → auf Eigennutzung umschalten';
+    }
+    if (ortId === 'schattenbank' && a.id === 'immo_verkaufen' && gs.immobilie) {
+      label = `💰  Immobilie verkaufen (${formatEuro(gs.immobilie.wert)} → Schwarzkasse)`;
+    }
     // Wohnung: Kur / Schein-WG / Umzug
     if (ortId === 'wohnung' && a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
@@ -2635,6 +2656,38 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent('🌍 Unterhalts-Tarnung aktiv – Auslands-Kindergeld wird behalten (riskant!).', 'warn');
       return;
     }
+    // ---- Immobilie kaufen (über Strohmann, aus Schwarzkasse) ----
+    if (aktionsId === 'immo_kaufen') {
+      if (gs.immobilie) { oeffneModal('🏘️ Schon im Besitz', 'Du besitzt bereits eine Immobilie.', []); return; }
+      if (gs.schwarzeKasse < IMMO_KAUFPREIS) {
+        oeffneModal('🏘️ Zu wenig Schwarzkasse', `Für die Immobilie brauchst du <strong>${formatEuro(IMMO_KAUFPREIS)}</strong> in der Schwarzkasse.<br><br>Vorhanden: ${formatEuro(gs.schwarzeKasse)}.`, []);
+        return;
+      }
+      gs.schwarzeKasse -= IMMO_KAUFPREIS;
+      gs.immobilie = { wert: IMMO_KAUFPREIS, miete: IMMO_MIETE, modus: 'eigen' };
+      oeffneModal('🏘️ Immobilie gekauft!',
+        `Über einen Strohmann erworben (${formatEuro(IMMO_KAUFPREIS)} aus der Schwarzkasse).<br><br>`
+        + `Modus: <strong>Eigennutzung</strong> – solange du Bürgergeld beziehst, überweist das Amt die Miete (${formatEuro(IMMO_MIETE)}/M an deinen Strohmann) → in deine Schwarzkasse.<br><br>`
+        + 'Der Wert steigt <strong>5 %/Monat</strong>. Du kannst jederzeit auf Vermieten umschalten oder verkaufen.<br><br>'
+        + '⚠️ Eigennutzung ist Leistungsbetrug → leicht erhöhtes Risiko + Jobcenter-Prüfung.', []);
+      logEvent(`🏘️ Immobilie gekauft (${formatEuro(IMMO_KAUFPREIS)}).`, 'warn');
+      return;
+    }
+    if (aktionsId === 'immo_modus') {
+      if (!gs.immobilie) { oeffneModal('🏘️ Keine Immobilie', 'Kaufe zuerst eine Immobilie.', []); return; }
+      gs.immobilie.modus = gs.immobilie.modus === 'eigen' ? 'vermietet' : 'eigen';
+      logEvent(`🔑 Immobilie: ${gs.immobilie.modus === 'eigen' ? 'Eigennutzung – Amt zahlt Miete' : 'Vermietet – Mieteinnahmen'}.`, '');
+      return;
+    }
+    if (aktionsId === 'immo_verkaufen') {
+      if (!gs.immobilie) { oeffneModal('🏘️ Keine Immobilie', 'Du besitzt keine Immobilie.', []); return; }
+      const erloes = Math.round(gs.immobilie.wert);
+      gs.schwarzeKasse += erloes;
+      gs.immobilie = null;
+      oeffneModal('💰 Immobilie verkauft', `Verkauft für <strong>${formatEuro(erloes)}</strong> → Schwarzkasse.`, []);
+      logEvent(`💰 Immobilie verkauft: +${formatEuro(erloes)} Schwarzkasse.`, 'good');
+      return;
+    }
   }
 
   // --- SUPERMARKT ---
@@ -3157,6 +3210,27 @@ function monatsAbschluss() {
     logEvent(`🏠 Schein-WG +${formatEuro(SCHEINWG_BETRAG)}.`, 'warn');
   }
 
+  // ---- Immobilie: Mieteinnahmen / KdU-Masche + Wertsteigerung ----
+  if (gs.immobilie) {
+    let einnahme = 0;
+    if (gs.immobilie.modus === 'eigen') {
+      // Amt zahlt KdU an den Strohmann – nur im Bürgergeld-Modus
+      if (gs.status === 'ALG2') einnahme = gs.immobilie.miete;
+    } else {
+      einnahme = gs.immobilie.miete; // echte Mieteinnahmen
+    }
+    if (einnahme > 0) {
+      gs.schwarzeKasse += einnahme;
+      gs.risikoRaster   = clamp(gs.risikoRaster + 6, 0, 100);
+      const quelle = gs.immobilie.modus === 'eigen' ? 'Amt-Miete (KdU-Masche)' : 'Mieteinnahmen';
+      meldungen.push(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`);
+      logEvent(`🏘️ Immobilie +${formatEuro(einnahme)} Schwarzkasse.`, 'warn');
+    }
+    // Wertsteigerung +5 %/Monat
+    gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
+    meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+5 %).`);
+  }
+
   // ---- Mietkaution-Darlehen: Rate vom Konto ----
   if (gs.kautionRest > 0) {
     const rate = Math.min(KAUTION_RATE, gs.kautionRest);
@@ -3205,6 +3279,7 @@ function monatsAbschluss() {
     if (gs.ernaehrungFake) fakeFaktoren += 1;
     if (gs.unterhaltsTarnung) fakeFaktoren += (gs.kindergeldKinder || []).length;
     if (gs.scheinWG) fakeFaktoren += 1;
+    if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') fakeFaktoren += 1;
     if (fakeFaktoren > 0) {
       const chance = Math.min(0.85, 0.15 * fakeFaktoren);
       if (Math.random() < chance) {
@@ -3224,6 +3299,11 @@ function monatsAbschluss() {
           rueck += SCHEINWG_BETRAG * 3;
           gs.scheinWG = false;
           gestrichen.push('Schein-WG (Hausbesuch!)');
+        }
+        if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') {
+          rueck += gs.immobilie.miete * 3;
+          gs.immobilie.modus = 'vermietet';   // KdU-Masche auffgeflogen → nur noch vermieten
+          gestrichen.push('Immobilien-KdU-Masche');
         }
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
