@@ -94,6 +94,22 @@ const gameState = {
   // ---- Arbeitsamt-Fehltermine ----
   amtsTermineVerpasst: 0,   // Zurückgesetzt bei erstem Besuch
   algGesperrt: false,       // true nach 3 verpassten Terminen, bis Besuch
+
+  // ---- Legale Mehrbedarfe / Anträge (Arbeitsamt) ----
+  mehrbedarf: {             // aktive monatliche Zuschläge
+    warmwasser:      false, // +15  legal, ohne Bedingung
+    alleinerziehend: false, // +70  braucht ≥1 Kind
+    ernaehrung:      false, // +110 braucht Attest
+    but:             false, // +40  braucht ≥1 Kind
+  },
+  ernaehrungFake: false,    // true wenn Attest gefälscht → Jobcenter-Prüfrisiko
+  einstiegsgeldMonate: 0,   // verbleibende Monate mit +338 (Gründerbonus)
+
+  // ---- Minijob (Supermarkt) – legales Einkommen mit Freibetrag ----
+  minijobLohn: 0,           // 0 = kein Job, sonst Bruttolohn/Monat
+
+  // ---- Unterhalts-Tarnung (Schattenbank) ----
+  unterhaltsTarnung: false, // Afrika-Kindergeld behalten statt anrechnen
 };
 
 // ================================================================
@@ -102,12 +118,29 @@ const gameState = {
 const MIETE                  = 650;
 const ALG1_ZAHLUNG           = 1200;
 const ALG2_ZAHLUNG           = 563;
-const ALG2_VERMOEGENS_GRENZE = 15000;
+const ALG2_VERMOEGENS_GRENZE = 50000;
 const ECHTZEIT_PRO_WOCHE     = 60;       // Sekunden pro Spielwoche
 const WOCHEN_PRO_MONAT       = 4;
 const RAZZIA_INTERVALL       = 60;       // Sekunden zwischen Razzia-Prüfungen
 const RAZZIA_SCHWELLE        = 70;       // Ab diesem Risiko aktiv
 const RAZZIA_CHANCE          = 0.10;     // 10% pro Prüfung
+
+// ---- Legale Mehrbedarfe (monatliche Zuschläge) ----
+const MEHRBEDARF_BETRAG = { warmwasser: 15, alleinerziehend: 70, ernaehrung: 110, but: 40 };
+const EINSTIEGSGELD_BETRAG = 338;        // €/Monat Gründerbonus
+const EINSTIEGSGELD_KOSTEN = 800;        // einmalig "Steuerberater/Businessplan"
+const EINSTIEGSGELD_ZUSCHUSS = 2000;     // einmaliger Investitions-Zuschuss
+const EINSTIEGSGELD_DAUER  = 6;          // Monate
+
+// Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
+//   erste 100 € frei, 100–520 € → 20% frei, 520–1000 € → 30% frei
+function minijobFreibetrag(lohn) {
+  if (lohn <= 0) return 0;
+  let f = Math.min(lohn, 100);
+  if (lohn > 100) f += 0.20 * (Math.min(lohn, 520) - 100);
+  if (lohn > 520) f += 0.30 * (Math.min(lohn, 1000) - 520);
+  return Math.round(f);
+}
 
 // ================================================================
 // ABSCHNITT 3: ORTE-KONFIGURATION
@@ -128,10 +161,15 @@ const ORTE_CONFIG = [
   {
     id: 'arbeitsamt', name: '🏛️  Arbeitsamt', col: 6, row: 2,
     farbe: 0x5a3a8c, dachFarbe: 0x8a6abf,
-    beschreibung: 'Pflichtbesuche alle 14 Tage. Bringe Scheinbewerbungen mit.',
+    beschreibung: 'Pflichtbesuche alle 14 Tage. Hier beantragst du legale Mehrbedarfe & Förderungen.',
     aktionen: [
       { label: '📋  Pflichttermin wahrnehmen',               id: 'pflichttermin' },
-      { label: '📝  Scheinbewerbung einreichen (Risiko -5)', id: 'scheinbewerbung' }
+      { label: '📝  Scheinbewerbung einreichen (Risiko -5)', id: 'scheinbewerbung' },
+      { label: '🚿  Mehrbedarf Warmwasser (+15 €/M)',         id: 'mb_warmwasser' },
+      { label: '👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)',    id: 'mb_alleinerziehend' },
+      { label: '🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', id: 'mb_ernaehrung' },
+      { label: '🎒  Bildung & Teilhabe (+40 €/M)',            id: 'mb_but' },
+      { label: '🚀  Einstiegsgeld (Gründerbonus) beantragen', id: 'einstiegsgeld' }
     ]
   },
   {
@@ -193,7 +231,8 @@ const ORTE_CONFIG = [
       { label: '🥗  Bio-Qualität  (800€, Gesundheit +10, Laune +10)',        id: 'einkauf_gut'    },
       { label: '🥙  Normal       (500€, Gesundheit ±0, Laune ±0)',            id: 'einkauf_normal' },
       { label: '🍟  Billig       (250€, Gesundheit -5/M, Laune -10/M)',       id: 'einkauf_billig' },
-      { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  }
+      { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  },
+      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
     ]
   },
   {
@@ -214,7 +253,8 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 10%/Monat Gebühr)', id: 'alles_sichern'  },
       { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
-      { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    }
+      { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
+      { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' }
     ]
   },
   {
@@ -239,11 +279,11 @@ const ORTE_CONFIG = [
 // ================================================================
 const PFAND_ZINS = 1.25;   // +25% Zins beim Auslösen
 const PFAND_ITEMS = {
-  handy:     { name: '📱 Handy',         wert: 120,  laune: 4,  ziel: 'spieler' },
-  schmuck:   { name: '💎 Schmuck',       wert: 250,  laune: 6,  ziel: 'partner' },
-  fernseher: { name: '📺 Fernseher',     wert: 220,  laune: 8,  ziel: 'spieler' },
-  konsole:   { name: '🎮 Spielekonsole', wert: 180,  laune: 10, ziel: 'spieler' },
-  auto:      { name: '🚗 Auto',          wert: 1200, laune: 12, ziel: 'spieler' },
+  handy:     { name: '📱 Handy',         wert: 240,  laune: 4,  ziel: 'spieler' },
+  schmuck:   { name: '💎 Schmuck',       wert: 500,  laune: 6,  ziel: 'partner' },
+  fernseher: { name: '📺 Fernseher',     wert: 440,  laune: 8,  ziel: 'spieler' },
+  konsole:   { name: '🎮 Spielekonsole', wert: 360,  laune: 10, ziel: 'spieler' },
+  auto:      { name: '🚗 Auto',          wert: 2400, laune: 12, ziel: 'spieler' },
 };
 
 // ================================================================
@@ -2009,6 +2049,27 @@ function interact(ortId) {
       const n = gs.goldBarren || 0;
       label = `🥇  Gold ausgraben & verkaufen (${n} Barren · ${formatEuro(n * 500)})`;
     }
+    // Arbeitsamt: Mehrbedarfe zeigen Aktiv-Status
+    if (ortId === 'arbeitsamt' && a.id.startsWith('mb_')) {
+      const key = a.id.slice(3);
+      if (gs.mehrbedarf && gs.mehrbedarf[key]) {
+        const fake = (key === 'ernaehrung' && gs.ernaehrungFake) ? ' ⚠️gefälscht' : '';
+        label = label.replace(/^(\S+\s+\S+)/, '$1') + '  ✅ aktiv' + fake;
+      }
+    }
+    if (ortId === 'arbeitsamt' && a.id === 'einstiegsgeld' && gs.einstiegsgeldMonate > 0) {
+      label = `🚀  Einstiegsgeld läuft (noch ${gs.einstiegsgeldMonate} Monate · +${EINSTIEGSGELD_BETRAG} €/M)`;
+    }
+    if (ortId === 'supermarkt' && a.id === 'minijob') {
+      label = gs.minijobLohn > 0
+        ? `💼  Minijob aktiv (${formatEuro(gs.minijobLohn)}/M · ändern/kündigen)`
+        : '💼  Minijob annehmen (legales Einkommen mit Freibetrag)';
+    }
+    if (ortId === 'schattenbank' && a.id === 'unterhalts_tarnung') {
+      label = gs.unterhaltsTarnung
+        ? '🌍  Unterhalts-Tarnung AKTIV (abschalten)'
+        : '🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)';
+    }
     return { label, callback: () => aktionAusfuehren(ortId, a.id) };
   });
 
@@ -2132,6 +2193,74 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.scheinbewerbungen++;
       gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100);
       logEvent(`📝 Scheinbewerbung Nr.${gs.scheinbewerbungen}. Risiko -5.`, 'good');
+    }
+
+    // ---- Mehrbedarf: Warmwasser (legal, ohne Bedingung) ----
+    if (aktionsId === 'mb_warmwasser') {
+      if (gs.mehrbedarf.warmwasser) { logEvent('ℹ️ Warmwasser-Mehrbedarf läuft bereits.', ''); return; }
+      gs.mehrbedarf.warmwasser = true;
+      logEvent(`🚿 Warmwasser-Mehrbedarf bewilligt: +${MEHRBEDARF_BETRAG.warmwasser} €/Monat.`, 'good');
+    }
+    // ---- Mehrbedarf: Alleinerziehend (braucht ≥1 Kind) ----
+    if (aktionsId === 'mb_alleinerziehend') {
+      if (gs.mehrbedarf.alleinerziehend) { logEvent('ℹ️ Mehrbedarf Alleinerziehend läuft bereits.', ''); return; }
+      if ((gs.kindergeldKinder || []).length < 1) {
+        oeffneModal('👨‍👧 Kein Kind gemeldet', 'Den Mehrbedarf für Alleinerziehende gibt es nur mit mindestens einem Kind. Hol dir erst über den Kindergeld-Trick (Wohnung → Cheats) ein Kind.', []);
+        return;
+      }
+      gs.mehrbedarf.alleinerziehend = true;
+      logEvent(`👨‍👧 Mehrbedarf Alleinerziehend bewilligt: +${MEHRBEDARF_BETRAG.alleinerziehend} €/Monat.`, 'good');
+    }
+    // ---- Bildung & Teilhabe (braucht ≥1 Kind) ----
+    if (aktionsId === 'mb_but') {
+      if (gs.mehrbedarf.but) { logEvent('ℹ️ Bildung & Teilhabe läuft bereits.', ''); return; }
+      if ((gs.kindergeldKinder || []).length < 1) {
+        oeffneModal('🎒 Kein Kind gemeldet', 'Bildung & Teilhabe gibt es nur für gemeldete Kinder.', []);
+        return;
+      }
+      gs.mehrbedarf.but = true;
+      logEvent(`🎒 Bildung & Teilhabe bewilligt: +${MEHRBEDARF_BETRAG.but} €/Monat.`, 'good');
+    }
+    // ---- Ernährungs-Mehrbedarf: echtes oder gefälschtes Attest ----
+    if (aktionsId === 'mb_ernaehrung') {
+      if (gs.mehrbedarf.ernaehrung) { logEvent('ℹ️ Ernährungs-Mehrbedarf läuft bereits.', ''); return; }
+      oeffneModal('🥗 Ernährungs-Mehrbedarf',
+        `Für +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat brauchst du ein ärztliches Attest (z. B. Zöliakie).`,
+        [
+          { label: '🩺 Echtes Attest besorgen (50 €, legal)', callback: () => {
+              if (gs.kontostand < 50) { logEvent('⚠️ Nicht genug Geld für das Attest (50 €).', 'warn'); return; }
+              gs.kontostand -= 50;
+              gs.mehrbedarf.ernaehrung = true;
+              gs.ernaehrungFake = false;
+              logEvent(`🥗 Ernährungs-Mehrbedarf (echtes Attest): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat.`, 'good');
+              updateHUD();
+            } },
+          { label: '🖊️ Attest fälschen (gratis, Prüf-Risiko!)', danger: true, callback: () => {
+              gs.mehrbedarf.ernaehrung = true;
+              gs.ernaehrungFake = true;
+              logEvent(`🥗 Ernährungs-Mehrbedarf (gefälscht): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat – riskant!`, 'warn');
+              updateHUD();
+            } },
+        ]);
+      return;
+    }
+    // ---- Einstiegsgeld / Gründerbonus ----
+    if (aktionsId === 'einstiegsgeld') {
+      if (gs.einstiegsgeldMonate > 0) { logEvent(`ℹ️ Einstiegsgeld läuft noch ${gs.einstiegsgeldMonate} Monate.`, ''); return; }
+      oeffneModal('🚀 Einstiegsgeld (Gründerbonus)',
+        `Gründe eine Selbstständigkeit. Kostet einmalig <strong>${formatEuro(EINSTIEGSGELD_KOSTEN)}</strong> (Steuerberater + Businessplan).<br><br>`
+        + `Dann: <strong>+${EINSTIEGSGELD_BETRAG} €/Monat</strong> für ${EINSTIEGSGELD_DAUER} Monate (anrechnungsfrei) + einmaliger Investitions-Zuschuss von <strong>${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}</strong>.`,
+        [
+          { label: `🚀 Gründen (${formatEuro(EINSTIEGSGELD_KOSTEN)})`, primary: true, callback: () => {
+              if (gs.kontostand < EINSTIEGSGELD_KOSTEN) { logEvent('⚠️ Nicht genug Geld zum Gründen (800 €).', 'warn'); return; }
+              gs.kontostand -= EINSTIEGSGELD_KOSTEN;
+              gs.kontostand += EINSTIEGSGELD_ZUSCHUSS;
+              gs.einstiegsgeldMonate = EINSTIEGSGELD_DAUER;
+              logEvent(`🚀 Einstiegsgeld bewilligt! Zuschuss +${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}, dann +${EINSTIEGSGELD_BETRAG} €/M für ${EINSTIEGSGELD_DAUER} Monate.`, 'good');
+              updateHUD();
+            } },
+        ]);
+      return;
     }
   }
 
@@ -2355,6 +2484,25 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.schattenbankAktiv = false;
       logEvent(`🏴 Schwarzkasse abgehoben → loses Bargeld.`, 'warn');
     }
+    // ---- Unterhalts-Tarnung: Auslands-Kindergeld behalten statt anrechnen ----
+    if (aktionsId === 'unterhalts_tarnung') {
+      if (gs.unterhaltsTarnung) {
+        gs.unterhaltsTarnung = false;
+        logEvent('🌍 Unterhalts-Tarnung abgeschaltet. Auslands-Kindergeld wird wieder angerechnet (netto 0).', '');
+        return;
+      }
+      if ((gs.kindergeldKinder || []).length < 1) {
+        oeffneModal('🌍 Keine Auslandskinder', 'Die Unterhalts-Tarnung lohnt sich nur mit Kindergeld für Kinder im Ausland (Wohnung → Cheats → Kindergeld-Trick).', []);
+        return;
+      }
+      gs.unterhaltsTarnung = true;
+      oeffneModal('🌍 Unterhalts-Tarnung aktiviert',
+        'Du reichst gefälschte Belege ein, dass du das Kindergeld als Unterhalt ins Ausland überweist.<br><br>'
+        + 'Das Amt rechnet es nicht mehr an – du <strong>behältst</strong> das Auslands-Kindergeld.<br><br>'
+        + '⚠️ Aber: Bei der <strong>Jobcenter-Prüfung</strong> (alle paar Monate) steigt das Entdeckungsrisiko mit jedem Auslandskind!', []);
+      logEvent('🌍 Unterhalts-Tarnung aktiv – Auslands-Kindergeld wird behalten (riskant!).', 'warn');
+      return;
+    }
   }
 
   // --- SUPERMARKT ---
@@ -2415,6 +2563,31 @@ function aktionAusfuehren(ortId, aktionsId) {
           + 'Deine Partnerin zieht wieder ein. Partnerlaune: <strong>70</strong>.<br>'
           + 'Der monatliche Unterhalt von 1.000 € entfällt.', []);
       }
+    }
+
+    // ---- Minijob (legales Einkommen mit Freibetrag) ----
+    if (aktionsId === 'minijob') {
+      const setze = (lohn) => {
+        gs.minijobLohn = lohn;
+        if (lohn > 0) {
+          const fb = minijobFreibetrag(lohn);
+          logEvent(`💼 Minijob angenommen: ${formatEuro(lohn)}/Monat brutto. Davon anrechnungsfrei: ${formatEuro(fb)}.`, 'good');
+        } else {
+          logEvent('💼 Minijob gekündigt.', '');
+        }
+        updateHUD();
+      };
+      const fb520 = minijobFreibetrag(520);
+      const fb250 = minijobFreibetrag(250);
+      oeffneModal('💼 Minijob (Aushilfe)',
+        'Legales Einkommen – aber das Amt rechnet an. Du behältst nur den <strong>Freibetrag</strong> (erste 100 € + 20 % vom Rest).<br><br>'
+        + `Kostet jeden Monat etwas Energie.`,
+        [
+          { label: `🧹 250 €/Monat (netto +${formatEuro(fb250)})`, callback: () => setze(250) },
+          { label: `🛒 520 €/Monat (netto +${formatEuro(fb520)})`, primary: true, callback: () => setze(520) },
+          { label: '🚪 Minijob kündigen', danger: true, callback: () => setze(0) },
+        ]);
+      return;
     }
   }
 
@@ -2775,26 +2948,71 @@ function monatsAbschluss() {
     logEvent('💸 Konto leer → Bürgergeld.', 'danger');
   }
 
-  // ALG-Zahlung
+  // ---- Minijob: anrechenbarer Teil (Freibetrag bleibt frei) ----
+  const minijobAnrechenbar = gs.minijobLohn > 0
+    ? Math.max(0, gs.minijobLohn - minijobFreibetrag(gs.minijobLohn))
+    : 0;
+
+  // ALG-Zahlung (Grundleistung, danach Einkommens-Anrechnung)
   if (gs.status === 'ALG1') {
     if (gs.algGesperrt) {
       meldungen.push('🛑 ALG I gesperrt! Besuche das Arbeitsamt um die Sperre aufzuheben.');
       logEvent('🛑 ALG I gesperrt – kein Geld!', 'danger');
     } else {
-      gs.kontostand += ALG1_ZAHLUNG;
-      meldungen.push(`✅ ALG I: +${formatEuro(ALG1_ZAHLUNG)}`);
-      logEvent(`✅ ALG I +${formatEuro(ALG1_ZAHLUNG)}.`, 'good');
+      const auszahlung = Math.max(0, ALG1_ZAHLUNG - minijobAnrechenbar);
+      gs.kontostand += auszahlung;
+      meldungen.push(`✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
+      logEvent(`✅ ALG I +${formatEuro(auszahlung)}.`, 'good');
     }
   } else {
-    // ALG2: Vermögensprüfung
-    if (gs.kontostand > ALG2_VERMOEGENS_GRENZE) {
-      meldungen.push(`🛑 Vermögensprüfung: Konto ${formatEuro(gs.kontostand)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld!`);
-      logEvent('🛑 Zu viel Vermögen.', 'danger');
+    // ALG2: Vermögensprüfung – nur alle 3 Monate, zählt Konto + Depot
+    // (Gold im Garten und Schwarzkasse zählen NICHT zum prüfbaren Vermögen)
+    const istPruefMonat  = (gs.monat % 3 === 0);
+    const depotWert      = (gs.depot || []).reduce((s, p) => s + p.anteile * p.aktuellerKurs, 0);
+    const pruefVermoegen = gs.kontostand + depotWert;
+    if (istPruefMonat && pruefVermoegen > ALG2_VERMOEGENS_GRENZE) {
+      meldungen.push(`🛑 Vermögensprüfung (alle 3 Monate): Konto + Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`);
+      logEvent('🛑 Vermögensprüfung: zu viel Vermögen (Konto + Depot).', 'danger');
     } else {
-      gs.kontostand += ALG2_ZAHLUNG;
-      meldungen.push(`✅ Bürgergeld: +${formatEuro(ALG2_ZAHLUNG)}`);
-      logEvent(`✅ Bürgergeld +${formatEuro(ALG2_ZAHLUNG)}.`, 'good');
+      const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar);
+      gs.kontostand += auszahlung;
+      meldungen.push(`✅ Bürgergeld: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
+      logEvent(`✅ Bürgergeld +${formatEuro(auszahlung)}.`, 'good');
     }
+  }
+
+  // ---- Minijob: Bruttolohn aufs Konto + Energie kostet ----
+  if (gs.minijobLohn > 0) {
+    gs.kontostand += gs.minijobLohn;
+    gs.energie     = clamp(gs.energie - 10, 0, 100);
+    const fb = minijobFreibetrag(gs.minijobLohn);
+    meldungen.push(`💼 Minijob: +${formatEuro(gs.minijobLohn)} (anrechnungsfrei: ${formatEuro(fb)}). Energie -10.`);
+    logEvent(`💼 Minijob +${formatEuro(gs.minijobLohn)}.`, 'good');
+  }
+
+  // ---- Legale Mehrbedarfe (monatliche Zuschläge aufs Konto) ----
+  {
+    let mbSumme = 0;
+    const mbTeile = [];
+    for (const key in MEHRBEDARF_BETRAG) {
+      if (gs.mehrbedarf && gs.mehrbedarf[key]) {
+        mbSumme += MEHRBEDARF_BETRAG[key];
+        mbTeile.push(key);
+      }
+    }
+    if (mbSumme > 0) {
+      gs.kontostand += mbSumme;
+      meldungen.push(`📑 Mehrbedarfe: +${formatEuro(mbSumme)} (${mbTeile.join(', ')})`);
+      logEvent(`📑 Mehrbedarfe +${formatEuro(mbSumme)}.`, 'good');
+    }
+  }
+
+  // ---- Einstiegsgeld (Gründerbonus, anrechnungsfrei) ----
+  if (gs.einstiegsgeldMonate > 0) {
+    gs.kontostand += EINSTIEGSGELD_BETRAG;
+    gs.einstiegsgeldMonate--;
+    meldungen.push(`🚀 Einstiegsgeld: +${formatEuro(EINSTIEGSGELD_BETRAG)} (noch ${gs.einstiegsgeldMonate} Monate)`);
+    logEvent(`🚀 Einstiegsgeld +${formatEuro(EINSTIEGSGELD_BETRAG)}.`, 'good');
   }
 
   // ---- Depot: Monatliche Kursaktualisierung ----
@@ -2812,14 +3030,53 @@ function monatsAbschluss() {
     logEvent(`🦈 Zinsen +${formatEuro(zinsen)}. Schulden: ${formatEuro(gs.loanSharkSchuld)}.`, 'danger');
   }
 
-  // ---- Kindergeld → Konto (pro Kind 300€, Risiko +5) ----
+  // ---- Auslands-Kindergeld (Kindergeld-Paradoxon) ----
+  // Ohne Tarnung: fließt, wird aber voll als Einkommen angerechnet → netto 0.
+  // Mit Unterhalts-Tarnung (Schattenbank): wird behalten – aber Prüf-Risiko!
   if (gs.kindergeldKinder && gs.kindergeldKinder.length > 0) {
     const anzahl  = gs.kindergeldKinder.length;
     const zahlung = anzahl * 300;
-    gs.kontostand  += zahlung;
-    gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
-    meldungen.push(`👶 Kindergeld für ${anzahl} Kind${anzahl > 1 ? 'er' : ''} (${gs.kindergeldKinder.join(', ')}): +${formatEuro(zahlung)} auf Konto. Risiko +${anzahl * 5}.`);
-    logEvent(`👶 Kindergeld +${formatEuro(zahlung)} für ${anzahl} Kinder.`, 'warn');
+    if (gs.unterhaltsTarnung) {
+      gs.kontostand  += zahlung;
+      gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
+      meldungen.push(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)} behalten. Risiko +${anzahl * 5}.`);
+      logEvent(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung aktiv).`, 'warn');
+    } else {
+      meldungen.push(`👶 Auslands-Kindergeld ${formatEuro(zahlung)} fließt, wird aber voll als Einkommen angerechnet → netto 0 €. Tipp: Unterhalts-Tarnung in der Schattenbank.`);
+      logEvent('👶 Kindergeld komplett angerechnet (netto 0).', '');
+    }
+  }
+
+  // ---- Jobcenter-Prüfung (Plausibilität) – versetzt zur Vermögensprüfung ----
+  // Deckt gefälschte Atteste und die Unterhalts-Tarnung auf.
+  if (gs.monat % 3 === 1) {
+    let fakeFaktoren = 0;
+    if (gs.ernaehrungFake) fakeFaktoren += 1;
+    if (gs.unterhaltsTarnung) fakeFaktoren += (gs.kindergeldKinder || []).length;
+    if (fakeFaktoren > 0) {
+      const chance = Math.min(0.85, 0.15 * fakeFaktoren);
+      if (Math.random() < chance) {
+        let rueck = 0;
+        const gestrichen = [];
+        if (gs.ernaehrungFake) {
+          rueck += MEHRBEDARF_BETRAG.ernaehrung * 3;
+          gs.mehrbedarf.ernaehrung = false; gs.ernaehrungFake = false;
+          gestrichen.push('Ernährungs-Mehrbedarf');
+        }
+        if (gs.unterhaltsTarnung) {
+          rueck += (gs.kindergeldKinder || []).length * 300 * 3;
+          gs.unterhaltsTarnung = false;
+          gestrichen.push('Unterhalts-Tarnung');
+        }
+        gs.kontostand   = Math.max(0, gs.kontostand - rueck);
+        gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
+        meldungen.push(`🚨 Jobcenter-Prüfung AUFGEFLOGEN! Rückforderung ${formatEuro(rueck)}, Risiko +30. Gestrichen: ${gestrichen.join(', ')}.`);
+        logEvent(`🚨 Jobcenter-Prüfung aufgeflogen: -${formatEuro(rueck)}, Risiko +30.`, 'danger');
+      } else {
+        meldungen.push('🔍 Jobcenter-Prüfung: diesmal nichts aufgefallen (Glück gehabt).');
+        logEvent('🔍 Jobcenter-Prüfung überstanden.', 'warn');
+      }
+    }
   }
 
   // Immobilien-Fake und andere Cheat-Extras → schwarze Kasse
