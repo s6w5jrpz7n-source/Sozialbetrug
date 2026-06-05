@@ -3899,11 +3899,12 @@ function zeichneStrassendeko(g, tileW, tileH, offsetX, offsetY) {
 //   breite  = Anzeigebreite als Vielfaches von tileW
 //   ankerY  = vertikaler Ankerpunkt (1 = Bildunterkante sitzt auf cy)
 //   dy      = Feinjustierung hoch/runter (Vielfaches von tileH)
+//   dx      = Feinjustierung links/rechts (Vielfaches von tileW, optional)
 // ================================================================
 const BUILDING_SPRITES = {
   bank:       { file: 'assets/buildings/bank.png',           breite: 2.28, ankerY: 0.86, dy: 0.10 },
   arbeitsamt: { file: 'assets/buildings/arbeitsamt.png',     breite: 2.83, ankerY: 0.92, dy: 0.18 },
-  baustelle:  { file: 'assets/buildings/baustelle.png',      breite: 3.42, ankerY: 0.86, dy: 0.10 },
+  baustelle:  { file: 'assets/buildings/baustelle.png',      breite: 3.05, ankerY: 0.86, dy: 0.10, dx: 0.25 },
   pawn:       { file: 'assets/buildings/pfandleiher.png',    breite: 1.31, ankerY: 0.86, dy: 0.10 },
   amuesier:   { file: 'assets/buildings/amuesierbetrieb.png', breite: 1.75, ankerY: 0.86, dy: 0.10 },
   kasino:     { file: 'assets/buildings/casino_nacht.png',   breite: 2.28, ankerY: 0.86, dy: 0.08 },
@@ -3932,7 +3933,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     // ---- Bild-Gebäude (PNG) bevorzugen, falls vorhanden ----
     const sprite = BUILDING_SPRITES[ort.id];
     if (sprite && scene.textures.exists('geb_' + ort.id)) {
-      const img = scene.add.image(pos.x, pos.y + tileH * (sprite.dy || 0), 'geb_' + ort.id);
+      const img = scene.add.image(pos.x + tileW * (sprite.dx || 0), pos.y + tileH * (sprite.dy || 0), 'geb_' + ort.id);
       img.setOrigin(sprite.ankerX ?? 0.5, sprite.ankerY ?? 0.85);
       const src   = scene.textures.get('geb_' + ort.id).getSourceImage();
       const dispW = tileW * (sprite.breite ?? 1.5);

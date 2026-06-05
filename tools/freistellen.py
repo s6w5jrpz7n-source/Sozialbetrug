@@ -143,9 +143,32 @@ def deshadow(path, top_guard=0.42, sat=18, lo=150, hi=225):
     print(f"   deshadow {path.split('/')[-1]} -> {img.size[0]}x{img.size[1]}")
 
 
+def loecher(path, thresh=235):
+    """Entfernt EINGESCHLOSSENE reinweisse Flaechen, die der randbasierte
+    Flood-Fill nicht erreicht (z.B. Himmel zwischen den Kran-Streben).
+    Hoher Schwellwert -> helle Gebaeudeteile bleiben erhalten."""
+    img = Image.open(path).convert("RGBA")
+    w, h = img.size
+    px = img.load()
+    rem = 0
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a > 0 and min(r, g, b) >= thresh:
+                px[x, y] = (r, g, b, 0); rem += 1
+    bbox = img.getbbox()
+    if bbox:
+        img = img.crop(bbox)
+    img.save(path)
+    print(f"   loecher {path.split('/')[-1]}: {rem} px -> {img.size[0]}x{img.size[1]}")
+
+
 if __name__ == "__main__":
     mode = sys.argv[3] if len(sys.argv) > 3 else "neutral"
     freistellen(sys.argv[1], sys.argv[2], mode=mode)
-    # 5. Argument 'deshadow' -> Schlagschatten zusaetzlich abschaelen
-    if len(sys.argv) > 4 and sys.argv[4] == "deshadow":
+    # Weitere Argumente (Reihenfolge egal): 'deshadow', 'loecher'
+    flags = sys.argv[4:]
+    if "loecher" in flags:
+        loecher(sys.argv[2])
+    if "deshadow" in flags:
         deshadow(sys.argv[2])
