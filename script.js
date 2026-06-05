@@ -151,7 +151,10 @@ const EINSTIEGSGELD_ZUSCHUSS = 2000;     // einmaliger Investitions-Zuschuss
 const EINSTIEGSGELD_DAUER  = 6;          // Monate
 const SCHEINWG_BETRAG      = 200;        // €/Monat Schein-WG-Bonus
 const KAUTION_RATE         = 150;        // €/Monat Kaution-Darlehen-Rückzahlung
-const IMMO_KAUFPREIS       = 100000;     // € (aus Schwarzkasse, Spätspiel-Ziel)
+const IMMO_KAUFPREIS       = 100000;     // € Gesamtpreis (Spätspiel-Ziel)
+const IMMO_EIGENKAPITAL    = 40000;      // € Anzahlung bei Kauf (aus Schwarzkasse)
+const IMMO_LAUFZEIT        = 24;         // Monate Ratenzahlung
+const IMMO_RATE            = Math.round((IMMO_KAUFPREIS - IMMO_EIGENKAPITAL) / IMMO_LAUFZEIT); // 2.500 €/M
 const IMMO_MIETE           = 700;        // €/Monat KdU bzw. Mieteinnahmen
 const IMMO_WERT_WACHSTUM   = 1.05;       // +5% Wert pro Monat
 
@@ -284,9 +287,10 @@ const ORTE_CONFIG = [
       { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
       { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
       { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' },
-      { label: '🏘️  Immobilie kaufen (Strohmann, aus Schwarzkasse)',           id: 'immo_kaufen'   },
+      { label: '🏘️  Immobilie kaufen (40.000 € EK + Rate)',                    id: 'immo_kaufen'   },
       { label: '🔑  Immobilie: Eigennutzung ⇄ Vermieten',                      id: 'immo_modus'    },
-      { label: '💰  Immobilie verkaufen (Wert → Schwarzkasse)',                id: 'immo_verkaufen'}
+      { label: '🏦  Immobilie sofort abbezahlen (Restschuld tilgen)',          id: 'immo_tilgen'   },
+      { label: '💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)',   id: 'immo_verkaufen'}
     ]
   },
   {
@@ -294,8 +298,8 @@ const ORTE_CONFIG = [
     farbe: 0x5a1a1a, dachFarbe: 0x8a2a2a,
     beschreibung: 'Schnelles Geld, hohe Risiken. Schulden wachsen monatlich.',
     aktionen: [
-      { label: '💰  Kredit 1.000 € aufnehmen (Risiko +15, Zins 20%/Monat)',  id: 'kredit_klein' },
-      { label: '💰  Kredit 3.000 € aufnehmen (Risiko +25, Zins 20%/Monat)',  id: 'kredit_gross' },
+      { label: '💰  Kredit 1.000 € aufnehmen (Risiko +15, Zins 10%/Monat)',  id: 'kredit_klein' },
+      { label: '💰  Kredit 3.000 € aufnehmen (Risiko +25, Zins 10%/Monat)',  id: 'kredit_gross' },
       { label: '💸  Schulden zurückzahlen (aktuell: 0 €)',                    id: 'schulden_zahlen' },
       { label: '🤝  Schuldenerlass verhandeln (Risiko +20, 50/50)',           id: 'schulden_verhandeln' }
     ]
@@ -2103,15 +2107,21 @@ function interact(ortId) {
         : '🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)';
     }
     if (ortId === 'schattenbank' && a.id === 'immo_kaufen' && gs.immobilie) {
-      label = `🏘️  Immobilie im Besitz (Wert ${formatEuro(gs.immobilie.wert)})`;
+      const rs = gs.immobilie.restSchuld || 0;
+      label = `🏘️  Immobilie: Wert ${formatEuro(gs.immobilie.wert)}${rs > 0 ? ` · Restschuld ${formatEuro(rs)}` : ' · schuldenfrei'}`;
     }
     if (ortId === 'schattenbank' && a.id === 'immo_modus' && gs.immobilie) {
       label = gs.immobilie.modus === 'eigen'
         ? '🔑  Modus: Eigennutzung → auf Vermieten umschalten'
         : '🔑  Modus: Vermietet → auf Eigennutzung umschalten';
     }
+    if (ortId === 'schattenbank' && a.id === 'immo_tilgen' && gs.immobilie) {
+      const rs = gs.immobilie.restSchuld || 0;
+      label = rs > 0 ? `🏦  Sofort tilgen (Restschuld ${formatEuro(rs)})` : '🏦  Bereits schuldenfrei';
+    }
     if (ortId === 'schattenbank' && a.id === 'immo_verkaufen' && gs.immobilie) {
-      label = `💰  Immobilie verkaufen (${formatEuro(gs.immobilie.wert)} → Schwarzkasse)`;
+      const netto = Math.max(0, Math.round(gs.immobilie.wert) - (gs.immobilie.restSchuld || 0));
+      label = `💰  Immobilie verkaufen (netto ${formatEuro(netto)} → Schwarzkasse)`;
     }
     // Wohnung: Kur / Schein-WG / Umzug
     if (ortId === 'wohnung' && a.id === 'kur') {
@@ -2140,7 +2150,7 @@ function interact(ortId) {
   // Gebäude-Beschreibung dynamisch anreichern
   let beschreibung = ort.beschreibung;
   if (ortId === 'loanshark' && (gs.loanSharkSchuld || 0) > 0) {
-    beschreibung += `<br><br>⚠️ Aktuelle Schulden: <strong style="color:#e84b4b">${formatEuro(gs.loanSharkSchuld)}</strong> (Zinsen: 20%/Monat)`;
+    beschreibung += `<br><br>⚠️ Aktuelle Schulden: <strong style="color:#e84b4b">${formatEuro(gs.loanSharkSchuld)}</strong> (Zinsen: 10%/Monat)`;
   }
   if (ortId === 'pawn' && (gs.goldBarren || 0) > 0) {
     beschreibung += `<br><br>🥇 Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * 500)})`;
@@ -2656,21 +2666,22 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent('🌍 Unterhalts-Tarnung aktiv – Auslands-Kindergeld wird behalten (riskant!).', 'warn');
       return;
     }
-    // ---- Immobilie kaufen (über Strohmann, aus Schwarzkasse) ----
+    // ---- Immobilie kaufen (40.000 € EK aus Schwarzkasse, Rest in Raten) ----
     if (aktionsId === 'immo_kaufen') {
       if (gs.immobilie) { oeffneModal('🏘️ Schon im Besitz', 'Du besitzt bereits eine Immobilie.', []); return; }
-      if (gs.schwarzeKasse < IMMO_KAUFPREIS) {
-        oeffneModal('🏘️ Zu wenig Schwarzkasse', `Für die Immobilie brauchst du <strong>${formatEuro(IMMO_KAUFPREIS)}</strong> in der Schwarzkasse.<br><br>Vorhanden: ${formatEuro(gs.schwarzeKasse)}.`, []);
+      if (gs.schwarzeKasse < IMMO_EIGENKAPITAL) {
+        oeffneModal('🏘️ Zu wenig Eigenkapital', `Für die Anzahlung brauchst du <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong> in der Schwarzkasse.<br><br>Vorhanden: ${formatEuro(gs.schwarzeKasse)}.`, []);
         return;
       }
-      gs.schwarzeKasse -= IMMO_KAUFPREIS;
-      gs.immobilie = { wert: IMMO_KAUFPREIS, miete: IMMO_MIETE, modus: 'eigen' };
+      gs.schwarzeKasse -= IMMO_EIGENKAPITAL;
+      const restSchuld = IMMO_KAUFPREIS - IMMO_EIGENKAPITAL;
+      gs.immobilie = { wert: IMMO_KAUFPREIS, miete: IMMO_MIETE, modus: 'eigen', restSchuld };
       oeffneModal('🏘️ Immobilie gekauft!',
-        `Über einen Strohmann erworben (${formatEuro(IMMO_KAUFPREIS)} aus der Schwarzkasse).<br><br>`
-        + `Modus: <strong>Eigennutzung</strong> – solange du Bürgergeld beziehst, überweist das Amt die Miete (${formatEuro(IMMO_MIETE)}/M an deinen Strohmann) → in deine Schwarzkasse.<br><br>`
-        + 'Der Wert steigt <strong>5 %/Monat</strong>. Du kannst jederzeit auf Vermieten umschalten oder verkaufen.<br><br>'
-        + '⚠️ Eigennutzung ist Leistungsbetrug → leicht erhöhtes Risiko + Jobcenter-Prüfung.', []);
-      logEvent(`🏘️ Immobilie gekauft (${formatEuro(IMMO_KAUFPREIS)}).`, 'warn');
+        `Über einen Strohmann erworben. Anzahlung: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
+        + `Restschuld <strong>${formatEuro(restSchuld)}</strong> → Rate <strong>${formatEuro(IMMO_RATE)}/Monat</strong> über ${IMMO_LAUFZEIT} Monate (jederzeit sofort tilgbar).<br><br>`
+        + `Modus: <strong>Eigennutzung</strong> – im Bürgergeld zahlt das Amt die Miete (${formatEuro(IMMO_MIETE)}/M) in deine Schwarzkasse. Wert +5 %/Monat.<br><br>`
+        + '⚠️ Eigennutzung ist Leistungsbetrug → erhöhtes Risiko + Jobcenter-Prüfung.', []);
+      logEvent(`🏘️ Immobilie gekauft. EK ${formatEuro(IMMO_EIGENKAPITAL)}, Restschuld ${formatEuro(restSchuld)}.`, 'warn');
       return;
     }
     if (aktionsId === 'immo_modus') {
@@ -2679,12 +2690,28 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent(`🔑 Immobilie: ${gs.immobilie.modus === 'eigen' ? 'Eigennutzung – Amt zahlt Miete' : 'Vermietet – Mieteinnahmen'}.`, '');
       return;
     }
+    if (aktionsId === 'immo_tilgen') {
+      if (!gs.immobilie || gs.immobilie.restSchuld <= 0) { oeffneModal('🏦 Nichts zu tilgen', 'Es besteht keine Restschuld.', []); return; }
+      const rest = gs.immobilie.restSchuld;
+      if (gs.schwarzeKasse + gs.kontostand < rest) {
+        oeffneModal('🏦 Zu wenig Geld', `Zum Abbezahlen der Restschuld brauchst du <strong>${formatEuro(rest)}</strong> (Schwarzkasse + Konto).`, []);
+        return;
+      }
+      let r = rest;
+      const ausSK = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= ausSK; r -= ausSK;
+      gs.kontostand -= r;
+      gs.immobilie.restSchuld = 0;
+      oeffneModal('🏦 Abbezahlt!', `Restschuld von ${formatEuro(rest)} sofort getilgt. Die Immobilie gehört dir schuldenfrei.`, []);
+      logEvent(`🏦 Immobilie abbezahlt: -${formatEuro(rest)}.`, 'good');
+      return;
+    }
     if (aktionsId === 'immo_verkaufen') {
       if (!gs.immobilie) { oeffneModal('🏘️ Keine Immobilie', 'Du besitzt keine Immobilie.', []); return; }
-      const erloes = Math.round(gs.immobilie.wert);
+      const erloes = Math.max(0, Math.round(gs.immobilie.wert) - (gs.immobilie.restSchuld || 0));
       gs.schwarzeKasse += erloes;
+      const rs = gs.immobilie.restSchuld || 0;
       gs.immobilie = null;
-      oeffneModal('💰 Immobilie verkauft', `Verkauft für <strong>${formatEuro(erloes)}</strong> → Schwarzkasse.`, []);
+      oeffneModal('💰 Immobilie verkauft', `Verkauft. Wert minus Restschuld (${formatEuro(rs)}) = <strong>${formatEuro(erloes)}</strong> → Schwarzkasse.`, []);
       logEvent(`💰 Immobilie verkauft: +${formatEuro(erloes)} Schwarzkasse.`, 'good');
       return;
     }
@@ -3226,6 +3253,22 @@ function monatsAbschluss() {
       meldungen.push(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`);
       logEvent(`🏘️ Immobilie +${formatEuro(einnahme)} Schwarzkasse.`, 'warn');
     }
+    // Ratenzahlung (Schwarzkasse zuerst, dann Konto)
+    if (gs.immobilie.restSchuld > 0) {
+      const rate = Math.min(IMMO_RATE, gs.immobilie.restSchuld);
+      const verfuegbar = gs.schwarzeKasse + gs.kontostand;
+      const zahlbar = Math.min(rate, verfuegbar);
+      let r = zahlbar;
+      const ausSK = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= ausSK; r -= ausSK;
+      gs.kontostand -= r;
+      gs.immobilie.restSchuld -= zahlbar;
+      if (zahlbar < rate) {
+        gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
+        meldungen.push(`🏘️ Immobilien-Rate nur teilweise gezahlt (${formatEuro(zahlbar)}/${formatEuro(rate)})! Risiko +5.`);
+      } else {
+        meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(rate)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
+      }
+    }
     // Wertsteigerung +5 %/Monat
     gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
     meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+5 %).`);
@@ -3248,7 +3291,7 @@ function monatsAbschluss() {
 
   // ---- Loan-Shark: Monatliche Zinsen 20% ----
   if (gs.loanSharkSchuld > 0) {
-    const zinsen = Math.round(gs.loanSharkSchuld * 0.20);
+    const zinsen = Math.round(gs.loanSharkSchuld * 0.10);
     gs.loanSharkSchuld += zinsen;
     gs.risikoRaster     = clamp(gs.risikoRaster + 5, 0, 100);
     meldungen.push(`🦈 Kredithai-Zinsen: +${formatEuro(zinsen)} → Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}. Risiko +5.`);
@@ -3417,13 +3460,14 @@ function monatsAbschluss() {
   // ---- Loan-Shark Mahnung-System ----
   if (gs.loanSharkSchuld > 0) {
     gs.loanSharkMahnungStufe = (gs.loanSharkMahnungStufe || 0) + 1;
-    if (gs.loanSharkMahnungStufe === 1) {
-      meldungen.push('🦈 Kredithai-Mahnung: Zahle deine Schulden! 3 Tage Zeit.');
+    // Rückzahlungszeit verdoppelt: Konsequenzen erst bei Stufe 2 / 4 / 6
+    if (gs.loanSharkMahnungStufe === 2) {
+      meldungen.push('🦈 Kredithai-Mahnung: Zahle deine Schulden!');
       logEvent('🦈 MAHNUNG vom Kredithai!', 'danger');
       setTimeout(() => oeffneModal('🦈 Mahnung vom Kredithai',
         `Du schuldest <strong>${formatEuro(gs.loanSharkSchuld)}</strong>.<br><br>`
-        + 'Zahle innerhalb von <strong>3 Tagen</strong>, sonst kommen Eintreiber!', []), 400);
-    } else if (gs.loanSharkMahnungStufe === 2) {
+        + 'Zahle bald, sonst kommen Eintreiber!', []), 400);
+    } else if (gs.loanSharkMahnungStufe === 4) {
       gs.gesundheit = clamp(gs.gesundheit - 5, 0, 100);
       meldungen.push('🦈 Erster Besuch der Eintreiber: Gesundheit -5!');
       logEvent('🦈 Eintreiber! Gesundheit -5.', 'danger');
@@ -3432,7 +3476,7 @@ function monatsAbschluss() {
         'Zwei Männer haben dich aufgesucht. Eine Warnung.<br><br>'
         + '<strong>Gesundheit −5</strong><br><br>'
         + `Schulden: ${formatEuro(gs.loanSharkSchuld)}`, []), 400);
-    } else if (gs.loanSharkMahnungStufe >= 3) {
+    } else if (gs.loanSharkMahnungStufe >= 6) {
       gs.gesundheit = clamp(gs.gesundheit - 15, 0, 100);
       meldungen.push('🦈 Zweiter Besuch! Schlimme Verletzungen: Gesundheit -15!');
       logEvent('🦈 Zweiter Besuch! Gesundheit -15!', 'danger');
