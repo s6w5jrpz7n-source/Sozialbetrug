@@ -4089,6 +4089,10 @@ class StartSzene extends Phaser.Scene {
   }
 
   create() {
+    // HUD ausblenden -> Startbildschirm = reines Vollbild-Titelbild
+    setHudSichtbar(false);
+    const _c = document.getElementById('game-container');
+    if (_c) this.scale.resize(_c.clientWidth, _c.clientHeight);
     const W = this.scale.width;
     const H = this.scale.height;
 
@@ -4106,11 +4110,13 @@ class StartSzene extends Phaser.Scene {
 
     // ---- Hintergrundbild: vollflächig skaliert ----
     // Jetzt zuverlässig geladen weil preload() fertig ist
+    let bgRect = null;   // {left, top, w, h} des angezeigten Bildes
     if (this.textures.exists('startbg')) {
       const bg = this.add.image(W/2, H/2, 'startbg');
-      const scaleX = W / bg.width;
-      const scaleY = H / bg.height;
-      bg.setScale(Math.max(scaleX, scaleY)).setDepth(0);
+      const scale = Math.max(W / bg.width, H / bg.height);
+      bg.setScale(scale).setDepth(0);
+      const dw = bg.width * scale, dh = bg.height * scale;
+      bgRect = { left: W/2 - dw/2, top: H/2 - dh/2, w: dw, h: dh };
     } else {
       // Fallback: dunkler Hintergrund wenn Datei fehlt
       const bgFallback = this.add.graphics().setDepth(0);
@@ -4120,93 +4126,63 @@ class StartSzene extends Phaser.Scene {
       this._zeichneSkylineFallback(skyGfx, W, H);
     }
 
-    // Leichter dunkler Overlay für bessere Lesbarkeit der Buttons
-    const overlay = this.add.graphics().setDepth(1);
-    overlay.fillStyle(0x000000, 0.22);
-    overlay.fillRect(0, 0, W, H);
-
-    // Vignette (Rand abdunkeln)
-    for (let i = 0; i < 6; i++) {
-      const vig = this.add.graphics().setDepth(2);
-      vig.lineStyle(30 + i*18, 0x000000, 0.08 * (6-i));
-      vig.strokeRect(0, 0, W, H);
-    }
-
-    // ---- Menü-Buttons (links unten, passend zum Bild-Layout) ----
-    const menuX  = W * 0.20;
-    const menuY0 = H * 0.54;
-    const menuH  = H * 0.072;
-    const menuW  = W * 0.22;
-
     const MENU_ITEMS = [
-      { icon: '👑', label: 'NEUES SPIEL',   aktion: () => this._neuesSpiel(),    aktiv: true },
-      { icon: '📁', label: 'SPIEL LADEN',   aktion: () => this._spielLaden(),    aktiv: true },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', aktion: () => this._einstellungen(), aktiv: true },
-      { icon: '🏆', label: 'BESTENLISTE',   aktion: () => this._bestenliste(),   aktiv: true },
-      { icon: '🚪', label: 'BEENDEN',       aktion: () => this._beenden(),       aktiv: true },
+      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.505, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.578, aktion: () => this._spielLaden()    },
+      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.648, aktion: () => this._einstellungen() },
+      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.718, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: 'BEENDEN',       relY: 0.788, aktion: () => this._beenden()        },
     ];
 
     this._menuButtons = [];
 
-    MENU_ITEMS.forEach((item, i) => {
-      const bx = menuX;
-      const by = menuY0 + i * menuH;
-      const bw = menuW;
-      const bh = menuH * 0.82;
+    if (bgRect) {
+      // ---- Das Menü ist bereits IM Bild gezeichnet ----
+      // Wir legen nur unsichtbare Klickflächen exakt darüber.
+      const cx = 0.15, zw = 0.27, zh = 0.066;   // relativ zum Bild
+      MENU_ITEMS.forEach(item => {
+        const sx = bgRect.left + cx * bgRect.w;
+        const sy = bgRect.top + item.relY * bgRect.h;
+        const w  = zw * bgRect.w;
+        const h  = zh * bgRect.h;
 
-      const bg2 = this.add.graphics().setDepth(5);
-      const isFirst = i === 0;
-      bg2.fillStyle(isFirst ? 0x2a1a00 : 0x0a0a12, isFirst ? 0.88 : 0.72);
-      bg2.fillRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-      bg2.lineStyle(isFirst ? 2 : 1, isFirst ? 0xffd700 : 0x4a4a6a, isFirst ? 0.9 : 0.5);
-      bg2.strokeRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-
-      const fontSize = Math.min(Math.floor(W / 50), 18);
-      const txt = this.add.text(bx, by, `${item.icon}  ${item.label}`, {
-        fontFamily: '"Courier New", monospace',
-        fontSize:   fontSize + 'px',
-        fontStyle:  'bold',
-        color:      isFirst ? '#ffd700' : '#e8e0c8',
-        stroke:     '#000000',
-        strokeThickness: 3,
-      }).setOrigin(0.5, 0.5).setDepth(6);
-
-      const zone = this.add.zone(bx, by, bw, bh).setDepth(7).setInteractive({ useHandCursor: true });
-
-      zone.on('pointerover', () => {
-        bg2.clear();
-        bg2.fillStyle(isFirst ? 0x4a3000 : 0x202038, 0.92);
-        bg2.fillRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-        bg2.lineStyle(2, isFirst ? 0xffd700 : 0xe8b84b, 0.95);
-        bg2.strokeRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-        txt.setColor(isFirst ? '#ffe866' : '#ffffff');
+        const hl = this.add.graphics().setDepth(4);   // dezentes Hover-Leuchten
+        const zone = this.add.zone(sx, sy, w, h).setDepth(7).setInteractive({ useHandCursor: true });
+        zone.on('pointerover', () => {
+          hl.clear(); hl.fillStyle(0xffe87a, 0.16);
+          hl.fillRoundedRect(sx - w/2, sy - h/2, w, h, 6);
+        });
+        zone.on('pointerout', () => hl.clear());
+        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        this._menuButtons.push({ hl, zone });
       });
-
-      zone.on('pointerout', () => {
-        bg2.clear();
-        bg2.fillStyle(isFirst ? 0x2a1a00 : 0x0a0a12, isFirst ? 0.88 : 0.72);
-        bg2.fillRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-        bg2.lineStyle(isFirst ? 2 : 1, isFirst ? 0xffd700 : 0x4a4a6a, isFirst ? 0.9 : 0.5);
-        bg2.strokeRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
-        txt.setColor(isFirst ? '#ffd700' : '#e8e0c8');
+    } else {
+      // ---- Fallback (kein Bild): gezeichnetes Menü ----
+      const menuX = W * 0.20, menuY0 = H * 0.54, menuH = H * 0.072, menuW = W * 0.22;
+      MENU_ITEMS.forEach((item, i) => {
+        const bx = menuX, by = menuY0 + i * menuH, bw = menuW, bh = menuH * 0.82;
+        const isFirst = i === 0;
+        const bg2 = this.add.graphics().setDepth(5);
+        const zeichne = (hover) => {
+          bg2.clear();
+          bg2.fillStyle(isFirst ? (hover?0x4a3000:0x2a1a00) : (hover?0x202038:0x0a0a12), isFirst?0.9:0.75);
+          bg2.fillRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
+          bg2.lineStyle(isFirst?2:1, isFirst?0xffd700:(hover?0xe8b84b:0x4a4a6a), isFirst?0.9:0.6);
+          bg2.strokeRoundedRect(bx - bw/2, by - bh/2, bw, bh, 4);
+        };
+        zeichne(false);
+        const txt = this.add.text(bx, by, `${item.icon}  ${item.label}`, {
+          fontFamily: '"Courier New", monospace', fontSize: Math.min(Math.floor(W/50),18)+'px',
+          fontStyle: 'bold', color: isFirst?'#ffd700':'#e8e0c8', stroke: '#000000', strokeThickness: 3,
+        }).setOrigin(0.5, 0.5).setDepth(6);
+        const zone = this.add.zone(bx, by, bw, bh).setDepth(7).setInteractive({ useHandCursor: true });
+        zone.on('pointerover', () => { zeichne(true); txt.setColor(isFirst?'#ffe866':'#ffffff'); });
+        zone.on('pointerout',  () => { zeichne(false); txt.setColor(isFirst?'#ffd700':'#e8e0c8'); });
+        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        this._menuButtons.push({ bg: bg2, txt, zone });
       });
+    }
 
-      zone.on('pointerdown', () => {
-        if (this._menuAktiv) return;
-        item.aktion();
-      });
-
-      this._menuButtons.push({ bg: bg2, txt, zone });
-    });
-
-    // Version unten links
-    this.add.text(10, H - 10, 'v7.3', {
-      fontFamily: '"Courier New", monospace',
-      fontSize:   '11px', color: '#606070',
-      stroke: '#000000', strokeThickness: 2,
-    }).setOrigin(0, 1).setDepth(10);
-
-    // Keyboard: Enter/Space → Neues Spiel
     this.input.keyboard.once('keydown-ENTER', () => this._neuesSpiel());
     this.input.keyboard.once('keydown-SPACE', () => this._neuesSpiel());
   }
@@ -4455,6 +4431,10 @@ class SpielSzene extends Phaser.Scene {
   }  // Audio läuft sonst über natives HTMLAudioElement
 
   create() {
+    // HUD wieder einblenden (Header + rechtes Panel) und Canvas anpassen
+    setHudSichtbar(true);
+    const _c = document.getElementById('game-container');
+    if (_c) this.scale.resize(_c.clientWidth, _c.clientHeight);
     const W = this.scale.width;
     const H = this.scale.height;
 
@@ -4922,6 +4902,15 @@ window.addEventListener('load', () => {
   window._phaserGameRef = game;
   console.log('🎮 Phaser gestartet, Canvas:', document.getElementById('game-container').clientWidth + 'x' + document.getElementById('game-container').clientHeight);
 });
+
+// HUD (Header + rechtes Panel) ein-/ausblenden.
+// Auf dem Startbildschirm aus -> Titelbild fuellt das ganze Fenster.
+function setHudSichtbar(sichtbar) {
+  const header = document.getElementById('header');
+  const hud    = document.getElementById('hud');
+  if (header) header.style.display = sichtbar ? '' : 'none';
+  if (hud)    hud.style.display    = sichtbar ? '' : 'none';
+}
 
 // Vollbild: Canvas-Größe immer an Container anpassen
 function resizeGame() {
