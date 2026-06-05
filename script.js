@@ -128,6 +128,10 @@ const gameState = {
   // ---- Immobilie (Schattenbank / Strohmann) ----
   // null oder { wert, miete, modus:'eigen'|'vermietet' }
   immobilie: null,
+
+  // ---- Zahlungsrückstand (universell) ----
+  zahlungsRueckstand: 0,    // offene, nicht bezahlte Verpflichtungen
+  rueckstandMonate: 0,      // aufeinanderfolgende Monate mit Rückstand → 3 = Game Over
 };
 
 // ================================================================
@@ -851,6 +855,12 @@ function triggerGameOver(grund) {
       text:   'Die Behörden haben dich auf frischer Tat ertappt. Deine schwarze Kasse ist<br>' +
               'konfisziert, dein Konto eingefroren. Ein Strafverfahren wegen Sozialbetrugs<br>' +
               'wurde eröffnet.<br><br><strong>Neustart für einen zweiten Versuch?</strong>'
+    },
+    zahlungsunfaehig: {
+      titel:  '💀 Game Over – Zahlungsunfähig',
+      text:   'Du konntest deine Verpflichtungen drei Monate lang nicht begleichen.<br>' +
+              'Der Gerichtsvollzieher pfändet alles, du wirst aus der Wohnung geklagt.<br><br>' +
+              '<strong>Neustart für einen zweiten Versuch?</strong>'
     },
     bankrott: {
       titel:  '💸 Game Over – Totalpleite',
@@ -3145,8 +3155,23 @@ function pruefeRisiko() {
 // ================================================================
 function monatsAbschluss() {
   const gs = gameState;
+
+  // ---- Zahlungsrückstand: Game Over nach 3 Monaten ohne Begleichung ----
+  if (gs.rueckstandMonate >= 3) {
+    triggerGameOver('zahlungsunfaehig');
+    return;
+  }
+
   gs.monat++;
   let meldungen = [];
+
+  // Hilfsfunktion: nicht zahlbarer Betrag → Zahlungsrückstand
+  const fehlt = (betrag, was) => {
+    if (betrag <= 0) return;
+    gs.zahlungsRueckstand += betrag;
+    meldungen.push(`❗ ${was} nicht (voll) bezahlt: +${formatEuro(betrag)} Rückstand.`);
+    logEvent(`❗ Rückstand +${formatEuro(betrag)} (${was}).`, 'danger');
+  };
 
   // ALG1 → ALG2 Wechsel
   if (gs.monat > 12 && gs.status === 'ALG1') {
@@ -3256,18 +3281,14 @@ function monatsAbschluss() {
     // Ratenzahlung (Schwarzkasse zuerst, dann Konto)
     if (gs.immobilie.restSchuld > 0) {
       const rate = Math.min(IMMO_RATE, gs.immobilie.restSchuld);
-      const verfuegbar = gs.schwarzeKasse + gs.kontostand;
+      const verfuegbar = Math.max(0, gs.schwarzeKasse) + Math.max(0, gs.kontostand);
       const zahlbar = Math.min(rate, verfuegbar);
       let r = zahlbar;
-      const ausSK = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= ausSK; r -= ausSK;
+      const ausSK = Math.min(r, Math.max(0, gs.schwarzeKasse)); gs.schwarzeKasse -= ausSK; r -= ausSK;
       gs.kontostand -= r;
       gs.immobilie.restSchuld -= zahlbar;
-      if (zahlbar < rate) {
-        gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
-        meldungen.push(`🏘️ Immobilien-Rate nur teilweise gezahlt (${formatEuro(zahlbar)}/${formatEuro(rate)})! Risiko +5.`);
-      } else {
-        meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(rate)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
-      }
+      meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(zahlbar)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
+      fehlt(rate - zahlbar, 'Immobilien-Rate');
     }
     // Wertsteigerung +5 %/Monat
     gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
@@ -3277,10 +3298,11 @@ function monatsAbschluss() {
   // ---- Mietkaution-Darlehen: Rate vom Konto ----
   if (gs.kautionRest > 0) {
     const rate = Math.min(KAUTION_RATE, gs.kautionRest);
-    gs.kontostand -= rate;
-    gs.kautionRest -= rate;
-    meldungen.push(`📦 Kaution-Darlehen: -${formatEuro(rate)} (Rest: ${formatEuro(gs.kautionRest)}).`);
-    logEvent(`📦 Kaution-Rate -${formatEuro(rate)}.`, 'warn');
+    const zahlbar = Math.min(rate, Math.max(0, gs.kontostand));
+    gs.kontostand -= zahlbar;
+    gs.kautionRest -= zahlbar;
+    meldungen.push(`📦 Kaution-Darlehen: -${formatEuro(zahlbar)} (Rest: ${formatEuro(gs.kautionRest)}).`);
+    fehlt(rate - zahlbar, 'Kaution-Rate');
   }
 
   // ---- Depot: Monatliche Kursaktualisierung ----
@@ -3427,9 +3449,11 @@ function monatsAbschluss() {
   }
   // ---- Unterhalt abziehen ----
   if (gs.frauAusgezogen && gs.unterhaltProMonat > 0) {
-    gs.kontostand = Math.max(0, gs.kontostand - gs.unterhaltProMonat);
-    meldungen.push(`💸 Unterhalt: -${formatEuro(gs.unterhaltProMonat)}`);
-    logEvent(`💸 Unterhalt -${formatEuro(gs.unterhaltProMonat)}.`, 'danger');
+    const zahlbar = Math.min(gs.unterhaltProMonat, Math.max(0, gs.kontostand));
+    gs.kontostand -= zahlbar;
+    meldungen.push(`💸 Unterhalt: -${formatEuro(zahlbar)}`);
+    logEvent(`💸 Unterhalt -${formatEuro(zahlbar)}.`, 'danger');
+    fehlt(gs.unterhaltProMonat - zahlbar, 'Unterhalt');
   }
 
   // ---- Gesundheit – Krankenhaus bei < 20 ----
@@ -3497,10 +3521,41 @@ function monatsAbschluss() {
     meldungen.push(`⚠️ Loses Bargeld ${formatEuro(gs.losesBargeld)} erhöht Risiko! Zur Bank/Pfandleiher!`);
   }
 
+  // ---- Rückstand mit übrigem Konto-Guthaben tilgen ----
+  if (gs.zahlungsRueckstand > 0 && gs.kontostand > 0) {
+    const tilg = Math.min(gs.zahlungsRueckstand, gs.kontostand);
+    gs.kontostand        -= tilg;
+    gs.zahlungsRueckstand -= tilg;
+    if (tilg > 0) meldungen.push(`📉 Rückstand getilgt: -${formatEuro(tilg)} (offen: ${formatEuro(gs.zahlungsRueckstand)}).`);
+  }
+  // Monatszähler für den Rückstand
+  if (gs.zahlungsRueckstand > 0) gs.rueckstandMonate++;
+  else gs.rueckstandMonate = 0;
+
   updateHUD();
   pruefeEheKrise();
 
-  oeffneModal(`📅 Monatsabschluss – Monat ${gs.monat}`, meldungen.join('<br><br>'), []);
+  // ---- Monatsbericht (mit automatischem Kredithai-Angebot bei Rückstand) ----
+  const summaryAktionen = [];
+  if (gs.zahlungsRueckstand > 0) {
+    const leihBetrag = gs.zahlungsRueckstand;
+    const verbleibend = Math.max(0, 3 - gs.rueckstandMonate);
+    meldungen.push(`⚠️ <strong>Offener Rückstand: ${formatEuro(leihBetrag)}</strong> – Rückstand seit ${gs.rueckstandMonate} Monat(en). Bei 3 Monaten ohne Begleichung droht <strong>Game Over</strong> (noch ${verbleibend}).`);
+    summaryAktionen.push({
+      label: `🦈 ${formatEuro(leihBetrag)} beim Kredithai leihen (Zins 10%/M, Risiko +15)`,
+      danger: true,
+      callback: () => {
+        gs.loanSharkSchuld   += leihBetrag;
+        gs.zahlungsRueckstand = 0;
+        gs.rueckstandMonate   = 0;
+        gs.risikoRaster       = clamp(gs.risikoRaster + 15, 0, 100);
+        logEvent(`🦈 Rückstand (${formatEuro(leihBetrag)}) mit Kredithai-Kredit beglichen. Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}.`, 'danger');
+        soundShark && soundShark();
+        updateHUD();
+      }
+    });
+  }
+  oeffneModal(`📅 Monatsabschluss – Monat ${gs.monat}`, meldungen.join('<br><br>'), summaryAktionen);
   pruefeGameOverBedingungen();
 }
 
@@ -4818,6 +4873,7 @@ class StartSzene extends Phaser.Scene {
         kautionRest: 0, umzugGemacht: false,
         pauschalen: { erstausstattung: false, moebel: false },
         bekleidungCooldownMonat: 0, immobilie: null,
+        zahlungsRueckstand: 0, rueckstandMonate: 0,
       });
       this.scene.start('SpielSzene');
     });
