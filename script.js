@@ -138,6 +138,10 @@ const gameState = {
 
   // ---- Statistik: insgesamt vom Staat kassiert ----
   vomStaatGesamt: 0,
+
+  // ---- Strafsystem (Sozialbetrug) ----
+  // 0=sauber, 1=Ermittlung, 2=Bewährung, 3=vorbestraft(war im Knast), 4=Game Over
+  strafStufe: 0,
 };
 
 // Zählt staatliche Leistungen für den "Vom Staat kassiert"-Counter mit
@@ -869,6 +873,13 @@ function triggerGameOver(grund) {
               'konfisziert, dein Konto eingefroren. Ein Strafverfahren wegen Sozialbetrugs<br>' +
               'wurde eröffnet.<br><br><strong>Neustart für einen zweiten Versuch?</strong>'
     },
+    knast: {
+      titel:  '🔒 Game Over – Lange Haft',
+      text:   'Als Wiederholungstäter beim Sozialbetrug verurteilt dich das Gericht zu<br>' +
+              'einer mehrjährigen Haftstrafe ohne Bewährung. Vermögen eingezogen,<br>' +
+              'Familie verloren. Das System hat doch gewonnen.<br><br>' +
+              '<strong>Neustart für einen zweiten Versuch?</strong>'
+    },
     zahlungsunfaehig: {
       titel:  '💀 Game Over – Zahlungsunfähig',
       text:   'Du konntest deine Verpflichtungen drei Monate lang nicht begleichen.<br>' +
@@ -998,10 +1009,73 @@ function ausloesenRazziaV3() {
   document.getElementById('modal-overlay').classList.add('active');
 }
 
+// ================================================================
+// STRAFSYSTEM: Sozialbetrug → gestufte Eskalation bis Gefängnis
+//   1. Bust: Ermittlung (Verwarnung)
+//   2. Bust: Anklage → Geldstrafe + Bewährung
+//   3. Bust: Gefängnis (3 Monate Zeitstrafe, Schwarzgeld konfisziert)
+//   4. Bust (nach Haft): Game Over (Wiederholungstäter)
+// ================================================================
+function sozialbetrugErwischt() {
+  const gs = gameState;
+  if (gs.gameOver) return;
+  gs.strafStufe = (gs.strafStufe || 0) + 1;
+
+  if (gs.strafStufe >= 4) {
+    triggerGameOver('knast');
+    return;
+  }
+
+  if (gs.strafStufe === 3) {
+    // ---- Gefängnis: Zeitstrafe + Konfiszierung ----
+    const haftMonate  = 3;
+    const konfisziert = gs.losesBargeld + gs.schwarzeKasse;
+    gs.losesBargeld   = 0;
+    gs.schwarzeKasse  = 0;
+    gs.gesundheit       = clamp(gs.gesundheit - 20, 0, 100);
+    gs.happinessPartner = clamp(gs.happinessPartner - 30, 0, 100);
+    gs.risikoRaster     = 20;                 // nach verbüßter Strafe geringerer Verdacht
+    gs.monat           += haftMonate;         // 3 Monate weg (kein Phasenbruch: +3 ≡ 0 mod 3)
+    // laufende Maschen fliegen auf
+    gs.ernaehrungFake = false;
+    gs.unterhaltsTarnung = false;
+    gs.scheinWG = false;
+    if (gs.immobilie && gs.immobilie.modus === 'eigen') gs.immobilie.modus = 'vermietet';
+    soundAlarm && soundAlarm();
+    logEvent('🔒 Gefängnis! 3 Monate Haft, Schwarzgeld konfisziert.', 'danger');
+    setTimeout(() => oeffneModal('🔒 Gefängnis – Sozialbetrug',
+      `Das Gericht verurteilt dich zu <strong>${haftMonate} Monaten Haft</strong>.<br><br>`
+      + `Konfisziert: <strong>${formatEuro(konfisziert)}</strong> (loses Bargeld + Schwarzkasse).<br>`
+      + 'Gesundheit −20, Partnerlaune −30. Alle laufenden Maschen sind aufgeflogen.<br><br>'
+      + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.', []), 500);
+    updateHUD();
+    return;
+  }
+
+  if (gs.strafStufe === 2) {
+    // ---- Anklage: Geldstrafe + Bewährung ----
+    const strafe = Math.min(Math.max(0, gs.kontostand), Math.max(2000, Math.floor((gs.vomStaatGesamt || 0) * 0.10)));
+    gs.kontostand -= strafe;
+    logEvent(`⚖️ Anklage: Geldstrafe ${formatEuro(strafe)} + Bewährung.`, 'danger');
+    setTimeout(() => oeffneModal('⚖️ Anklage – Bewährung',
+      `Anklage wegen Sozialbetrugs. <strong>Geldstrafe ${formatEuro(strafe)}</strong> und <strong>Bewährung</strong>.<br><br>`
+      + 'Das nächste Mal drohen <strong>Gefängnis</strong>.', []), 500);
+    updateHUD();
+    return;
+  }
+
+  // ---- Erster Bust: Ermittlung / Verwarnung ----
+  logEvent('📂 Ermittlungsverfahren wegen Sozialbetrugs eröffnet.', 'danger');
+  updateHUD();
+  setTimeout(() => oeffneModal('📂 Ermittlungsverfahren',
+    'Gegen dich wird wegen Verdachts auf Sozialbetrug ermittelt – noch eine <strong>Verwarnung</strong>.<br><br>'
+    + 'Halte dein Risiko niedrig (Sportverein, Spende) und versteck dein Geld (Gold/verschleiertes Depot), sonst wird es ernst.', []), 500);
+}
+
 function verarbeiteRazzia(wahl) {
   const gs = gameState;
   let resultatText = '';
-  let gameOverTriggered = false;
+  let erwischt = false;
 
   if (wahl === 'bestechung') {
     const verfuegbar = gs.losesBargeld + gs.schwarzeKasse;
@@ -1018,7 +1092,7 @@ function verarbeiteRazzia(wahl) {
       gs.losesBargeld  = 0;
       gs.risikoRaster  = 95;
       resultatText = 'Kein Bargeld! Der Beamte ist wütend. Alles konfisziert, Risiko 95%.';
-      gameOverTriggered = true;
+      erwischt = true;
     }
     logEvent(`🚨 Razzia: Bestechung. ${resultatText}`, 'danger');
   }
@@ -1037,7 +1111,7 @@ function verarbeiteRazzia(wahl) {
       gs.risikoRaster  = 95;
       resultatText = `❌ Ausrede aufgeflogen! ${formatEuro(konfisziert)} konfisziert. Risiko 95%.`;
       logEvent('🚨 Razzia: Ausrede aufgeflogen!', 'danger');
-      gameOverTriggered = (gs.schwarzeKasse <= 0 && gs.kontostand <= 0);
+      erwischt = true;
     }
   }
 
@@ -1046,8 +1120,8 @@ function verarbeiteRazzia(wahl) {
     gs.losesBargeld  = 0;
     gs.risikoRaster  = 95;
     resultatText = 'Du gibst alles zu. Schwarzkasse = 0, Risiko = 95%.';
-    logEvent('🚨 Razzia: Kapitulation. Game Over droht!', 'danger');
-    gameOverTriggered = true;
+    logEvent('🚨 Razzia: Kapitulation – Ermittlungen folgen!', 'danger');
+    erwischt = true;
   }
 
   updateHUD();
@@ -1060,7 +1134,7 @@ function verarbeiteRazzia(wahl) {
   closeBtn.textContent = '✅ Verstanden';
   closeBtn.onclick     = () => {
     schliesseModal();
-    if (gameOverTriggered) setTimeout(() => triggerGameOver('razzia'), 300);
+    if (erwischt) setTimeout(() => sozialbetrugErwischt(), 300);
   };
   body.appendChild(closeBtn);
 }
@@ -3441,6 +3515,7 @@ function monatsAbschluss() {
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
         meldungen.push(`🚨 Jobcenter-Prüfung AUFGEFLOGEN! Rückforderung ${formatEuro(rueck)}, Risiko +30. Gestrichen: ${gestrichen.join(', ')}.`);
         logEvent(`🚨 Jobcenter-Prüfung aufgeflogen: -${formatEuro(rueck)}, Risiko +30.`, 'danger');
+        sozialbetrugErwischt();   // strafrechtliche Eskalation (Ermittlung → Bewährung → Knast)
       } else {
         meldungen.push('🔍 Jobcenter-Prüfung: diesmal nichts aufgefallen (Glück gehabt).');
         logEvent('🔍 Jobcenter-Prüfung überstanden.', 'warn');
@@ -4953,7 +5028,7 @@ class StartSzene extends Phaser.Scene {
         pauschalen: { erstausstattung: false, moebel: false },
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
-        depotVerschleiert: false, vomStaatGesamt: 0,
+        depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
       });
       this.scene.start('SpielSzene');
     });
