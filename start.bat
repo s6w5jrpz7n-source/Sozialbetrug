@@ -13,6 +13,6 @@ echo (Zum Beenden dieses Fenster schliessen)
 REM Browser nach kurzer Wartezeit oeffnen
 start "" cmd /c "timeout /t 2 >nul & start http://localhost:8000"
 
-REM Python-Webserver starten (py oder python)
-py -m http.server 8000 2>nul
-if errorlevel 1 python -m http.server 8000
+REM Python-Webserver starten (ohne Cache, damit Updates sofort sichtbar sind)
+py tools\serve.py 2>nul
+if errorlevel 1 python tools\serve.py

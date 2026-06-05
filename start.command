@@ -15,5 +15,5 @@ echo "(Zum Beenden: Strg + C druecken)"
 # Browser nach kurzer Wartezeit oeffnen
 ( sleep 2 && open "http://localhost:8000" ) &
 
-# Python-Webserver starten
-python3 -m http.server 8000
+# Python-Webserver starten (ohne Cache, damit Updates sofort sichtbar sind)
+python3 tools/serve.py
