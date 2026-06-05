@@ -3893,6 +3893,18 @@ function zeichneStrassendeko(g, tileW, tileH, offsetX, offsetY) {
 }
 
 // ================================================================
+// BILD-GEBÄUDE
+// Ist für eine ort.id hier ein Eintrag hinterlegt UND die Textur
+// geladen, wird das PNG statt der gezeichneten Vektor-Variante genutzt.
+//   breite  = Anzeigebreite als Vielfaches von tileW
+//   ankerY  = vertikaler Ankerpunkt (1 = Bildunterkante sitzt auf cy)
+//   dy      = Feinjustierung hoch/runter (Vielfaches von tileH)
+// ================================================================
+const BUILDING_SPRITES = {
+  pawn: { file: 'assets/buildings/pfandleiher.png', breite: 1.75, ankerY: 0.86, dy: 0.10 },
+};
+
+// ================================================================
 // HAUPTAUFRUF
 // ================================================================
 function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
@@ -3910,6 +3922,24 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
   const sortiertOrte = [...ORTE_CONFIG].sort((a, b) => (a.col+a.row) - (b.col+b.row));
   sortiertOrte.forEach(ort => {
     const pos = isoToScreen(ort.col+0.5, ort.row+0.5, tileW, tileH, offsetX, offsetY);
+
+    // ---- Bild-Gebäude (PNG) bevorzugen, falls vorhanden ----
+    const sprite = BUILDING_SPRITES[ort.id];
+    if (sprite && scene.textures.exists('geb_' + ort.id)) {
+      const img = scene.add.image(pos.x, pos.y + tileH * (sprite.dy || 0), 'geb_' + ort.id);
+      img.setOrigin(sprite.ankerX ?? 0.5, sprite.ankerY ?? 0.85);
+      const src   = scene.textures.get('geb_' + ort.id).getSourceImage();
+      const dispW = tileW * (sprite.breite ?? 1.5);
+      img.setDisplaySize(dispW, dispW * src.height / src.width);
+
+      const labelY = pos.y + tileH * 0.52;
+      scene.add.text(pos.x, labelY, ort.name, {
+        fontSize: '9px', fontFamily: '"Courier New", monospace',
+        color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+      }).setOrigin(0.5, 0).setDepth(10);
+      return;   // gezeichnete Variante überspringen
+    }
+
     const g   = scene.add.graphics();
     switch (ort.id) {
       case 'wohnung':     baueWohnung(g,     pos.x, pos.y, tileW, tileH); break;
@@ -4410,7 +4440,12 @@ class SpielSzene extends Phaser.Scene {
     this.npcTick = 0;
   }
 
-  preload() {}  // Audio läuft über natives HTMLAudioElement
+  preload() {
+    // Bild-Gebäude laden (siehe BUILDING_SPRITES)
+    for (const id in BUILDING_SPRITES) {
+      this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
+    }
+  }  // Audio läuft sonst über natives HTMLAudioElement
 
   create() {
     const W = this.scale.width;
