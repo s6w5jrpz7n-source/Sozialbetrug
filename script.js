@@ -72,8 +72,11 @@ const gameState = {
   loanSharkSchuld: 0,
   loanSharkMahnungStufe: 0, // 0=keine, 1=Mahnung, 2=erster Besuch, 3=zweiter Besuch
 
-  // ---- Gold (Pfandleiher → Schattenbank) ----
-  goldBarren: 0,            // Anzahl Goldbarren (je 500€ Bargeld, kein ALG2-Limit)
+  // ---- Gold (im Garten vergraben – sicher & unsichtbar) ----
+  goldBarren: 0,            // Anzahl Goldbarren (je 500€, kein ALG2-Limit)
+
+  // ---- Pfandleiher: verpfändete Gegenstände ----
+  verpfaendet: {},          // z.B. { handy:true, auto:true } – jedes Item nur 1×
 
   // ---- Gesundheit ----
   gesundheit: 80,           // 0–100, Tod bei 0
@@ -143,10 +146,9 @@ const ORTE_CONFIG = [
   {
     id: 'bank', name: '🏦  Bank', col: 2, row: 6,
     farbe: 0x2a7a4a, dachFarbe: 0x45aa6e,
-    beschreibung: 'Loses Bargeld offiziell auf Konto einzahlen oder als Schwarzgeld sichern.',
+    beschreibung: 'Loses Bargeld offiziell aufs Konto einzahlen (max. 200 €/Woche) oder Geld abheben. Aktiendepot.',
     aktionen: [
       { label: '💳  → KONTO einzahlen (Loses Bargeld → Bankkonto)',         id: 'einzahlen' },
-      { label: '🔒  → SCHWARZKASSE sichern (Loses Bargeld → Schwarzkasse)', id: 'einzahlen_schwarz' },
       { label: '💵  500 € abheben (Bankkonto → Loses Bargeld)',              id: 'abheben' },
       { label: '📈  Aktiendepot – Kaufen (MSCI World / Spekulation)',        id: 'depot_kaufen' },
       { label: '📉  Aktiendepot – Verkaufen / Übersicht',                   id: 'depot_verkaufen' }
@@ -155,13 +157,15 @@ const ORTE_CONFIG = [
   {
     id: 'pawn', name: '💍  Pfandleiher', col: 6, row: 6,
     farbe: 0x8c1a1a, dachFarbe: 0xbf4545,
-    beschreibung: 'Verkaufe Eigentum, nimm Kredit auf, oder zahle loses Bargeld ein.',
+    beschreibung: 'Goldbarren kaufen (im Garten vergraben) oder Gegenstände verpfänden. Auslösen kostet 25% Zins.',
     aktionen: [
-      { label: '📱  Handy verkaufen (Loses Bargeld +120)',                      id: 'handy_verkaufen' },
-      { label: '💎  Schmuck verkaufen (Loses Bargeld +250)',                    id: 'schmuck_verkaufen' },
-      { label: '🦈  Kredit aufnehmen (Loses Bargeld +500, Risiko +8)',          id: 'kredit' },
-      { label: '🥇  Bargeld → Gold  (500€/Barren, unsichtbar für Behörden)',    id: 'gold_kaufen' },
-      { label: '💵  Loses Bargeld in Schwarze Kasse sichern (Risiko +3)',       id: 'bargeld_sichern' }
+      { label: '🥇  Goldbarren kaufen (500 € · Bargeld/Konto → im Garten vergraben)', id: 'gold_kaufen' },
+      { label: '🥇  Gold ausgraben & verkaufen',                                       id: 'gold_verkaufen' },
+      { label: '📱  Handy verpfänden',                                                  id: 'pfand_handy' },
+      { label: '💎  Schmuck verpfänden',                                                id: 'pfand_schmuck' },
+      { label: '📺  Fernseher verpfänden',                                              id: 'pfand_fernseher' },
+      { label: '🎮  Spielekonsole verpfänden',                                          id: 'pfand_konsole' },
+      { label: '🚗  Auto verpfänden',                                                   id: 'pfand_auto' }
     ]
   },
   {
@@ -210,9 +214,7 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 10%/Monat Gebühr)', id: 'alles_sichern'  },
       { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
-      { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
-      { label: '🥇  Gold einlagern (kostenlos, zählt nicht zu Vermögen)',       id: 'gold_einlagern'},
-      { label: '🥇  Gold verkaufen (500€/Barren → Loses Bargeld)',              id: 'gold_verkaufen'}
+      { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    }
     ]
   },
   {
@@ -227,6 +229,22 @@ const ORTE_CONFIG = [
     ]
   }
 ];
+
+// ================================================================
+// PFANDLEIHER: Verpfändbare Gegenstände
+//   wert  = Pfandkredit (aufs Konto)
+//   laune = Laune-Abzug beim Verpfänden (wird beim Auslösen zurückgegeben)
+//   ziel  = 'spieler' oder 'partner' (welche Laune betroffen ist)
+//   Auslösen kostet wert × PFAND_ZINS. Jedes Item nur 1× gleichzeitig.
+// ================================================================
+const PFAND_ZINS = 1.25;   // +25% Zins beim Auslösen
+const PFAND_ITEMS = {
+  handy:     { name: '📱 Handy',         wert: 120,  laune: 4,  ziel: 'spieler' },
+  schmuck:   { name: '💎 Schmuck',       wert: 250,  laune: 6,  ziel: 'partner' },
+  fernseher: { name: '📺 Fernseher',     wert: 220,  laune: 8,  ziel: 'spieler' },
+  konsole:   { name: '🎮 Spielekonsole', wert: 180,  laune: 10, ziel: 'spieler' },
+  auto:      { name: '🚗 Auto',          wert: 1200, laune: 12, ziel: 'spieler' },
+};
 
 // ================================================================
 // ABSCHNITT 4: CHEAT-SYSTEM
@@ -1974,6 +1992,23 @@ function interact(ortId) {
       const uebrig = limit - (gs.bankEinzahlungDieseWoche || 0);
       label = `💳  Bargeld einzahlen → Konto (Limit: ${formatEuro(Math.max(0,uebrig))}/Woche)`;
     }
+    // Pfandleiher: Verpfänden ⇄ Auslösen je nach Zustand
+    if (ortId === 'pawn' && a.id.startsWith('pfand_')) {
+      const itemId = a.id.slice(6);
+      const item   = PFAND_ITEMS[itemId];
+      if (item) {
+        if (gs.verpfaendet[itemId]) {
+          const kosten = Math.round(item.wert * PFAND_ZINS);
+          label = `${item.name} auslösen (${formatEuro(kosten)} · +25% Zins)`;
+        } else {
+          label = `${item.name} verpfänden (+${formatEuro(item.wert)} → Konto, Laune −${item.laune})`;
+        }
+      }
+    }
+    if (ortId === 'pawn' && a.id === 'gold_verkaufen') {
+      const n = gs.goldBarren || 0;
+      label = `🥇  Gold ausgraben & verkaufen (${n} Barren · ${formatEuro(n * 500)})`;
+    }
     return { label, callback: () => aktionAusfuehren(ortId, a.id) };
   });
 
@@ -1982,8 +2017,8 @@ function interact(ortId) {
   if (ortId === 'loanshark' && (gs.loanSharkSchuld || 0) > 0) {
     beschreibung += `<br><br>⚠️ Aktuelle Schulden: <strong style="color:#e84b4b">${formatEuro(gs.loanSharkSchuld)}</strong> (Zinsen: 20%/Monat)`;
   }
-  if (ortId === 'schattenbank' && (gs.goldBarren || 0) > 0) {
-    beschreibung += `<br><br>🥇 Eingelagert: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * 500)})`;
+  if (ortId === 'pawn' && (gs.goldBarren || 0) > 0) {
+    beschreibung += `<br><br>🥇 Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * 500)})`;
   }
   if (ortId === 'supermarkt') {
     const einkauf = gs.lebensmittelDiesenMonat;
@@ -2141,13 +2176,6 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent(`💳 ${formatEuro(betrag)} auf Konto. Wochenlimit noch: ${formatEuro(uebrig)}. Risiko +${transportRisiko}.`, 'good');
       soundGeld && soundGeld();
     }
-    // einzahlen_schwarz entfernt → nur noch über Schattenbank
-    if (aktionsId === 'einzahlen_schwarz') {
-      oeffneModal('🏴 Nur über Schattenbank',
-        'Bargeld kann nur in der <strong>Schattenbank</strong> in die Schwarzkasse überführt werden.<br><br>'
-        + 'Die Bank akzeptiert keine Schwarzgeld-Einzahlungen mehr.', []);
-      return;
-    }
     if (aktionsId === 'abheben') {
       const b = Math.min(500, gs.kontostand);
       if (b <= 0) { logEvent('⚠️ Konto leer.', 'warn'); return; }
@@ -2167,36 +2195,56 @@ function aktionAusfuehren(ortId, aktionsId) {
 
   // --- PFANDLEIHER ---
   if (ortId === 'pawn') {
-    if (aktionsId === 'handy_verkaufen') {
-      gs.losesBargeld += 120;
-      logEvent('📱 Handy: +120 € loses Bargeld.', 'good');
-    }
-    if (aktionsId === 'schmuck_verkaufen') {
-      gs.losesBargeld += 250;
-      logEvent('💎 Schmuck: +250 € loses Bargeld.', 'good');
-    }
-    if (aktionsId === 'kredit') {
-      gs.losesBargeld += 500;
-      gs.risikoRaster  = clamp(gs.risikoRaster + 8, 0, 100);
-      logEvent('🦈 Kredit +500 € loses Bargeld. Risiko +8.', 'danger');
-    }
-    // Gold kaufen: 500€ Bargeld pro Barren, unsichtbar für Behörden
+    // ---- Gold kaufen: 1 Barren = 500 € (Bargeld zuerst, dann Konto) ----
     if (aktionsId === 'gold_kaufen') {
-      const barren = Math.floor(gs.losesBargeld / 500);
-      if (barren <= 0) {
-        logEvent('⚠️ Mindestens 500€ Bargeld für einen Goldbarren nötig.', 'warn'); return;
+      const preis = 500;
+      if (gs.losesBargeld + gs.kontostand < preis) {
+        logEvent('⚠️ Mindestens 500 € (Bargeld oder Konto) für einen Goldbarren nötig.', 'warn'); return;
       }
-      const kosten = barren * 500;
-      gs.losesBargeld -= kosten;
-      gs.goldBarren   += barren;
-      logEvent(`🥇 ${barren} Goldbarren gekauft (${formatEuro(kosten)}). Gold zählt nicht zum prüfbaren Vermögen!`, 'good');
+      let rest = preis;
+      const ausLose = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausLose; rest -= ausLose;
+      gs.kontostand -= rest;
+      gs.goldBarren += 1;
+      logEvent('🥇 1 Goldbarren gekauft (500 €) und im Garten vergraben – unsichtbar für Behörden.', 'good');
       soundGeld && soundGeld();
     }
-    // Bargeld sichern: nur noch über Schattenbank
-    if (aktionsId === 'bargeld_sichern') {
-      oeffneModal('🏴 Nur über Schattenbank',
-        'Bargeld kann nur in der <strong>Schattenbank</strong> in die Schwarzkasse überführt werden.', []);
-      return;
+    // ---- Gold ausgraben & verkaufen → loses Bargeld ----
+    if (aktionsId === 'gold_verkaufen') {
+      if (gs.goldBarren <= 0) { logEvent('⚠️ Kein Gold im Garten vergraben.', 'warn'); return; }
+      const erloese = gs.goldBarren * 500;
+      gs.losesBargeld += erloese;
+      logEvent(`🥇 ${gs.goldBarren} Goldbarren ausgegraben & verkauft: +${formatEuro(erloese)} loses Bargeld.`, 'good');
+      gs.goldBarren = 0;
+      soundGeld && soundGeld();
+    }
+    // ---- Verpfänden ⇄ Auslösen ----
+    if (aktionsId.startsWith('pfand_')) {
+      const itemId = aktionsId.slice(6);
+      const item   = PFAND_ITEMS[itemId];
+      if (!item) return;
+      const launeFeld = item.ziel === 'partner' ? 'happinessPartner' : 'happinessSpieler';
+
+      if (gs.verpfaendet[itemId]) {
+        // AUSLÖSEN: Pfandwert × 1.25 (Konto zuerst, dann loses Bargeld)
+        const kosten = Math.round(item.wert * PFAND_ZINS);
+        if (gs.kontostand + gs.losesBargeld < kosten) {
+          logEvent(`⚠️ Nicht genug Geld zum Auslösen von ${item.name} (${formatEuro(kosten)}).`, 'warn'); return;
+        }
+        let rest = kosten;
+        const ausKonto = Math.min(rest, gs.kontostand); gs.kontostand -= ausKonto; rest -= ausKonto;
+        gs.losesBargeld -= rest;
+        gs.verpfaendet[itemId] = false;
+        gs[launeFeld] = clamp(gs[launeFeld] + item.laune, 0, 100);
+        logEvent(`${item.name} ausgelöst: −${formatEuro(kosten)} (inkl. 25% Zins). Laune +${item.laune}.`, 'good');
+        soundGeld && soundGeld();
+      } else {
+        // VERPFÄNDEN: Pfandwert aufs Konto, Laune sinkt
+        gs.kontostand += item.wert;
+        gs.verpfaendet[itemId] = true;
+        gs[launeFeld] = clamp(gs[launeFeld] - item.laune, 0, 100);
+        logEvent(`${item.name} verpfändet: +${formatEuro(item.wert)} aufs Konto. Laune −${item.laune}.`, 'warn');
+        soundGeld && soundGeld();
+      }
     }
   }
 
@@ -2306,19 +2354,6 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.schwarzeKasse  = 0;
       gs.schattenbankAktiv = false;
       logEvent(`🏴 Schwarzkasse abgehoben → loses Bargeld.`, 'warn');
-    }
-    if (aktionsId === 'gold_einlagern') {
-      if (gs.goldBarren <= 0) { logEvent('⚠️ Keine Goldbarren vorhanden. Erst beim Pfandleiher kaufen.', 'warn'); return; }
-      logEvent(`🥇 ${gs.goldBarren} Goldbarren eingelagert. Kostenlos, zählt nicht zum Vermögen.`, 'good');
-      // Gold ist bereits in gameState.goldBarren gespeichert – Einlagerung ist implizit
-    }
-    if (aktionsId === 'gold_verkaufen') {
-      if (gs.goldBarren <= 0) { logEvent('⚠️ Keine Goldbarren eingelagert.', 'warn'); return; }
-      const erloese = gs.goldBarren * 500;
-      gs.losesBargeld += erloese;
-      logEvent(`🥇 ${gs.goldBarren} Goldbarren verkauft: +${formatEuro(erloese)} loses Bargeld.`, 'good');
-      gs.goldBarren = 0;
-      soundGeld && soundGeld();
     }
   }
 
