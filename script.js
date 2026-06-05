@@ -3480,8 +3480,16 @@ function monatsAbschluss() {
       logEvent('❌ Konto überzogen → Bürgergeld.', 'danger');
     }
   } else {
-    meldungen.push('🏠 Miete vom Staat übernommen (Bürgergeld-Modus).');
-    logEvent('🏠 Miete Staat.', 'good');
+    // Staat zahlt die Miete = geldwerter Vorteil -> zählt mit.
+    // Ausnahme: bei der Immobilien-KdU-Masche (Eigennutzung) wird die
+    // Amt-Miete bereits im Immobilien-Block gezählt -> keine Doppelzählung.
+    if (!(gs.immobilie && gs.immobilie.modus === 'eigen')) {
+      staatGibt(MIETE);
+      meldungen.push(`🏠 Miete vom Staat übernommen: +${formatEuro(MIETE)} (gespart).`);
+      logEvent(`🏠 Miete Staat +${formatEuro(MIETE)}.`, 'good');
+    } else {
+      meldungen.push('🏠 Wohnkosten laufen über die Immobilien-Masche.');
+    }
   }
 
   // Natürlicher Verfall
