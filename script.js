@@ -155,7 +155,7 @@ const IMMO_KAUFPREIS       = 100000;     // € Gesamtpreis (Spätspiel-Ziel)
 const IMMO_EIGENKAPITAL    = 40000;      // € Anzahlung bei Kauf (aus Schwarzkasse)
 const IMMO_LAUFZEIT        = 24;         // Monate Ratenzahlung
 const IMMO_RATE            = Math.round((IMMO_KAUFPREIS - IMMO_EIGENKAPITAL) / IMMO_LAUFZEIT); // 2.500 €/M
-const IMMO_MIETE           = 700;        // €/Monat KdU bzw. Mieteinnahmen
+const IMMO_MIETE           = 1250;       // €/Monat KdU bzw. Mieteinnahmen
 const IMMO_WERT_WACHSTUM   = 1.05;       // +5% Wert pro Monat
 
 // Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
