@@ -4127,11 +4127,11 @@ class StartSzene extends Phaser.Scene {
     }
 
     const MENU_ITEMS = [
-      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.505, aktion: () => this._neuesSpiel()    },
-      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.578, aktion: () => this._spielLaden()    },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.648, aktion: () => this._einstellungen() },
-      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.718, aktion: () => this._bestenliste()   },
-      { icon: '🚪', label: 'BEENDEN',       relY: 0.788, aktion: () => this._beenden()        },
+      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.510, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.585, aktion: () => this._spielLaden()    },
+      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.655, aktion: () => this._einstellungen() },
+      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.725, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: 'BEENDEN',       relY: 0.790, aktion: () => this._beenden()        },
     ];
 
     this._menuButtons = [];
@@ -4139,7 +4139,7 @@ class StartSzene extends Phaser.Scene {
     if (bgRect) {
       // ---- Das Menü ist bereits IM Bild gezeichnet ----
       // Wir legen nur unsichtbare Klickflächen exakt darüber.
-      const cx = 0.15, zw = 0.27, zh = 0.066;   // relativ zum Bild
+      const cx = 0.16, zw = 0.205, zh = 0.055;   // relativ zum Bild (deckt die eingebauten Buttons)
       MENU_ITEMS.forEach(item => {
         const sx = bgRect.left + cx * bgRect.w;
         const sy = bgRect.top + item.relY * bgRect.h;
