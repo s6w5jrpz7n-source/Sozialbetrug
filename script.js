@@ -149,6 +149,7 @@ function staatGibt(betrag) {
 // ABSCHNITT 2: KONSTANTEN
 // ================================================================
 const MIETE                  = 650;
+const KRANKENKASSE_BEITRAG   = 120;      // €/Monat KV+PV-Pauschale, vom Staat übernommen
 const ALG1_ZAHLUNG           = 1200;
 const ALG2_ZAHLUNG           = 563;
 const ALG2_VERMOEGENS_GRENZE = 50000;
@@ -3491,6 +3492,10 @@ function monatsAbschluss() {
       meldungen.push('🏠 Wohnkosten laufen über die Immobilien-Masche.');
     }
   }
+
+  // Krankenversicherung vom Staat übernommen (geldwerter Vorteil, kein Bargeld)
+  staatGibt(KRANKENKASSE_BEITRAG);
+  meldungen.push(`🏥 Krankenkasse vom Staat: +${formatEuro(KRANKENKASSE_BEITRAG)} (Beitrag übernommen).`);
 
   // Natürlicher Verfall
   gs.energie          = clamp(gs.energie - 5, 0, 100);
