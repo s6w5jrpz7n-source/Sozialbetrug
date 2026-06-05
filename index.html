@@ -517,6 +517,42 @@
       100% { opacity: 0; }
     }
 
+    /* Großer "SOZIALBETRUG"-Stempel bei aufgeflogenem Betrug (Stufen 1-3) */
+    #betrug-flash {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      pointer-events: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+    }
+    #betrug-flash.show { display: flex; animation: betrugBg 1.6s ease-out forwards; }
+    #betrug-flash .betrug-text {
+      font-family: var(--mono);
+      font-weight: 900;
+      color: #ff3b3b;
+      font-size: clamp(2.5rem, 12vw, 9rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 0 28px rgba(255,59,59,0.85), 0 4px 0 #5a0000;
+      border: 6px solid #ff3b3b;
+      border-radius: 10px;
+      padding: 0.15em 0.35em;
+      transform: rotate(-8deg);
+      animation: betrugStamp 1.6s cubic-bezier(.2,1.5,.3,1) forwards;
+    }
+    @keyframes betrugBg { 0%{opacity:0} 12%{opacity:1} 78%{opacity:1} 100%{opacity:0} }
+    @keyframes betrugStamp {
+      0%   { transform: rotate(-8deg) scale(2.6); opacity: 0; }
+      14%  { transform: rotate(-8deg) scale(1);    opacity: 1; }
+      19%  { transform: rotate(-8deg) scale(1.07); }
+      24%  { transform: rotate(-8deg) scale(1); }
+      78%  { opacity: 1; }
+      100% { transform: rotate(-8deg) scale(1.12); opacity: 0; }
+    }
+
     /* =================================================================
        STATUSLEISTE UNTEN
     ================================================================= */
@@ -761,6 +797,7 @@
 
   <!-- ===== DANGER-FLASH ===== -->
   <div id="danger-flash"></div>
+  <div id="betrug-flash"><div class="betrug-text">Sozialbetrug</div></div>
 
   <!-- ===== STATUSLEISTE ===== -->
   <div id="controls-hint">

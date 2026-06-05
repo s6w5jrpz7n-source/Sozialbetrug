@@ -1017,6 +1017,17 @@ function ausloesenRazziaV3() {
 //   3. Bust: Gefängnis (3 Monate Zeitstrafe, Schwarzgeld konfisziert)
 //   4. Bust (nach Haft): Game Over (Wiederholungstäter)
 // ================================================================
+// Großer "SOZIALBETRUG"-Stempel (Stufen 1-3)
+function zeigeBetrugFlash() {
+  const el = document.getElementById('betrug-flash');
+  if (!el) return;
+  el.classList.remove('show');
+  void el.offsetWidth;            // Reflow → Animation neu starten
+  el.classList.add('show');
+  soundAlarm && soundAlarm();
+  setTimeout(() => el.classList.remove('show'), 1600);
+}
+
 function sozialbetrugErwischt() {
   const gs = gameState;
   if (gs.gameOver) return;
@@ -1026,6 +1037,9 @@ function sozialbetrugErwischt() {
     triggerGameOver('knast');
     return;
   }
+
+  // Großer Betrugs-Stempel für Stufen 1-3
+  zeigeBetrugFlash();
 
   if (gs.strafStufe === 3) {
     // ---- Gefängnis: Zeitstrafe + Konfiszierung ----
@@ -1048,7 +1062,7 @@ function sozialbetrugErwischt() {
       `Das Gericht verurteilt dich zu <strong>${haftMonate} Monaten Haft</strong>.<br><br>`
       + `Konfisziert: <strong>${formatEuro(konfisziert)}</strong> (loses Bargeld + Schwarzkasse).<br>`
       + 'Gesundheit −20, Partnerlaune −30. Alle laufenden Maschen sind aufgeflogen.<br><br>'
-      + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.', []), 500);
+      + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.', []), 1700);
     updateHUD();
     return;
   }
@@ -1060,7 +1074,7 @@ function sozialbetrugErwischt() {
     logEvent(`⚖️ Anklage: Geldstrafe ${formatEuro(strafe)} + Bewährung.`, 'danger');
     setTimeout(() => oeffneModal('⚖️ Anklage – Bewährung',
       `Anklage wegen Sozialbetrugs. <strong>Geldstrafe ${formatEuro(strafe)}</strong> und <strong>Bewährung</strong>.<br><br>`
-      + 'Das nächste Mal drohen <strong>Gefängnis</strong>.', []), 500);
+      + 'Das nächste Mal drohen <strong>Gefängnis</strong>.', []), 1700);
     updateHUD();
     return;
   }
@@ -1070,7 +1084,7 @@ function sozialbetrugErwischt() {
   updateHUD();
   setTimeout(() => oeffneModal('📂 Ermittlungsverfahren',
     'Gegen dich wird wegen Verdachts auf Sozialbetrug ermittelt – noch eine <strong>Verwarnung</strong>.<br><br>'
-    + 'Halte dein Risiko niedrig (Sportverein, Spende) und versteck dein Geld (Gold/verschleiertes Depot), sonst wird es ernst.', []), 500);
+    + 'Halte dein Risiko niedrig (Sportverein, Spende) und versteck dein Geld (Gold/verschleiertes Depot), sonst wird es ernst.', []), 1700);
 }
 
 function verarbeiteRazzia(wahl) {
