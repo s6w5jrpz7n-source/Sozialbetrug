@@ -110,6 +110,20 @@ const gameState = {
 
   // ---- Unterhalts-Tarnung (Schattenbank) ----
   unterhaltsTarnung: false, // Afrika-Kindergeld behalten statt anrechnen
+
+  // ---- Kur / Sanatorium ----
+  kurCooldownMonat: 0,      // frühester Monat für die nächste Kur
+
+  // ---- Schein-WG (Wohnung) ----
+  scheinWG: false,          // Partner als WG deklariert → +Bonus, Prüf-Risiko
+
+  // ---- Umzug / Mietkaution-Darlehen ----
+  kautionRest: 0,           // verbleibendes Kaution-Darlehen (in Raten zurück)
+  umzugGemacht: false,      // schaltet Wohnungs-Erstausstattung frei
+
+  // ---- Einmalige Pauschalen (Arbeitsamt) ----
+  pauschalen: { erstausstattung: false, moebel: false },
+  bekleidungCooldownMonat: 0,
 };
 
 // ================================================================
@@ -131,6 +145,8 @@ const EINSTIEGSGELD_BETRAG = 338;        // €/Monat Gründerbonus
 const EINSTIEGSGELD_KOSTEN = 800;        // einmalig "Steuerberater/Businessplan"
 const EINSTIEGSGELD_ZUSCHUSS = 2000;     // einmaliger Investitions-Zuschuss
 const EINSTIEGSGELD_DAUER  = 6;          // Monate
+const SCHEINWG_BETRAG      = 200;        // €/Monat Schein-WG-Bonus
+const KAUTION_RATE         = 150;        // €/Monat Kaution-Darlehen-Rückzahlung
 
 // Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
 //   erste 100 € frei, 100–520 € → 20% frei, 520–1000 € → 30% frei
@@ -155,6 +171,9 @@ const ORTE_CONFIG = [
       { label: '🛏️  Schlafen (Energie +25)',                    id: 'schlafen' },
       { label: '💵  500 € verstecken (Konto → Schwarze Kasse)', id: 'verstecken' },
       { label: '💵  500 € holen  (Schwarze Kasse → Konto)',     id: 'holen' },
+      { label: '🏖️  Kur beantragen (volle Erholung)',           id: 'kur' },
+      { label: '🏠  Schein-WG deklarieren (+200 €/M, riskant)', id: 'scheinwg' },
+      { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
       { label: '🎭  Cheats öffnen...',                          id: 'cheats_menu' }
     ]
   },
@@ -169,7 +188,10 @@ const ORTE_CONFIG = [
       { label: '👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)',    id: 'mb_alleinerziehend' },
       { label: '🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', id: 'mb_ernaehrung' },
       { label: '🎒  Bildung & Teilhabe (+40 €/M)',            id: 'mb_but' },
-      { label: '🚀  Einstiegsgeld (Gründerbonus) beantragen', id: 'einstiegsgeld' }
+      { label: '🚀  Einstiegsgeld (Gründerbonus) beantragen', id: 'einstiegsgeld' },
+      { label: '🛋️  Erstausstattung Wohnung (einmalig +1.200 €)', id: 'pausch_erstausstattung' },
+      { label: '🪑  Möbel/Schreibtisch fürs Kind (+250 €)',       id: 'pausch_moebel' },
+      { label: '👕  Kinder-Bekleidung (+150 €, alle 6 Monate)',    id: 'pausch_bekleidung' }
     ]
   },
   {
@@ -2070,6 +2092,27 @@ function interact(ortId) {
         ? '🌍  Unterhalts-Tarnung AKTIV (abschalten)'
         : '🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)';
     }
+    // Wohnung: Kur / Schein-WG / Umzug
+    if (ortId === 'wohnung' && a.id === 'kur') {
+      label = gs.monat < gs.kurCooldownMonat
+        ? `🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`
+        : '🏖️  Kur beantragen (volle Erholung)';
+    }
+    if (ortId === 'wohnung' && a.id === 'scheinwg') {
+      label = gs.scheinWG
+        ? '🏠  Schein-WG AKTIV (abmelden)'
+        : `🏠  Schein-WG deklarieren (+${SCHEINWG_BETRAG} €/M, riskant)`;
+    }
+    if (ortId === 'wohnung' && a.id === 'umzug' && gs.kautionRest > 0) {
+      label = `📦  Umzug (Kaution-Darlehen läuft: ${formatEuro(gs.kautionRest)})`;
+    }
+    // Arbeitsamt: Pauschalen Status
+    if (ortId === 'arbeitsamt' && a.id === 'pausch_erstausstattung' && gs.pauschalen.erstausstattung) {
+      label = '🛋️  Erstausstattung Wohnung  ✅ bezogen';
+    }
+    if (ortId === 'arbeitsamt' && a.id === 'pausch_moebel' && gs.pauschalen.moebel) {
+      label = '🪑  Möbel/Schreibtisch fürs Kind  ✅ bezogen';
+    }
     return { label, callback: () => aktionAusfuehren(ortId, a.id) };
   });
 
@@ -2170,6 +2213,61 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.schwarzeKasse -= b; gs.kontostand += b;
       logEvent(`💵 ${formatEuro(b)} aufs Konto.`, 'good');
     }
+    // ---- Kur / Sanatorium: volle Erholung, Cooldown 3 Monate ----
+    if (aktionsId === 'kur') {
+      if (gs.gesundheit >= 60 && gs.energie >= 35) {
+        oeffneModal('🏖️ Keine Kur bewilligt', 'Eine Kur gibt es nur bei angeschlagener Gesundheit (< 60) oder Erschöpfung (Energie < 35).', []);
+        return;
+      }
+      if (gs.monat < gs.kurCooldownMonat) {
+        oeffneModal('🏖️ Noch keine neue Kur', `Die Krankenkasse bewilligt erst ab Monat ${gs.kurCooldownMonat} wieder eine Kur.`, []);
+        return;
+      }
+      gs.energie          = 100;
+      gs.gesundheit       = 100;
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
+      gs.kurCooldownMonat = gs.monat + 3;
+      verbraucheTag(7);
+      oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten. Du kommst <strong>topfit</strong> zurück: Energie & Gesundheit voll, Laune +20. Das Bürgergeld lief unverändert weiter.', []);
+      logEvent('🏖️ Kur: Energie & Gesundheit voll, Laune +20.', 'good');
+      return;
+    }
+    // ---- Schein-WG: voller Single-Satz, aber Prüf-Risiko ----
+    if (aktionsId === 'scheinwg') {
+      if (gs.scheinWG) {
+        gs.scheinWG = false;
+        logEvent('🏠 Schein-WG abgemeldet.', '');
+        return;
+      }
+      if (gs.frauAusgezogen) {
+        oeffneModal('🏠 Keine Mitbewohnerin', 'Eine Schein-WG kannst du nur deklarieren, solange eine Partnerin bei dir wohnt.', []);
+        return;
+      }
+      gs.scheinWG = true;
+      oeffneModal('🏠 Schein-WG deklariert',
+        `Du meldest die Beziehung als reine Wohngemeinschaft – beide behalten den vollen Single-Satz: <strong>+${SCHEINWG_BETRAG} €/Monat</strong>.<br><br>`
+        + '⚠️ Risiko: bei der <strong>Jobcenter-Prüfung</strong> kommt der Außendienst zum unangekündigten Hausbesuch!', []);
+      logEvent(`🏠 Schein-WG aktiv: +${SCHEINWG_BETRAG} €/Monat (riskant).`, 'warn');
+      return;
+    }
+    // ---- Umzug: einmalig Cash, dafür Kaution-Darlehen + schaltet Erstausstattung frei ----
+    if (aktionsId === 'umzug') {
+      if (gs.kautionRest > 0) {
+        oeffneModal('📦 Darlehen läuft noch', `Zahle erst das laufende Kaution-Darlehen (${formatEuro(gs.kautionRest)}) ab, bevor du wieder umziehst.`, []);
+        return;
+      }
+      const pauschale = 450;
+      gs.kontostand += pauschale;
+      gs.kautionRest = 900;
+      gs.umzugGemacht = true;
+      gs.pauschalen.erstausstattung = false;   // neue Wohnung → Erstausstattung wieder beantragbar
+      oeffneModal('📦 Umzug!',
+        `Umzugs- & Renovierungspauschale: <strong>+${formatEuro(pauschale)}</strong> sofort.<br><br>`
+        + `Die Mietkaution (${formatEuro(gs.kautionRest)}) ist ein Darlehen und wird in Raten von ${formatEuro(KAUTION_RATE)}/Monat abgezogen.<br><br>`
+        + '💡 Tipp: Jetzt am Arbeitsamt die <strong>Erstausstattung Wohnung</strong> beantragen!', []);
+      logEvent(`📦 Umzug: +${formatEuro(pauschale)}, Kaution-Darlehen ${formatEuro(gs.kautionRest)}.`, 'warn');
+      return;
+    }
     if (aktionsId === 'cheats_menu') { oeffneCheatMenu(); return; }
   }
 
@@ -2261,6 +2359,40 @@ function aktionAusfuehren(ortId, aktionsId) {
             } },
         ]);
       return;
+    }
+    // ---- Einmalige Pauschalen ----
+    if (aktionsId === 'pausch_erstausstattung') {
+      if (gs.pauschalen.erstausstattung) { logEvent('ℹ️ Erstausstattung wurde bereits bezogen.', ''); return; }
+      if (!gs.umzugGemacht) {
+        oeffneModal('🛋️ Kein Anspruch', 'Die Wohnungs-Erstausstattung gibt es nur nach einem Umzug / Erstbezug (Wohnung → Umzug).', []);
+        return;
+      }
+      gs.kontostand += 1200;
+      gs.pauschalen.erstausstattung = true;
+      logEvent('🛋️ Erstausstattung Wohnung bewilligt: +1.200 €.', 'good');
+    }
+    if (aktionsId === 'pausch_moebel') {
+      if (gs.pauschalen.moebel) { logEvent('ℹ️ Möbel-Zuschuss wurde bereits bezogen.', ''); return; }
+      if ((gs.kindergeldKinder || []).length < 1) {
+        oeffneModal('🪑 Kein Kind gemeldet', 'Den Möbel-Zuschuss (Jugendbett/Schreibtisch) gibt es nur fürs Kind.', []);
+        return;
+      }
+      gs.kontostand += 250;
+      gs.pauschalen.moebel = true;
+      logEvent('🪑 Möbel/Schreibtisch fürs Kind: +250 €.', 'good');
+    }
+    if (aktionsId === 'pausch_bekleidung') {
+      if ((gs.kindergeldKinder || []).length < 1) {
+        oeffneModal('👕 Kein Kind gemeldet', 'Die Kinder-Bekleidungspauschale gibt es nur fürs Kind.', []);
+        return;
+      }
+      if (gs.monat < gs.bekleidungCooldownMonat) {
+        oeffneModal('👕 Noch zu früh', `Die Bekleidungspauschale gibt es nur alle 6 Monate – wieder ab Monat ${gs.bekleidungCooldownMonat}.`, []);
+        return;
+      }
+      gs.kontostand += 150;
+      gs.bekleidungCooldownMonat = gs.monat + 6;
+      logEvent('👕 Kinder-Bekleidung: +150 €.', 'good');
     }
   }
 
@@ -3015,6 +3147,25 @@ function monatsAbschluss() {
     logEvent(`🚀 Einstiegsgeld +${formatEuro(EINSTIEGSGELD_BETRAG)}.`, 'good');
   }
 
+  // ---- Schein-WG: Bonus, solange Partnerin da ist (sonst auto-aus) ----
+  if (gs.scheinWG && gs.frauAusgezogen) {
+    gs.scheinWG = false;
+    meldungen.push('🏠 Schein-WG hinfällig – Partnerin ist ausgezogen.');
+  } else if (gs.scheinWG) {
+    gs.kontostand += SCHEINWG_BETRAG;
+    meldungen.push(`🏠 Schein-WG: +${formatEuro(SCHEINWG_BETRAG)} (voller Single-Satz).`);
+    logEvent(`🏠 Schein-WG +${formatEuro(SCHEINWG_BETRAG)}.`, 'warn');
+  }
+
+  // ---- Mietkaution-Darlehen: Rate vom Konto ----
+  if (gs.kautionRest > 0) {
+    const rate = Math.min(KAUTION_RATE, gs.kautionRest);
+    gs.kontostand -= rate;
+    gs.kautionRest -= rate;
+    meldungen.push(`📦 Kaution-Darlehen: -${formatEuro(rate)} (Rest: ${formatEuro(gs.kautionRest)}).`);
+    logEvent(`📦 Kaution-Rate -${formatEuro(rate)}.`, 'warn');
+  }
+
   // ---- Depot: Monatliche Kursaktualisierung ----
   const depotMeldungen = aktuelisiereDepotKurse();
   if (depotMeldungen && depotMeldungen.length > 0) {
@@ -3053,6 +3204,7 @@ function monatsAbschluss() {
     let fakeFaktoren = 0;
     if (gs.ernaehrungFake) fakeFaktoren += 1;
     if (gs.unterhaltsTarnung) fakeFaktoren += (gs.kindergeldKinder || []).length;
+    if (gs.scheinWG) fakeFaktoren += 1;
     if (fakeFaktoren > 0) {
       const chance = Math.min(0.85, 0.15 * fakeFaktoren);
       if (Math.random() < chance) {
@@ -3067,6 +3219,11 @@ function monatsAbschluss() {
           rueck += (gs.kindergeldKinder || []).length * 300 * 3;
           gs.unterhaltsTarnung = false;
           gestrichen.push('Unterhalts-Tarnung');
+        }
+        if (gs.scheinWG) {
+          rueck += SCHEINWG_BETRAG * 3;
+          gs.scheinWG = false;
+          gestrichen.push('Schein-WG (Hausbesuch!)');
         }
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
