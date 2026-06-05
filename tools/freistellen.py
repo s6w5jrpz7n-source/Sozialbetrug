@@ -101,6 +101,51 @@ def freistellen(src, dst, mode="neutral",
     print(f"OK [{mode:8s}] {src.split('/')[-1]:22s} -> {img.size[0]}x{img.size[1]}")
 
 
+def deshadow(path, top_guard=0.42, sat=18, lo=150, hi=225):
+    """Entfernt einen grauen Schlagschatten, der nach 'colorkey' bei hellen
+    Gebaeuden (z.B. Bank) uebrig bleibt. Schaelt den Schatten NUR von unten
+    her ab (obere top_guard% = Dach bleiben tabu), damit helle Daecher
+    unangetastet bleiben."""
+    img = Image.open(path).convert("RGBA")
+    w, h = img.size
+    px = img.load()
+    guard = int(h * top_guard)
+
+    def shadowish(r, g, b):
+        mx, mn = max(r, g, b), min(r, g, b)
+        return (mx - mn) <= sat and lo <= mx <= hi
+
+    seen = bytearray(w * h)
+    dq = deque()
+    for y in range(guard, h):
+        for x in (0, w - 1):
+            if px[x, y][3] == 0 and not seen[y*w+x]:
+                seen[y*w+x] = 1; dq.append((x, y))
+    for x in range(w):
+        if px[x, h-1][3] == 0 and not seen[(h-1)*w+x]:
+            seen[(h-1)*w+x] = 1; dq.append((x, h-1))
+
+    while dq:
+        x, y = dq.popleft()
+        for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+            nx, ny = x+dx, y+dy
+            if 0 <= nx < w and guard <= ny < h and not seen[ny*w+nx]:
+                r, g, b, a = px[nx, ny]
+                if a == 0:
+                    seen[ny*w+nx] = 1; dq.append((nx, ny))
+                elif shadowish(r, g, b):
+                    seen[ny*w+nx] = 1; px[nx, ny] = (r, g, b, 0); dq.append((nx, ny))
+
+    bbox = img.getbbox()
+    if bbox:
+        img = img.crop(bbox)
+    img.save(path)
+    print(f"   deshadow {path.split('/')[-1]} -> {img.size[0]}x{img.size[1]}")
+
+
 if __name__ == "__main__":
     mode = sys.argv[3] if len(sys.argv) > 3 else "neutral"
     freistellen(sys.argv[1], sys.argv[2], mode=mode)
+    # 5. Argument 'deshadow' -> Schlagschatten zusaetzlich abschaelen
+    if len(sys.argv) > 4 and sys.argv[4] == "deshadow":
+        deshadow(sys.argv[2])
