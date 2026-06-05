@@ -135,7 +135,15 @@ const gameState = {
 
   // ---- Depot verschleiert (in der Schattenbank, für Amt unsichtbar) ----
   depotVerschleiert: false, // kostet 5%/Monat, zählt dafür nicht zur Vermögensprüfung
+
+  // ---- Statistik: insgesamt vom Staat kassiert ----
+  vomStaatGesamt: 0,
 };
+
+// Zählt staatliche Leistungen für den "Vom Staat kassiert"-Counter mit
+function staatGibt(betrag) {
+  if (betrag > 0) gameState.vomStaatGesamt = (gameState.vomStaatGesamt || 0) + betrag;
+}
 
 // ================================================================
 // ABSCHNITT 2: KONSTANTEN
@@ -1812,6 +1820,10 @@ function updateHUD() {
   const clock = document.getElementById('header-clock');
   if (clock) clock.textContent = `Monat ${gs.monat} · Woche ${gs.woche} · Tag ${gs.tag}`;
 
+  // ---- "Vom Staat kassiert"-Counter ----
+  const staatEl = document.getElementById('hud-vom-staat');
+  if (staatEl) staatEl.textContent = formatEuro(gs.vomStaatGesamt || 0);
+
   // ---- Amtsbesuch-Countdown in TAGEN ----
   const amtBar = document.getElementById('bar-amtsbesuch');
   const amtVal = document.getElementById('val-amtsbesuch');
@@ -2307,7 +2319,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         return;
       }
       const pauschale = 450;
-      gs.kontostand += pauschale;
+      gs.kontostand += pauschale; staatGibt(pauschale);
       gs.kautionRest = 900;
       gs.umzugGemacht = true;
       gs.pauschalen.erstausstattung = false;   // neue Wohnung → Erstausstattung wieder beantragbar
@@ -2402,7 +2414,7 @@ function aktionAusfuehren(ortId, aktionsId) {
           { label: `🚀 Gründen (${formatEuro(EINSTIEGSGELD_KOSTEN)})`, primary: true, callback: () => {
               if (gs.kontostand < EINSTIEGSGELD_KOSTEN) { logEvent('⚠️ Nicht genug Geld zum Gründen (800 €).', 'warn'); return; }
               gs.kontostand -= EINSTIEGSGELD_KOSTEN;
-              gs.kontostand += EINSTIEGSGELD_ZUSCHUSS;
+              gs.kontostand += EINSTIEGSGELD_ZUSCHUSS; staatGibt(EINSTIEGSGELD_ZUSCHUSS);
               gs.einstiegsgeldMonate = EINSTIEGSGELD_DAUER;
               logEvent(`🚀 Einstiegsgeld bewilligt! Zuschuss +${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}, dann +${EINSTIEGSGELD_BETRAG} €/M für ${EINSTIEGSGELD_DAUER} Monate.`, 'good');
               updateHUD();
@@ -2417,7 +2429,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         oeffneModal('🛋️ Kein Anspruch', 'Die Wohnungs-Erstausstattung gibt es nur nach einem Umzug / Erstbezug (Wohnung → Umzug).', []);
         return;
       }
-      gs.kontostand += 1200;
+      gs.kontostand += 1200; staatGibt(1200);
       gs.pauschalen.erstausstattung = true;
       logEvent('🛋️ Erstausstattung Wohnung bewilligt: +1.200 €.', 'good');
     }
@@ -2427,7 +2439,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         oeffneModal('🪑 Kein Kind gemeldet', 'Den Möbel-Zuschuss (Jugendbett/Schreibtisch) gibt es nur fürs Kind.', []);
         return;
       }
-      gs.kontostand += 250;
+      gs.kontostand += 250; staatGibt(250);
       gs.pauschalen.moebel = true;
       logEvent('🪑 Möbel/Schreibtisch fürs Kind: +250 €.', 'good');
     }
@@ -2440,7 +2452,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         oeffneModal('👕 Noch zu früh', `Die Bekleidungspauschale gibt es nur alle 6 Monate – wieder ab Monat ${gs.bekleidungCooldownMonat}.`, []);
         return;
       }
-      gs.kontostand += 150;
+      gs.kontostand += 150; staatGibt(150);
       gs.bekleidungCooldownMonat = gs.monat + 6;
       logEvent('👕 Kinder-Bekleidung: +150 €.', 'good');
     }
@@ -3236,7 +3248,7 @@ function monatsAbschluss() {
       logEvent('🛑 ALG I gesperrt – kein Geld!', 'danger');
     } else {
       const auszahlung = Math.max(0, ALG1_ZAHLUNG - minijobAnrechenbar);
-      gs.kontostand += auszahlung;
+      gs.kontostand += auszahlung; staatGibt(auszahlung);
       meldungen.push(`✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
       logEvent(`✅ ALG I +${formatEuro(auszahlung)}.`, 'good');
     }
@@ -3252,7 +3264,7 @@ function monatsAbschluss() {
       logEvent('🛑 Vermögensprüfung: zu viel sichtbares Vermögen.', 'danger');
     } else {
       const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar);
-      gs.kontostand += auszahlung;
+      gs.kontostand += auszahlung; staatGibt(auszahlung);
       meldungen.push(`✅ Bürgergeld: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
       logEvent(`✅ Bürgergeld +${formatEuro(auszahlung)}.`, 'good');
     }
@@ -3278,7 +3290,7 @@ function monatsAbschluss() {
       }
     }
     if (mbSumme > 0) {
-      gs.kontostand += mbSumme;
+      gs.kontostand += mbSumme; staatGibt(mbSumme);
       meldungen.push(`📑 Mehrbedarfe: +${formatEuro(mbSumme)} (${mbTeile.join(', ')})`);
       logEvent(`📑 Mehrbedarfe +${formatEuro(mbSumme)}.`, 'good');
     }
@@ -3286,7 +3298,7 @@ function monatsAbschluss() {
 
   // ---- Einstiegsgeld (Gründerbonus, anrechnungsfrei) ----
   if (gs.einstiegsgeldMonate > 0) {
-    gs.kontostand += EINSTIEGSGELD_BETRAG;
+    gs.kontostand += EINSTIEGSGELD_BETRAG; staatGibt(EINSTIEGSGELD_BETRAG);
     gs.einstiegsgeldMonate--;
     meldungen.push(`🚀 Einstiegsgeld: +${formatEuro(EINSTIEGSGELD_BETRAG)} (noch ${gs.einstiegsgeldMonate} Monate)`);
     logEvent(`🚀 Einstiegsgeld +${formatEuro(EINSTIEGSGELD_BETRAG)}.`, 'good');
@@ -3297,7 +3309,7 @@ function monatsAbschluss() {
     gs.scheinWG = false;
     meldungen.push('🏠 Schein-WG hinfällig – Partnerin ist ausgezogen.');
   } else if (gs.scheinWG) {
-    gs.kontostand += SCHEINWG_BETRAG;
+    gs.kontostand += SCHEINWG_BETRAG; staatGibt(SCHEINWG_BETRAG);
     meldungen.push(`🏠 Schein-WG: +${formatEuro(SCHEINWG_BETRAG)} (voller Single-Satz).`);
     logEvent(`🏠 Schein-WG +${formatEuro(SCHEINWG_BETRAG)}.`, 'warn');
   }
@@ -3313,6 +3325,7 @@ function monatsAbschluss() {
     }
     if (einnahme > 0) {
       gs.schwarzeKasse += einnahme;
+      if (gs.immobilie.modus === 'eigen') staatGibt(einnahme); // KdU kommt vom Amt
       gs.risikoRaster   = clamp(gs.risikoRaster + 6, 0, 100);
       const quelle = gs.immobilie.modus === 'eigen' ? 'Amt-Miete (KdU-Masche)' : 'Mieteinnahmen';
       meldungen.push(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`);
@@ -3380,7 +3393,7 @@ function monatsAbschluss() {
     const anzahl  = gs.kindergeldKinder.length;
     const zahlung = anzahl * 300;
     if (gs.unterhaltsTarnung) {
-      gs.kontostand  += zahlung;
+      gs.kontostand  += zahlung; staatGibt(zahlung);
       gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
       meldungen.push(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)} behalten. Risiko +${anzahl * 5}.`);
       logEvent(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung aktiv).`, 'warn');
@@ -4927,7 +4940,7 @@ class StartSzene extends Phaser.Scene {
         pauschalen: { erstausstattung: false, moebel: false },
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
-        depotVerschleiert: false,
+        depotVerschleiert: false, vomStaatGesamt: 0,
       });
       this.scene.start('SpielSzene');
     });
