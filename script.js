@@ -1899,6 +1899,25 @@ function updateHUD() {
   const staatEl = document.getElementById('hud-vom-staat');
   if (staatEl) staatEl.textContent = formatEuro(gs.vomStaatGesamt || 0);
 
+  // ---- Justiz / Vorstrafen-Status ----
+  const justizRow = document.getElementById('justiz-row');
+  const justizBadge = document.getElementById('justiz-badge');
+  if (justizRow && justizBadge) {
+    const stufen = {
+      1: { txt: '📂 Ermittlung',  farbe: '#e8b84b' },
+      2: { txt: '⚖️ Bewährung',   farbe: '#e8924b' },
+      3: { txt: '🔒 Vorbestraft', farbe: '#e84b4b' },
+    };
+    const s = stufen[gs.strafStufe || 0];
+    if (s) {
+      justizRow.style.display = '';
+      justizBadge.textContent = s.txt;
+      justizBadge.style.color = s.farbe;
+    } else {
+      justizRow.style.display = 'none';
+    }
+  }
+
   // ---- Amtsbesuch-Countdown in TAGEN ----
   const amtBar = document.getElementById('bar-amtsbesuch');
   const amtVal = document.getElementById('val-amtsbesuch');
