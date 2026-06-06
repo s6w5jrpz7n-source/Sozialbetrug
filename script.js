@@ -145,6 +145,9 @@ const gameState = {
 
   // ---- Korrupter Sachbearbeiter (senkt Jobcenter-Prüf-Chance) ----
   sachbearbeiterBestochen: false,
+
+  // ---- Sucht (0=keine, 1-3) durch Amüsierbetrieb/Alkohol/Glücksspiel ----
+  suchtStufe: 0,
 };
 
 const AUSWANDERN_GRENZE     = 1000000;   // € Gesamtvermögen für den Auswander-Sieg
@@ -303,15 +306,27 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'supermarkt', name: '🛒  Supermarkt', col: 14, row: 2,
+    id: 'supermarkt', name: '🛒  Supermarkt & Kiosk', col: 14, row: 2,
     farbe: 0x2a6a8a, dachFarbe: 0x3a9aba,
-    beschreibung: 'Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.',
+    beschreibung: 'Lebensmittel, Minijob – und am Kiosk: Rubbellose & Genussmittel.',
     aktionen: [
       { label: '🥗  Bio-Qualität  (800€, Gesundheit +10, Laune +10)',        id: 'einkauf_gut'    },
       { label: '🥙  Normal       (500€, Gesundheit ±0, Laune ±0)',            id: 'einkauf_normal' },
       { label: '🍟  Billig       (250€, Gesundheit -5/M, Laune -10/M)',       id: 'einkauf_billig' },
       { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  },
-      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
+      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   },
+      { label: '🎟️  Rubbellos kaufen (5€ · Glück?)',                              id: 'rubbellos' },
+      { label: '🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)',         id: 'genussmittel' }
+    ]
+  },
+  {
+    id: 'arztpraxis', name: '⚕️  Arztpraxis', col: 14, row: 10,
+    farbe: 0xcfd8e0, dachFarbe: 0x9aa6b4,
+    beschreibung: 'Behandlung, Krankschreibung und Entzug. Hält dich auf den Beinen.',
+    aktionen: [
+      { label: '🩺  Behandlung (Gesundheit +30, 500€)',           id: 'arzt_behandlung' },
+      { label: '🤒  Krankschreibung (Risiko -8, Energie +10)',     id: 'arzt_krank' },
+      { label: '💉  Entzug / Therapie (Sucht heilen, 800€)',       id: 'arzt_entzug' }
     ]
   },
   {
@@ -2823,6 +2838,10 @@ function aktionAusfuehren(ortId, aktionsId) {
       else gs.kontostand -= 200;
       gs.happinessSpieler = clamp(gs.happinessSpieler + 30, 0, 100);
       logEvent('🍸 Schöner Abend! Laune +30. -200 €.', 'good');
+      if (Math.random() < 0.20 && gs.suchtStufe < 3) {
+        gs.suchtStufe++;
+        logEvent(`🍸 Das Nachtleben zieht dich rein… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+      }
       if (Math.random() < 0.25) {
         gs.happinessPartner = clamp(gs.happinessPartner - 20, 0, 100);
         setTimeout(() => {
@@ -3092,6 +3111,75 @@ function aktionAusfuehren(ortId, aktionsId) {
           { label: `🛒 520 €/Monat (netto +${formatEuro(fb520)})`, primary: true, callback: () => setze(520) },
           { label: '🚪 Minijob kündigen', danger: true, callback: () => setze(0) },
         ]);
+      return;
+    }
+
+    // ---- Kiosk: Rubbellos ----
+    if (aktionsId === 'rubbellos') {
+      if (gs.kontostand < 5) { logEvent('⚠️ Kein Geld für ein Rubbellos.', 'warn'); return; }
+      gs.kontostand -= 5;
+      const r = Math.random();
+      let gewinn = 0;
+      if (r < 0.60)       gewinn = 0;
+      else if (r < 0.85)  gewinn = 10;
+      else if (r < 0.95)  gewinn = 30;
+      else if (r < 0.99)  gewinn = 200;
+      else if (r < 0.999) gewinn = 2000;
+      else                gewinn = 50000;
+      if (gewinn > 0) {
+        gs.kontostand += gewinn;
+        soundGeld && soundGeld();
+        oeffneModal('🎟️ Rubbellos', gewinn >= 2000
+          ? `🎉 <strong>JACKPOT!</strong> Du gewinnst <strong>${formatEuro(gewinn)}</strong>!`
+          : `Gewonnen: <strong>${formatEuro(gewinn)}</strong>.`, []);
+        logEvent(`🎟️ Rubbellos: +${formatEuro(gewinn)}.`, 'good');
+      } else {
+        logEvent('🎟️ Rubbellos: Niete.', 'warn');
+      }
+      // kleines Sucht-Risiko (Glücksspiel)
+      if (Math.random() < 0.15 && gs.suchtStufe < 3) {
+        gs.suchtStufe++;
+        logEvent(`🎰 Das Zocken packt dich… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+      }
+      return;
+    }
+    // ---- Kiosk: Alkohol & Zigaretten ----
+    if (aktionsId === 'genussmittel') {
+      if (gs.kontostand < 15) { logEvent('⚠️ Kein Geld für Genussmittel.', 'warn'); return; }
+      gs.kontostand      -= 15;
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 8, 0, 100);
+      gs.gesundheit       = clamp(gs.gesundheit - 3, 0, 100);
+      logEvent('🍺 Alkohol & Zigaretten: Laune +8, Gesundheit -3.', 'warn');
+      if (Math.random() < 0.20 && gs.suchtStufe < 3) {
+        gs.suchtStufe++;
+        logEvent(`🍺 Es wird zur Gewohnheit… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+      }
+      return;
+    }
+  }
+
+  // --- ARZTPRAXIS ---
+  if (ortId === 'arztpraxis') {
+    if (aktionsId === 'arzt_behandlung') {
+      if (gs.kontostand < 500) { logEvent('⚠️ Nicht genug Geld für die Behandlung (500€).', 'warn'); return; }
+      gs.kontostand -= 500;
+      gs.gesundheit  = clamp(gs.gesundheit + 30, 0, 100);
+      logEvent('🩺 Behandlung: Gesundheit +30 (-500€).', 'good');
+    }
+    if (aktionsId === 'arzt_krank') {
+      gs.risikoRaster = clamp(gs.risikoRaster - 8, 0, 100);
+      gs.energie      = clamp(gs.energie + 10, 0, 100);
+      gs.naechsterAmtsBesuch = Math.max(gs.naechsterAmtsBesuch, 2);
+      logEvent('🤒 Krankschreibung: Risiko -8, Energie +10.', 'good');
+    }
+    if (aktionsId === 'arzt_entzug') {
+      if ((gs.suchtStufe || 0) === 0) { oeffneModal('💉 Entzug', 'Du hast (noch) keine Sucht. Bleib so!', []); return; }
+      if (gs.kontostand < 800) { logEvent('⚠️ Nicht genug Geld für die Therapie (800€).', 'warn'); return; }
+      gs.kontostand -= 800;
+      gs.suchtStufe  = 0;
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
+      logEvent('💉 Entzug erfolgreich – Sucht überwunden!', 'good');
+      oeffneModal('💉 Clean!', 'Die Therapie hat angeschlagen. Deine Sucht ist überwunden, Laune +10.', []);
       return;
     }
   }
@@ -3759,6 +3847,17 @@ function monatsAbschluss() {
       meldungen.push('🤝 Schmiergeld nicht gezahlt – der Sachbearbeiter deckt dich nicht mehr!');
       logEvent('🤝 Schmiergeld geplatzt.', 'warn');
     }
+  }
+
+  // ---- Sucht: monatliche Folgen ----
+  if (gs.suchtStufe > 0) {
+    const kosten = gs.suchtStufe * 120;
+    const zahlbar = Math.min(kosten, Math.max(0, gs.kontostand));
+    gs.kontostand      -= zahlbar;
+    gs.gesundheit       = clamp(gs.gesundheit - 4 * gs.suchtStufe, 0, 100);
+    gs.happinessSpieler = clamp(gs.happinessSpieler - 3 * gs.suchtStufe, 0, 100);
+    meldungen.push(`🍺 Sucht (Stufe ${gs.suchtStufe}): -${formatEuro(zahlbar)}, Gesundheit -${4*gs.suchtStufe}, Laune -${3*gs.suchtStufe}. Entzug in der Arztpraxis!`);
+    logEvent(`🍺 Sucht Stufe ${gs.suchtStufe}: -${formatEuro(zahlbar)}.`, 'danger');
   }
 
   // Natürlicher Verfall
@@ -4931,6 +5030,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       case 'kasino':      baueKasino(g,      pos.x, pos.y, tileW, tileH); break;
       case 'schattenbank': baueSchattenbank(g, pos.x, pos.y, tileW, tileH); break;
       case 'supermarkt':   baueSupermarkt(g,   pos.x, pos.y, tileW, tileH); break;
+      case 'arztpraxis':   baueArztpraxis(g,   pos.x, pos.y, tileW, tileH); break;
     }
     // Label: dezent, kein Pfahl, kein Rahmen – nur Text auf Bodenhöhe
     const labelY = pos.y + tileH * 0.52;
@@ -5001,6 +5101,25 @@ function baueSchattenbank(g, cx, cy, tw, th) {
   BB.rohr(g, cx + W*0.33, cy - hoehe*0.2, cy - hoehe * 0.7, 0x202030);
 }
 
+
+// ---- Arztpraxis – helles Gebäude mit rotem Kreuz ----
+function baueArztpraxis(g, cx, cy, tw, th) {
+  const hoehe = th * 1.3;
+  zeichneKlinkerhaus(g, cx, cy, tw * 0.9, th * 0.9, {
+    klinkerFarbe: 0xdfe6ee, dachFarbe: 0x9aa6b4,
+    hoehe, dachart: 'flach', etagen: 1,
+    fensterFarbe: 0xafe0ff, tuerFarbe: 0x3a6a8a,
+    schild: 'PRAXIS', schildFarbe: 0xe84b4b, seed: 1207
+  });
+  // Rotes Kreuz auf dem Dach
+  const ky = cy - hoehe - 6;
+  g.fillStyle(0xe84b4b, 1);
+  g.fillRect(cx - 3, ky - 9, 6, 18);
+  g.fillRect(cx - 9, ky - 3, 18, 6);
+  g.fillStyle(0xffffff, 0.85);
+  g.fillRect(cx - 1.5, ky - 7, 3, 14);
+  g.fillRect(cx - 7, ky - 1.5, 14, 3);
+}
 
 // ---- Supermarkt – helles Gebäude mit Einkaufswagen-Symbol ----
 function baueSupermarkt(g, cx, cy, tw, th) {
@@ -5218,7 +5337,7 @@ class StartSzene extends Phaser.Scene {
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
-        sachbearbeiterBestochen: false,
+        sachbearbeiterBestochen: false, suchtStufe: 0,
       });
       this.scene.start('SpielSzene');
     });
