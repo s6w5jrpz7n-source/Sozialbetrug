@@ -148,7 +148,7 @@ const gameState = {
 };
 
 const AUSWANDERN_GRENZE     = 1000000;   // € Gesamtvermögen für den Auswander-Sieg
-const SACHBEARBEITER_KOSTEN = 300;       // €/Monat Schmiergeld
+const SACHBEARBEITER_KOSTEN = 150;       // €/Monat Schmiergeld
 
 // Name der aktuellen Strafstufe (für Anwalt/Anzeigen)
 function strafStufeName(n) {
@@ -248,7 +248,7 @@ const ORTE_CONFIG = [
       { label: '🛋️  Erstausstattung Wohnung (einmalig +1.200 €)', id: 'pausch_erstausstattung' },
       { label: '🪑  Möbel/Schreibtisch fürs Kind (+250 €)',       id: 'pausch_moebel' },
       { label: '👕  Kinder-Bekleidung (+150 €, alle 6 Monate)',    id: 'pausch_bekleidung' },
-      { label: '🤝  Sachbearbeiter schmieren (300 €/M, weniger Prüfungen)', id: 'sachbearbeiter' }
+      { label: '🤝  Sachbearbeiter schmieren (150 €/M, weniger Prüfungen)', id: 'sachbearbeiter' }
     ]
   },
   {
@@ -2330,7 +2330,7 @@ function interact(ortId) {
     if (ortId === 'arbeitsamt' && a.id === 'sachbearbeiter') {
       label = gs.sachbearbeiterBestochen
         ? '🤝  Sachbearbeiter geschmiert AKTIV (beenden)'
-        : '🤝  Sachbearbeiter schmieren (300 €/M)';
+        : '🤝  Sachbearbeiter schmieren (150 €/M)';
     }
     // Wohnung: Kur / Schein-WG / Umzug
     if (ortId === 'wohnung' && a.id === 'kur') {
