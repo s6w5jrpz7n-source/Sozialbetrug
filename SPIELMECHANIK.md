@@ -101,6 +101,10 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   Alkohol/Zigaretten 15 € (Laune+8, Ges−3, Sucht-Risiko).
 - **Arztpraxis:** Behandlung (Ges+30, −500 €); Krankschreibung (R−8, E+10);
   Entzug (Sucht heilen, −800 €).
+- **Villa (10/14):** Eigenes begehbares Luxus-Gebäude. Nur bewohnbar, wenn eine
+  Immobilie vorhanden ist UND auf Eigennutzung steht – sonst leeres
+  Baugrundstück. Aktionen: Luxus-Schlafen (E+40, 1 Tag), Pool & Sauna (Laune+20),
+  Gäste empfangen (Laune+10, Partner+10).
 - **Kasino:** Schwarzgeld waschen (100/500/1.000/alles): Rückzahlung 50–120 %
   (Ø 85 %) → Konto (legal).
 - **Schattenbank:** Bargeld → Schwarzkasse (10 %/M); Schwarzkasse abheben;
@@ -144,6 +148,13 @@ Amt-unsichtbar).
   Misserfolg/Kapitulation → strafrechtliche Eskalation (§11).
 - Anonyme Anzeige (Zufallsevent): Schweigegeld 1.500 € oder Sonderprüfung
   riskieren (60 % Auffliegen bei aktiven Maschen).
+- Zufalls-Events (eventDatabase) in 4 Kategorien: behoerde, loan_shark (nur bei
+  Schulden), beziehung, alltag. „alltag" = kurze, witzige Mini-Effekt-Popups
+  (Pfandflaschen, Spielhalle→Sucht, Schwarzfahren, Kleeblatt = nächste
+  Razzia-Chance −50 %, Oma schickt Geld, Erkältung, …).
+- Kleeblatt-Flag (gs.kleeblatt) halbiert einmalig die nächste Razzia-Chance.
+- Modal-Warteschlange: Popups überschreiben sich nicht, sondern erscheinen
+  nacheinander (wichtig beim Wochen-Skip: Events + Monatsbericht).
 
 ## 11. Strafsystem (strafStufe, gestuft)
 Jeder ernste Bust (Razzia oder Jobcenter-Prüfung) eskaliert + zeigt einen großen
