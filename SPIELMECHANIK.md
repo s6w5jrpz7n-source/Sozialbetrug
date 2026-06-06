@@ -72,7 +72,8 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
 
 ## 6. Gebäude & Aktionen
 - **Wohnung:** Schlafen (E+25); 500 € Konto↔Schwarzkasse; Kur (Energie+Gesundheit
-  voll, Cooldown 3 Mon., nur bei Ges<60/E<35); Schein-WG; Umzug (+450 € einmalig,
+  voll + Laune+20, Cooldown 3 Mon., **nur über gefälschtes Attest: 300 €, Risiko +12** —
+  NICHT mehr an Gesundheit/Energie gekoppelt); Schein-WG; Umzug (+450 € einmalig,
   dann −150 €/M Kaution, schaltet Erstausstattung frei); Anwalt; Auswandern
   (Sieg); Cheats.
 - **Arbeitsamt:** Pflichttermin (R−5, sonst Sperre); Scheinbewerbung (R−5);
@@ -122,7 +123,8 @@ Amt-unsichtbar).
 ## 8. Legale Bonus-Systeme
 - Minijob-Freibetrag: Bürgergeld wird um den anrechenbaren Teil gekürzt.
   Freibetrag = erste 100 € frei + 20 % von 100–520 € (+30 % von 520–1000).
-  Beispiel 520 €-Job → netto +184 €.
+  Wählbar: 250 € oder 538 €/Monat (Minijob-Grenze 2026). Beispiel 538 €-Job
+  → netto ca. +189 €.
 - Mehrbedarfe / Einstiegsgeld / Pauschalen: wie §6, monatlich bzw. einmalig.
 
 ## 9. Grauzonen-Maschen (erhöhen fakeFaktoren der Prüfung)

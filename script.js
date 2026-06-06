@@ -2500,21 +2500,26 @@ function aktionAusfuehren(ortId, aktionsId) {
     }
     // ---- Kur / Sanatorium: volle Erholung, Cooldown 3 Monate ----
     if (aktionsId === 'kur') {
-      if (gs.gesundheit >= 60 && gs.energie >= 35) {
-        oeffneModal('🏖️ Keine Kur bewilligt', 'Eine Kur gibt es nur bei angeschlagener Gesundheit (< 60) oder Erschöpfung (Energie < 35).', []);
-        return;
-      }
       if (gs.monat < gs.kurCooldownMonat) {
-        oeffneModal('🏖️ Noch keine neue Kur', `Die Krankenkasse bewilligt erst ab Monat ${gs.kurCooldownMonat} wieder eine Kur.`, []);
+        oeffneModal('🏖️ Noch keine neue Kur', `Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, []);
         return;
       }
-      gs.energie          = 100;
-      gs.gesundheit       = 100;
-      gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
-      gs.kurCooldownMonat = gs.monat + 3;
-      verbraucheTag(7);
-      oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten. Du kommst <strong>topfit</strong> zurück: Energie & Gesundheit voll, Laune +20. Das Bürgergeld lief unverändert weiter.', []);
-      logEvent('🏖️ Kur: Energie & Gesundheit voll, Laune +20.', 'good');
+      const attestKosten = 300;
+      oeffneModal('🏖️ Kur – nur mit Attest',
+        `Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> vom willigen Arzt kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`
+        + 'Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).',
+        [{ label: `🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, danger: true, callback: () => {
+            if (gs.kontostand < attestKosten) { logEvent('⚠️ Nicht genug Geld fürs Attest.', 'warn'); return; }
+            gs.kontostand      -= attestKosten;
+            gs.risikoRaster     = clamp(gs.risikoRaster + 12, 0, 100);
+            gs.energie          = 100;
+            gs.gesundheit       = 100;
+            gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
+            gs.kurCooldownMonat = gs.monat + 3;
+            verbraucheTag(7);
+            logEvent('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', 'warn');
+            oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', []);
+          }}]);
       return;
     }
     // ---- Schein-WG: voller Single-Satz, aber Prüf-Risiko ----
@@ -3131,14 +3136,14 @@ function aktionAusfuehren(ortId, aktionsId) {
         }
         updateHUD();
       };
-      const fb520 = minijobFreibetrag(520);
+      const fb538 = minijobFreibetrag(538);
       const fb250 = minijobFreibetrag(250);
       oeffneModal('💼 Minijob (Aushilfe)',
         'Legales Einkommen – aber das Amt rechnet an. Du behältst nur den <strong>Freibetrag</strong> (erste 100 € + 20 % vom Rest).<br><br>'
         + `Kostet jeden Monat etwas Energie.`,
         [
           { label: `🧹 250 €/Monat (netto +${formatEuro(fb250)})`, callback: () => setze(250) },
-          { label: `🛒 520 €/Monat (netto +${formatEuro(fb520)})`, primary: true, callback: () => setze(520) },
+          { label: `🛒 538 €/Monat (netto +${formatEuro(fb538)})`, primary: true, callback: () => setze(538) },
           { label: '🚪 Minijob kündigen', danger: true, callback: () => setze(0) },
         ]);
       return;
