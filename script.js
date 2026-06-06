@@ -148,6 +148,9 @@ const gameState = {
 
   // ---- Sucht (0=keine, 1-3) durch Amüsierbetrieb/Alkohol/Glücksspiel ----
   suchtStufe: 0,
+
+  // ---- Glücks-Kleeblatt: halbiert einmalig die nächste Razzia-Chance ----
+  kleeblatt: false,
 };
 
 const AUSWANDERN_GRENZE     = 1000000;   // € Gesamtvermögen für den Auswander-Sieg
@@ -998,7 +1001,8 @@ function tickRazziaTimer(dt) {
     razziaTimerSek = RAZZIA_INTERVALL;
     // Chance korreliert direkt mit risikoRaster:
     // Bei 70 Risiko: ~14%, bei 80: ~20%, bei 90: ~27%, bei 100: ~40%
-    const chance = Math.min(0.40, Math.pow(gs.risikoRaster, 1.5) / 25000);
+    let chance = Math.min(0.40, Math.pow(gs.risikoRaster, 1.5) / 25000);
+    if (gs.kleeblatt) { chance *= 0.5; gs.kleeblatt = false; }   // Glücks-Kleeblatt (1×)
     if (Math.random() < chance) {
       ausloesenRazziaV3();
     }
@@ -1206,6 +1210,95 @@ function verarbeiteRazzia(wahl) {
 // ABSCHNITT 8: EVENT-DATENBANK (30 Events – unverändert aus V2)
 // ================================================================
 const eventDatabase = [
+  // ---------- 🎲 ALLTAG / GLÜCK (kurze, witzige Mini-Effekte) ----------
+  {
+    id: 'alltag_hund', kategorie: 'alltag',
+    titel: '🐕 Wurst-Raub',
+    text: 'Der Hund vom Nachbarn schnappt sich deine Bratwurst vom Balkon.',
+    optionA: { label: '🤬 Schimpfen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100); return 'Der Köter rennt grinsend weg.'; }},
+    optionB: { label: '😂 Drüber lachen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return 'War eh nur die Billig-Wurst.'; }}
+  },
+  {
+    id: 'alltag_pfand', kategorie: 'alltag',
+    titel: '💶 Pfandflaschen-Bonanza',
+    text: 'Im Park steht ein praller Sack voll Pfandflaschen – herrenlos.',
+    optionA: { label: '♻️ Einsammeln', effekt(gs) { gs.losesBargeld += 15; return '+15 € Pfand kassiert.'; }},
+    optionB: { label: '🚶 Zu stolz', effekt(gs) { return 'Du gehst würdevoll weiter.'; }}
+  },
+  {
+    id: 'alltag_bonusheft', kategorie: 'alltag',
+    titel: '🛒 Bonusheft voll',
+    text: 'Dein Discounter-Bonusheft ist endlich vollgeklebt.',
+    optionA: { label: '🎁 Einlösen', effekt(gs) { gs.kontostand += 25; return '+25 € Gutschrift aufs Konto.'; }},
+    optionB: { label: '🗑️ Verlegt', effekt(gs) { return 'Wo war das Heft nochmal…?'; }}
+  },
+  {
+    id: 'alltag_trashtv', kategorie: 'alltag',
+    titel: '📺 Trash-TV-Marathon',
+    text: 'Deine Lieblings-Trash-Show läuft den ganzen Tag am Stück.',
+    optionA: { label: '📺 Reinziehen (1 Tag)', effekt(gs) { gs.energie = clamp(gs.energie + 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); verbraucheTag(1); return 'Herrlich vergammelt. E +10, Laune +5.'; }},
+    optionB: { label: '🙅 Produktiv bleiben', effekt(gs) { return 'Diszipliniert ausgeschaltet.'; }}
+  },
+  {
+    id: 'alltag_spielhalle', kategorie: 'alltag',
+    titel: '🎰 Spielhallen-Glück',
+    text: 'Du kommst an der Daddelhalle vorbei. Die Automaten blinken verführerisch.',
+    optionA: { label: '🎰 Zocken', effekt(gs) { gs.losesBargeld += 120; if (Math.random() < 0.25 && gs.suchtStufe < 3) { gs.suchtStufe++; return `Heute lief's! +120 €. Aber das Zocken packt dich (Sucht ${gs.suchtStufe}).`; } return "Heute lief's! +120 € Bargeld."; }},
+    optionB: { label: '🚶 Weitergehen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 2, 0, 100); return 'Diszipliniert geblieben (schade eigentlich).'; }}
+  },
+  {
+    id: 'alltag_schwarzfahren', kategorie: 'alltag',
+    titel: '🚌 Kontrolle im Bus!',
+    text: 'Kontrolleure steigen ein – und du hast (mal wieder) kein Ticket.',
+    optionA: { label: '🎫 Strafe zahlen (-60 €)', effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 60); return '60 € erhöhtes Beförderungsentgelt.'; }},
+    optionB: { label: '🏃 Wegrennen', effekt(gs) { gs.energie = clamp(gs.energie - 10, 0, 100); gs.risikoRaster = clamp(gs.risikoRaster + 3, 0, 100); return 'Entkommen – aber Stress. E -10, Risiko +3.'; }}
+  },
+  {
+    id: 'alltag_wetter', kategorie: 'alltag',
+    titel: '🌧️ Schmuddelwetter',
+    text: 'Seit Tagen nur Regen. Die Stimmung ist im Keller.',
+    optionA: { label: '😞 Drin verkriechen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return 'Couch-Tristesse. Laune -4.'; }},
+    optionB: { label: '☔ Trotzdem raus', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); gs.energie = clamp(gs.energie - 5, 0, 100); return 'Frische Luft tut gut. Laune +2, E -5.'; }}
+  },
+  {
+    id: 'alltag_paket', kategorie: 'alltag',
+    titel: '📦 Falsches Paket',
+    text: 'Ein Paket landet bei dir – adressiert an einen Nachbarn.',
+    optionA: { label: '📦 Behalten', effekt(gs) {
+      const verpfaendet = Object.keys(gs.verpfaendet || {}).filter(k => gs.verpfaendet[k]);
+      if (verpfaendet.length > 0) {
+        const itemId = verpfaendet[Math.floor(Math.random() * verpfaendet.length)];
+        gs.verpfaendet[itemId] = false;
+        gs.risikoRaster = clamp(gs.risikoRaster + 2, 0, 100);
+        return `Im Paket: dein ${PFAND_ITEMS[itemId].name}! Quasi zurück (Risiko +2).`;
+      }
+      gs.losesBargeld += 30; gs.risikoRaster = clamp(gs.risikoRaster + 2, 0, 100);
+      return 'Drin: 30 € und Krimskrams. Risiko +2.';
+    }},
+    optionB: { label: '📮 Zurückgeben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Ehrlich währt am längsten. Laune +3.'; }}
+  },
+  {
+    id: 'alltag_kleeblatt', kategorie: 'alltag',
+    titel: '🍀 Vierblättriges Kleeblatt',
+    text: 'Du entdeckst tatsächlich ein vierblättriges Kleeblatt.',
+    optionA: { label: '🍀 Aufheben', effekt(gs) { gs.kleeblatt = true; gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Glück im Anflug: nächste Razzia-Chance halbiert!'; }},
+    optionB: { label: '🌱 Stehen lassen', effekt(gs) { return 'Soll ein anderer Glück haben.'; }}
+  },
+  {
+    id: 'alltag_oma', kategorie: 'alltag',
+    titel: '🧧 Post von Oma',
+    text: 'Ein Brief von Oma – mit einem Geldschein und einem gestrickten Schal.',
+    optionA: { label: '💌 Annehmen', effekt(gs) { gs.kontostand += 50; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return 'Danke, Oma! +50 €, Laune +5.'; }},
+    optionB: { label: '📞 Zurückschicken', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Zu stolz – aber nett telefoniert. Laune +3.'; }}
+  },
+  {
+    id: 'alltag_erkaeltung', kategorie: 'alltag',
+    titel: '🦠 Erkältung',
+    text: 'Du wachst mit Halsschmerzen und Schnupfen auf.',
+    optionA: { label: '🛌 Schonen', effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); gs.energie = clamp(gs.energie - 10, 0, 100); return 'Auskuriert. Gesundheit -3, E -10.'; }},
+    optionB: { label: '💪 Durchziehen', effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 8, 0, 100); return 'Wird schlimmer. Gesundheit -8.'; }}
+  },
+
   {
     id: 'anzeige_anonym', kategorie: 'behoerde',
     titel: '📣 Anonyme Anzeige',
@@ -1918,6 +2011,8 @@ function triggerEvent(event) {
     soundShark();   // Bedrohlicher Ton bei Kredithai-Events
   } else if (event.kategorie === 'beziehung') {
     soundBeziehung(); // Melancholischer Ton bei Beziehungs-Events
+  } else if (event.kategorie === 'alltag') {
+    soundNeutral && soundNeutral();
   }
   oeffneEventModal(event);
 }
@@ -1931,7 +2026,7 @@ function oeffneEventModal(event) {
 function _renderEventModal(event) {
   document.getElementById('modal-title').textContent = event.titel;
   const body = document.getElementById('modal-body');
-  const kat = { behoerde: '🏛️ Behörden', loan_shark: '🦈 Kreditgeber', beziehung: '💑 Beziehung' }[event.kategorie] || '📨';
+  const kat = { behoerde: '🏛️ Behörden', loan_shark: '🦈 Kreditgeber', beziehung: '💑 Beziehung', alltag: '🎲 Alltag' }[event.kategorie] || '📨';
   body.innerHTML = `
     <p style="color:var(--text-dim);font-size:0.6rem;margin-bottom:8px;">${kat}</p>
     <p>${event.text}</p>
@@ -5394,7 +5489,7 @@ class StartSzene extends Phaser.Scene {
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
-        sachbearbeiterBestochen: false, suchtStufe: 0,
+        sachbearbeiterBestochen: false, suchtStufe: 0, kleeblatt: false,
       });
       this.scene.start('SpielSzene');
     });
