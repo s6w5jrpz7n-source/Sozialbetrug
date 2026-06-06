@@ -6023,10 +6023,13 @@ class SpielSzene extends Phaser.Scene {
 
   /** Überspringt die aktuelle Woche sofort (SPACE-Taste) */
   skipWoche() {
+    // Während des Überspringens wird "geschlafen" → Energie voll erholt
+    gameState.energie = 100;
     // Restzeit der Woche sofort ablaufen lassen
     this.zeitAkku = ECHTZEIT_PRO_WOCHE;
-    logEvent('⏩ Woche übersprungen.', '');
+    logEvent('⏩ Woche übersprungen – ausgeschlafen, Energie voll.', '');
     soundNeutral && soundNeutral();
+    updateHUD();
   }
 }
 

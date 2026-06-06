@@ -31,6 +31,8 @@ werden. **Sieg:** 1.000.000 € Gesamtvermögen erreichen (und auswandern).
 
 ## 4. Zeit & Status
 - 1 Spielwoche = 60 Echtzeit-Sekunden; 4 Wochen = 1 Monat. Tag 1–7/Woche.
+- „Woche überspringen" (Button/SPACE) lässt die Restwoche sofort ablaufen und
+  setzt die Energie auf 100 (man hat in der Zeit geschlafen).
 - status: **ALG1** (Monate 1–12, 1.200 €/M, KEINE Vermögensprüfung) → ab
   Monat 13 **ALG2/Bürgergeld** (563 €/M, Vermögensprüfung alle 3 Monate).
   Wechsel auch früher, wenn Konto ≤ 0.
