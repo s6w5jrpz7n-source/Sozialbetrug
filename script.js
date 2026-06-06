@@ -142,7 +142,30 @@ const gameState = {
   // ---- Strafsystem (Sozialbetrug) ----
   // 0=sauber, 1=Ermittlung, 2=Bewährung, 3=vorbestraft(war im Knast), 4=Game Over
   strafStufe: 0,
+
+  // ---- Korrupter Sachbearbeiter (senkt Jobcenter-Prüf-Chance) ----
+  sachbearbeiterBestochen: false,
 };
+
+const AUSWANDERN_GRENZE     = 1000000;   // € Gesamtvermögen für den Auswander-Sieg
+const SACHBEARBEITER_KOSTEN = 300;       // €/Monat Schmiergeld
+
+// Name der aktuellen Strafstufe (für Anwalt/Anzeigen)
+function strafStufeName(n) {
+  return ({ 0: 'sauber', 1: 'Ermittlung', 2: 'Bewährung', 3: 'Vorbestraft' })[n] || 'sauber';
+}
+
+// Gesamtvermögen (inkl. versteckter Werte, abzgl. Schulden) – für den Auswander-Sieg
+function gesamtVermoegen() {
+  const gs = gameState;
+  const depotWert = (gs.depot || []).reduce((s, p) => s + p.anteile * p.aktuellerKurs, 0);
+  const immoNet   = gs.immobilie ? Math.max(0, gs.immobilie.wert - (gs.immobilie.restSchuld || 0)) : 0;
+  return Math.round(
+    gs.kontostand + gs.schwarzeKasse + gs.losesBargeld
+    + (gs.goldBarren || 0) * 500 + depotWert + immoNet
+    - (gs.loanSharkSchuld || 0) - (gs.kautionRest || 0) - (gs.zahlungsRueckstand || 0)
+  );
+}
 
 // Zählt staatliche Leistungen für den "Vom Staat kassiert"-Counter mit
 function staatGibt(betrag) {
@@ -205,6 +228,8 @@ const ORTE_CONFIG = [
       { label: '🏖️  Kur beantragen (volle Erholung)',           id: 'kur' },
       { label: '🏠  Schein-WG deklarieren (+200 €/M, riskant)', id: 'scheinwg' },
       { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
+      { label: '⚖️  Anwalt anrufen (Strafe anfechten)',         id: 'anwalt' },
+      { label: '✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)',    id: 'auswandern' },
       { label: '🎭  Cheats öffnen...',                          id: 'cheats_menu' }
     ]
   },
@@ -222,7 +247,8 @@ const ORTE_CONFIG = [
       { label: '🚀  Einstiegsgeld (Gründerbonus) beantragen', id: 'einstiegsgeld' },
       { label: '🛋️  Erstausstattung Wohnung (einmalig +1.200 €)', id: 'pausch_erstausstattung' },
       { label: '🪑  Möbel/Schreibtisch fürs Kind (+250 €)',       id: 'pausch_moebel' },
-      { label: '👕  Kinder-Bekleidung (+150 €, alle 6 Monate)',    id: 'pausch_bekleidung' }
+      { label: '👕  Kinder-Bekleidung (+150 €, alle 6 Monate)',    id: 'pausch_bekleidung' },
+      { label: '🤝  Sachbearbeiter schmieren (300 €/M, weniger Prüfungen)', id: 'sachbearbeiter' }
     ]
   },
   {
@@ -1158,6 +1184,33 @@ function verarbeiteRazzia(wahl) {
 // ABSCHNITT 8: EVENT-DATENBANK (30 Events – unverändert aus V2)
 // ================================================================
 const eventDatabase = [
+  {
+    id: 'anzeige_anonym', kategorie: 'behoerde',
+    titel: '📣 Anonyme Anzeige',
+    text: 'Ein Nachbar (oder dein Ex?) hat dich beim Jobcenter wegen Sozialbetrugs angeschwärzt. Eine Sonderprüfung droht.',
+    optionA: { label: '🤐 Schweigegeld zahlen (-1.500 €)',
+      effekt(gs) {
+        if (gs.kontostand + gs.schwarzeKasse < 1500) {
+          gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100);
+          return 'Kein Geld fürs Schweigegeld – Risiko +10.';
+        }
+        let r = 1500;
+        const sk = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= sk; r -= sk;
+        gs.kontostand -= r;
+        return 'Der Informant hält den Mund. Vorerst Ruhe.';
+      }},
+    optionB: { label: '😶 Aussitzen (Sonderprüfung riskieren)',
+      effekt(gs) {
+        const maschen = gs.ernaehrungFake || gs.unterhaltsTarnung || gs.scheinWG ||
+          (gs.immobilie && gs.immobilie.modus === 'eigen');
+        if (maschen && Math.random() < 0.6) {
+          setTimeout(() => sozialbetrugErwischt(), 400);
+          return 'Sonderprüfung! Deine Maschen sind aufgeflogen…';
+        }
+        gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100);
+        return 'Die Prüfung ergab (diesmal) nichts Konkretes. Risiko +20.';
+      }}
+  },
   {
     id: 'behoerde_01', kategorie: 'behoerde',
     titel: '📬 Brief vom Jobcenter',
@@ -2263,6 +2316,22 @@ function interact(ortId) {
         ? '📈  Depot verschleiert AKTIV (wieder offiziell machen)'
         : '📈  Depot verschleiern (Amt-unsichtbar, 5%/Monat)';
     }
+    if (ortId === 'wohnung' && a.id === 'anwalt') {
+      label = (gs.strafStufe || 0) > 0
+        ? `⚖️  Anwalt anrufen (Status: ${strafStufeName(gs.strafStufe)})`
+        : '⚖️  Anwalt anrufen (keine Probleme)';
+    }
+    if (ortId === 'wohnung' && a.id === 'auswandern') {
+      const v = gesamtVermoegen();
+      label = v >= AUSWANDERN_GRENZE
+        ? '✈️  AUSWANDERN – du kannst gewinnen!'
+        : `✈️  Auswandern (${formatEuro(v)} / ${formatEuro(AUSWANDERN_GRENZE)})`;
+    }
+    if (ortId === 'arbeitsamt' && a.id === 'sachbearbeiter') {
+      label = gs.sachbearbeiterBestochen
+        ? '🤝  Sachbearbeiter geschmiert AKTIV (beenden)'
+        : '🤝  Sachbearbeiter schmieren (300 €/M)';
+    }
     // Wohnung: Kur / Schein-WG / Umzug
     if (ortId === 'wohnung' && a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
@@ -2439,6 +2508,57 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent(`📦 Umzug: +${formatEuro(pauschale)}, Kaution-Darlehen ${formatEuro(gs.kautionRest)}.`, 'warn');
       return;
     }
+    // ---- Anwalt / Strafverteidiger: Strafstufe anfechten ----
+    if (aktionsId === 'anwalt') {
+      if ((gs.strafStufe || 0) === 0) {
+        oeffneModal('⚖️ Strafverteidiger', 'Du hast aktuell keine juristischen Probleme. Melde dich, wenn gegen dich ermittelt wird.', []);
+        return;
+      }
+      const gebuehr = 2000 + 1500 * gs.strafStufe;
+      oeffneModal('⚖️ Strafverteidiger',
+        `Aktueller Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.<br><br>`
+        + `Ein guter Anwalt kann die Stufe um eine senken – Honorar <strong>${formatEuro(gebuehr)}</strong>, Erfolgschance <strong>65 %</strong> (bei Misserfolg ist das Honorar weg).`,
+        [{ label: `⚖️ Beauftragen (${formatEuro(gebuehr)})`, primary: true, callback: () => {
+            if (gs.kontostand < gebuehr) { logEvent('⚠️ Nicht genug Geld fürs Anwaltshonorar.', 'warn'); return; }
+            gs.kontostand -= gebuehr;
+            if (Math.random() < 0.65) {
+              gs.strafStufe = Math.max(0, gs.strafStufe - 1);
+              logEvent('⚖️ Anwalt erfolgreich – Strafe gemildert.', 'good');
+              oeffneModal('⚖️ Erfolg!', `Dein Anwalt hat ganze Arbeit geleistet.<br><br>Neuer Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.`, []);
+            } else {
+              logEvent('⚖️ Anwalt gescheitert – Honorar futsch.', 'danger');
+              oeffneModal('⚖️ Abgewiesen', `Der Antrag wurde abgelehnt. Das Honorar (${formatEuro(gebuehr)}) ist weg, der Status bleibt.`, []);
+            }
+            updateHUD();
+          }}]);
+      return;
+    }
+    // ---- Auswandern: Sieg ab AUSWANDERN_GRENZE Gesamtvermögen ----
+    if (aktionsId === 'auswandern') {
+      const v = gesamtVermoegen();
+      if (v < AUSWANDERN_GRENZE) {
+        oeffneModal('✈️ Auswandern',
+          `Um dich endgültig abzusetzen, brauchst du <strong>${formatEuro(AUSWANDERN_GRENZE)}</strong> Gesamtvermögen (inkl. Gold, Schwarzkasse, Depot, Immobilie).<br><br>`
+          + `Aktuell: <strong>${formatEuro(v)}</strong> – es fehlen noch <strong>${formatEuro(AUSWANDERN_GRENZE - v)}</strong>.`, []);
+        return;
+      }
+      gs.gameOver = true;
+      soundGut && soundGut();
+      oeffneModal('🏆 Ausgewandert – Gewonnen!',
+        `<div style="text-align:center; padding:10px 0;">
+          <div style="font-size:2rem; margin-bottom:10px;">🏝️ ✈️ 🍹</div>
+          <strong>Du hast es geschafft!</strong><br><br>
+          Mit <strong style="color:#ffd700; font-size:1.1rem;">${formatEuro(v)}</strong> setzt du dich ins sonnige Ausland ab.<br>
+          Kein Amt, keine Razzia, kein Knast – nur Strand.<br><br>
+          Vom Arbeitslosen zum Millionär. <strong>Der Staat hat verloren.</strong>
+        </div>`,
+        [{ label: '🔄 Neues Spiel', primary: true, callback: () => {
+            window._phaserGameRef && window._phaserGameRef.scene.stop('SpielSzene');
+            window._phaserGameRef && window._phaserGameRef.scene.start('StartSzene');
+          }}]);
+      logEvent(`🏆 Ausgewandert mit ${formatEuro(v)} – gewonnen!`, 'good');
+      return;
+    }
     if (aktionsId === 'cheats_menu') { oeffneCheatMenu(); return; }
   }
 
@@ -2564,6 +2684,20 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.kontostand += 150; staatGibt(150);
       gs.bekleidungCooldownMonat = gs.monat + 6;
       logEvent('👕 Kinder-Bekleidung: +150 €.', 'good');
+    }
+    // ---- Korrupter Sachbearbeiter schmieren ----
+    if (aktionsId === 'sachbearbeiter') {
+      if (gs.sachbearbeiterBestochen) {
+        gs.sachbearbeiterBestochen = false;
+        logEvent('🤝 Schmiergeld eingestellt.', '');
+        return;
+      }
+      gs.sachbearbeiterBestochen = true;
+      oeffneModal('🤝 Sachbearbeiter geschmiert',
+        `Dein Sachbearbeiter drückt künftig beide Augen zu: <strong>halbe Entdeckungschance</strong> bei der Jobcenter-Prüfung.<br><br>`
+        + `Kostet <strong>${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat</strong>. Kannst du mal nicht zahlen, ist der Deal sofort geplatzt.`, []);
+      logEvent(`🤝 Sachbearbeiter bestochen (${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat).`, 'warn');
+      return;
     }
   }
 
@@ -3521,7 +3655,8 @@ function monatsAbschluss() {
     if (gs.scheinWG) fakeFaktoren += 1;
     if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') fakeFaktoren += 1;
     if (fakeFaktoren > 0) {
-      const chance = Math.min(0.85, 0.15 * fakeFaktoren);
+      let chance = Math.min(0.85, 0.15 * fakeFaktoren);
+      if (gs.sachbearbeiterBestochen) chance *= 0.5;   // geschmierter Sachbearbeiter
       if (Math.random() < chance) {
         let rueck = 0;
         const gestrichen = [];
@@ -3612,6 +3747,18 @@ function monatsAbschluss() {
     gs.kontostand -= zahlbar;
     meldungen.push(`💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
     fehlt(NEBENKOSTEN - zahlbar, 'Nebenkosten');
+  }
+
+  // ---- Schmiergeld für den Sachbearbeiter ----
+  if (gs.sachbearbeiterBestochen) {
+    if (gs.kontostand >= SACHBEARBEITER_KOSTEN) {
+      gs.kontostand -= SACHBEARBEITER_KOSTEN;
+      meldungen.push(`🤝 Sachbearbeiter-Schmiergeld: -${formatEuro(SACHBEARBEITER_KOSTEN)}.`);
+    } else {
+      gs.sachbearbeiterBestochen = false;
+      meldungen.push('🤝 Schmiergeld nicht gezahlt – der Sachbearbeiter deckt dich nicht mehr!');
+      logEvent('🤝 Schmiergeld geplatzt.', 'warn');
+    }
   }
 
   // Natürlicher Verfall
@@ -5071,6 +5218,7 @@ class StartSzene extends Phaser.Scene {
         bekleidungCooldownMonat: 0, immobilie: null,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
+        sachbearbeiterBestochen: false,
       });
       this.scene.start('SpielSzene');
     });
