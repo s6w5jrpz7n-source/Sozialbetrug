@@ -340,6 +340,16 @@ const ORTE_CONFIG = [
     ]
   },
   {
+    id: 'villa', name: '🏖️  Villa', col: 10, row: 14,
+    farbe: 0xf0e6d0, dachFarbe: 0xd8b070,
+    beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt.',
+    aktionen: [
+      { label: '🛌  Luxuriös schlafen (Energie +40, 1 Tag)',   id: 'villa_schlafen' },
+      { label: '🏊  Pool & Sauna (Laune +20)',                 id: 'villa_pool' },
+      { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' }
+    ]
+  },
+  {
     id: 'kasino', name: '🎰  Kasino', col: 10, row: 6,
     farbe: 0x6a1a6a, dachFarbe: 0x9a2a9a,
     beschreibung: 'Wasche Schwarzgeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Kasino behält im Schnitt 15%.',
@@ -2378,6 +2388,14 @@ function interact(ortId) {
   if (!ort) return;
   const gs = gameState;
 
+  // Villa nur bewohnbar, wenn die Immobilie selbst genutzt wird
+  if (ortId === 'villa' && !(gs.immobilie && gs.immobilie.modus === 'eigen')) {
+    oeffneModal('🏖️ Leeres Baugrundstück',
+      'Hier könnte deine Villa stehen!<br><br>'
+      + 'Kaufe bei der <strong>Schattenbank</strong> eine Immobilie und stelle sie auf <strong>Eigennutzung</strong> – dann ziehst du hier ein.', []);
+    return;
+  }
+
   const aktionen = ort.aktionen.map(a => {
     // Dynamische Labels für kontextabhängige Infos
     let label = a.label;
@@ -3315,6 +3333,24 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent('💉 Entzug erfolgreich – Sucht überwunden!', 'good');
       oeffneModal('💉 Clean!', 'Die Therapie hat angeschlagen. Deine Sucht ist überwunden, Laune +10.', []);
       return;
+    }
+  }
+
+  // --- VILLA (Luxus-Domizil, nur bei Eigennutzung erreichbar) ---
+  if (ortId === 'villa') {
+    if (aktionsId === 'villa_schlafen') {
+      gs.energie = clamp(gs.energie + 40, 0, 100);
+      verbraucheTag(1);
+      logEvent('🛌 Luxuriös geschlafen: Energie +40. 1 Tag vergangen.', 'good');
+    }
+    if (aktionsId === 'villa_pool') {
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
+      logEvent('🏊 Pool & Sauna: Laune +20.', 'good');
+    }
+    if (aktionsId === 'villa_gaeste') {
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
+      gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
+      logEvent('🍸 Gäste in der Villa empfangen: Laune +10, Partner +10.', 'good');
     }
   }
 
@@ -5166,6 +5202,11 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       case 'supermarkt':   baueSupermarkt(g,   pos.x, pos.y, tileW, tileH); break;
       case 'arztpraxis':   baueArztpraxis(g,   pos.x, pos.y, tileW, tileH); break;
       case 'kiosk':        baueKiosk(g,        pos.x, pos.y, tileW, tileH); break;
+      case 'villa':
+        if (gameState.immobilie && gameState.immobilie.modus === 'eigen')
+             baueVilla(g,          pos.x, pos.y, tileW, tileH);
+        else baueBaugrundstueck(g, pos.x, pos.y, tileW, tileH);
+        break;
     }
     // Label: dezent, kein Pfahl, kein Rahmen – nur Text auf Bodenhöhe
     const labelY = pos.y + tileH * 0.52;
@@ -5236,6 +5277,40 @@ function baueSchattenbank(g, cx, cy, tw, th) {
   BB.rohr(g, cx + W*0.33, cy - hoehe*0.2, cy - hoehe * 0.7, 0x202030);
 }
 
+
+// ---- Villa – Luxus-Domizil (wenn Immobilie selbst genutzt) ----
+function baueVilla(g, cx, cy, tw, th) {
+  const hoehe = th * 1.25;
+  zeichneKlinkerhaus(g, cx, cy, tw * 1.05, th * 1.05, {
+    klinkerFarbe: 0xf2ead6, dachFarbe: 0xc89858,
+    hoehe, dachart: 'flach', etagen: 2,
+    fensterFarbe: 0x9ad8ff, tuerFarbe: 0x6a4a2a,
+    schild: 'VILLA', schildFarbe: 0xffd700, seed: 4242
+  });
+  // Pool (türkis) vorne rechts
+  g.fillStyle(0x35c8e0, 0.9); g.fillRect(cx + tw * 0.12, cy + th * 0.05, tw * 0.30, th * 0.16);
+  g.fillStyle(0x9fe8f4, 0.5); g.fillRect(cx + tw * 0.12, cy + th * 0.05, tw * 0.30, th * 0.05);
+  // Palme links
+  const px = cx - tw * 0.40, py = cy - th * 0.05;
+  g.fillStyle(0x6a4a2a, 1); g.fillRect(px - 1.5, py - hoehe * 0.5, 3, hoehe * 0.5);
+  g.fillStyle(0x3a9a52, 1);
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i - 2) * 0.5;
+    g.fillTriangle(px, py - hoehe * 0.5,
+      px + Math.cos(a) * 14, py - hoehe * 0.5 + Math.sin(a) * 14 - 4,
+      px + Math.cos(a) * 6,  py - hoehe * 0.5 + Math.sin(a) * 6);
+  }
+}
+
+// ---- Baugrundstück – leeres Grundstück mit Schild ----
+function baueBaugrundstueck(g, cx, cy, tw, th) {
+  if (typeof isoFill === 'function') isoFill(g, cx, cy, tw * 0.7, th * 0.7, 0x4a4438, 0.6);
+  g.fillStyle(0x7a6a4a, 1);
+  for (let i = -2; i <= 2; i++) g.fillRect(cx + i * tw * 0.12, cy - 9, 2, 11);
+  g.fillStyle(0x6a5a3a, 1); g.fillRect(cx - 1, cy - th * 0.5, 2, th * 0.5);
+  g.fillStyle(0xf0d040, 1); g.fillRect(cx - tw * 0.13, cy - th * 0.58, tw * 0.26, 13);
+  g.lineStyle(1.5, 0x806010, 1); g.strokeRect(cx - tw * 0.13, cy - th * 0.58, tw * 0.26, 13);
+}
 
 // ---- Kiosk – kleiner bunter Späti ----
 function baueKiosk(g, cx, cy, tw, th) {
