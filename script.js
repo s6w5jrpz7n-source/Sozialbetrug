@@ -1923,7 +1923,12 @@ function triggerEvent(event) {
 }
 
 function oeffneEventModal(event) {
+  if (modalOffen) { modalQueue.push({ typ: 'event', event }); return; }   // anstellen
   modalOffen = true;
+  _renderEventModal(event);
+}
+
+function _renderEventModal(event) {
   document.getElementById('modal-title').textContent = event.titel;
   const body = document.getElementById('modal-body');
   const kat = { behoerde: '🏛️ Behörden', loan_shark: '🦈 Kreditgeber', beziehung: '💑 Beziehung' }[event.kategorie] || '📨';
@@ -2212,21 +2217,39 @@ function setBar(id, wert, farbe) {
 // ABSCHNITT 12: MODAL-SYSTEM
 // ================================================================
 let modalOffen = false;
+let modalQueue = [];   // Warteschlange, damit sich Popups nicht überschreiben
+
+// Zeigt das nächste Modal aus der Warteschlange – oder schließt das Overlay.
+function _modalNaechstes() {
+  if (modalQueue.length > 0) {
+    const next = modalQueue.shift();
+    modalOffen = true;
+    if (next.typ === 'event') _renderEventModal(next.event);
+    else                      _renderStdModal(next);
+  } else {
+    document.getElementById('modal-overlay').classList.remove('active');
+    modalOffen = false;
+  }
+}
 
 function oeffneModal(titel, beschreibungHTML, aktionen, schliessenCallback) {
+  const item = { typ: 'std', titel, beschreibungHTML, aktionen: aktionen || [], schliessenCallback };
+  if (modalOffen) { modalQueue.push(item); return; }   // läuft schon eins → anstellen
   modalOffen = true;
-  document.getElementById('modal-title').textContent = titel;
+  _renderStdModal(item);
+}
+
+function _renderStdModal(item) {
+  document.getElementById('modal-title').textContent = item.titel;
   const body = document.getElementById('modal-body');
-  body.innerHTML = `<p>${beschreibungHTML}</p>`;
-  aktionen.forEach(a => {
+  body.innerHTML = `<p>${item.beschreibungHTML}</p>`;
+  item.aktionen.forEach(a => {
     const btn = document.createElement('button');
     btn.className   = 'action-btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger-btn' : '');
     btn.textContent = a.label;
     btn.onclick = () => {
-      // Titel vor Callback merken – ändert er sich, hat der Callback ein neues Modal geöffnet
       const titelVorher = document.getElementById('modal-title').textContent;
       a.callback();
-      // Nur schließen wenn kein neues Modal durch den Callback geöffnet wurde
       const titelNachher = document.getElementById('modal-title').textContent;
       if (titelVorher === titelNachher) schliesseModal();
     };
@@ -2235,14 +2258,14 @@ function oeffneModal(titel, beschreibungHTML, aktionen, schliessenCallback) {
   const closeBtn = document.createElement('button');
   closeBtn.id          = 'modal-close-btn';
   closeBtn.textContent = '✕ Schließen (ESC)';
-  closeBtn.onclick = () => { if (schliessenCallback) schliessenCallback(); schliesseModal(); };
+  closeBtn.onclick = () => { if (item.schliessenCallback) item.schliessenCallback(); schliesseModal(); };
   body.appendChild(closeBtn);
   document.getElementById('modal-overlay').classList.add('active');
 }
 
 function schliesseModal() {
-  document.getElementById('modal-overlay').classList.remove('active');
   modalOffen = false;
+  _modalNaechstes();   // ggf. nächstes wartendes Popup zeigen
 }
 
 document.addEventListener('keydown', e => {
