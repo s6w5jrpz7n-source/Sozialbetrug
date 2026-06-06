@@ -15,7 +15,7 @@ werden. **Sieg:** 1.000.000 € Gesamtvermögen erreichen (und auswandern).
 |---|---|---|
 | energie | 80 | Aktionen kosten Energie; bei 0 nur noch Schlafen möglich |
 | happinessSpieler | 70 | Eigene Laune |
-| happinessPartner | 70 | Partnerlaune; <30 Ehe-Krise, <20 Frau zieht aus |
+| happinessPartner | 70 | Partnerlaune; <20 zieht die Partnerin aus (Unterhalt 1.000 €/M) |
 | gesundheit | 80 | <20 Krankenhaus-Zwang, =0 Tod (Game Over) |
 | risikoRaster | 10 | Entdeckungsrisiko (0–100); ab 70 Razzia-Gefahr |
 
@@ -172,9 +172,9 @@ Steigt durch Amüsierbetrieb/Alkohol/Glücksspiel. Monatlich: −120 €/Stufe,
 Gesundheit −4/Stufe, Laune −3/Stufe. Heilung nur durch Entzug in der Arztpraxis.
 
 ## 13. Familie
-- Partnerlaune <20 → Frau zieht aus (Unterhalt 1.000 €/M; Rückkehr bei 5.000 €
-  Geschenke). Ehe-Krise-Quest bei niedriger Partnerlaune (Verlust = Game Over
-  „Sorgerecht").
+- Partnerlaune <20 → Partnerin zieht aus (Unterhalt 1.000 €/M; Rückkehr bei
+  5.000 € Geschenke). KEIN Sorgerechtsstreit/Game-Over mehr (entfernt – ohne
+  Kind im Haushalt sinnlos).
 - Kindergeld-Afrika-Cheat: bis 4 Kinder à 300 €/M (nur behalten mit Unterhalts-
   Tarnung). Kinder schalten Alleinerziehend/BuT/Pauschalen frei.
 
@@ -193,8 +193,8 @@ Schein-WG, Pauschalen, Umzug, Auslands-Kindergeld (getarnt), Immobilien-KdU.
 - Sieg: „Auswandern" ab 1.000.000 € Gesamtvermögen (Konto + Schwarzkasse +
   Bargeld + Gold + Depot + Immobilie − Schulden − Rückstand); zusätzlich
   Auto-Sieg bei 1 Mio. Konto+Depot.
-- Game Over: Gesundheit 0 (Tod); Bankrott; Sorgerecht verloren; Razzia/Gefängnis
-  (Wiederholung); Zahlungsunfähig (Rückstand 3 Monate).
+- Game Over: Gesundheit 0 (Tod); Bankrott; Razzia/Gefängnis (Wiederholung);
+  Zahlungsunfähig (Rückstand 3 Monate).
 
 ## 17. Konstanten (Referenz)
 ```

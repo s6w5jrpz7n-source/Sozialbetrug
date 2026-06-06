@@ -796,6 +796,13 @@ const eheKriseSchritte = [
  * ob die Ehe-Krise ausgelöst oder weitergeführt werden soll.
  */
 function pruefeEheKrise() {
+  // Sorgerechtsstreit/Ehe-Krise-Quest entfernt: ohne Kind im Haushalt sinnlos.
+  // Niedrige Partnerlaune führt stattdessen zum Auszug der Partnerin (siehe
+  // monatsAbschluss, happinessPartner < 20) – kein Game Over mehr durch Sorgerecht.
+  return;
+}
+
+function _pruefeEheKrise_DEAKTIVIERT() {
   const gs = gameState;
   if (gs.gameOver || gs.eheKriseGescheitert) return;
 
@@ -1599,15 +1606,6 @@ const eventDatabase = [
     optionB: { label: '🚫 Ablehnen (Partner +5)',
       effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100); return 'Richtige Entscheidung.'; }}
   },
-  {
-    id: 'beziehung_10', kategorie: 'beziehung',
-    titel: '⚖️ Sorgerechts-Drohung (Frühwarnung)',
-    text: 'Ex droht mit Sorgerechtsstreit wegen instabiler Finanzen.',
-    optionA: { label: '⚖️ Anwalt (-800 € Konto)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 800); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); return 'Stabilisiert.'; }},
-    optionB: { label: '🤝 Ohne Anwalt einigen',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 15, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 25, 0, 100); pruefeEheKrise(); return 'Eskalation.'; }}
-  }
 ];
 
 
