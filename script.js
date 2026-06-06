@@ -306,17 +306,24 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'supermarkt', name: '🛒  Supermarkt & Kiosk', col: 14, row: 2,
+    id: 'supermarkt', name: '🛒  Supermarkt', col: 14, row: 2,
     farbe: 0x2a6a8a, dachFarbe: 0x3a9aba,
-    beschreibung: 'Lebensmittel, Minijob – und am Kiosk: Rubbellose & Genussmittel.',
+    beschreibung: 'Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.',
     aktionen: [
       { label: '🥗  Bio-Qualität  (800€, Gesundheit +10, Laune +10)',        id: 'einkauf_gut'    },
       { label: '🥙  Normal       (500€, Gesundheit ±0, Laune ±0)',            id: 'einkauf_normal' },
       { label: '🍟  Billig       (250€, Gesundheit -5/M, Laune -10/M)',       id: 'einkauf_billig' },
       { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  },
-      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   },
-      { label: '🎟️  Rubbellos kaufen (5€ · Glück?)',                              id: 'rubbellos' },
-      { label: '🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)',         id: 'genussmittel' }
+      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
+    ]
+  },
+  {
+    id: 'kiosk', name: '🏪  Kiosk', col: 2, row: 14,
+    farbe: 0xc23a3a, dachFarbe: 0x8a2020,
+    beschreibung: 'Späti um die Ecke: Rubbellose, Alkohol & Zigaretten. Vorsicht – macht süchtig.',
+    aktionen: [
+      { label: '🎟️  Rubbellos kaufen (5€ · Glück?)',                       id: 'rubbellos' },
+      { label: '🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)',  id: 'genussmittel' }
     ]
   },
   {
@@ -3114,7 +3121,11 @@ function aktionAusfuehren(ortId, aktionsId) {
       return;
     }
 
-    // ---- Kiosk: Rubbellos ----
+  }
+
+  // --- KIOSK ---
+  if (ortId === 'kiosk') {
+    // ---- Rubbellos ----
     if (aktionsId === 'rubbellos') {
       if (gs.kontostand < 5) { logEvent('⚠️ Kein Geld für ein Rubbellos.', 'warn'); return; }
       gs.kontostand -= 5;
@@ -3143,7 +3154,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       }
       return;
     }
-    // ---- Kiosk: Alkohol & Zigaretten ----
+    // ---- Alkohol & Zigaretten ----
     if (aktionsId === 'genussmittel') {
       if (gs.kontostand < 15) { logEvent('⚠️ Kein Geld für Genussmittel.', 'warn'); return; }
       gs.kontostand      -= 15;
@@ -4082,7 +4093,7 @@ function pruefeGameOverBedingungen() {
 // ---- Layout (unverändert) ----
 const STRASSENLAYOUT = {
   laengs: [0, 4, 8, 12],
-  quer:   [0, 4, 8],
+  quer:   [0, 4, 8, 12],
 };
 function istStrasse(col, row) {
   return STRASSENLAYOUT.laengs.includes(col) || STRASSENLAYOUT.quer.includes(row);
@@ -4863,7 +4874,7 @@ function zeichneFuellgebaeude(g, tileW, tileH, offsetX, offsetY) {
   const dacharten  = ['sattel','sattel','flach','walm','sattel','sattel'];
 
   for (let c = 0; c <= 15; c++) {
-    for (let r = 0; r <= 11; r++) {
+    for (let r = 0; r <= 15; r++) {
       if (istStrasse(c, r))     continue;
       if (istSpielortMitte(c,r)) continue;
       const pos  = isoToScreen(c+0.5, r+0.5, tileW, tileH, offsetX, offsetY);
@@ -4985,7 +4996,7 @@ const BUILDING_SPRITES = {
 // HAUPTAUFRUF
 // ================================================================
 function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
-  const COLS = 16, ROWS = 12;
+  const COLS = 16, ROWS = 16;
 
   const gBoden = scene.add.graphics();
   zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
@@ -5031,6 +5042,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       case 'schattenbank': baueSchattenbank(g, pos.x, pos.y, tileW, tileH); break;
       case 'supermarkt':   baueSupermarkt(g,   pos.x, pos.y, tileW, tileH); break;
       case 'arztpraxis':   baueArztpraxis(g,   pos.x, pos.y, tileW, tileH); break;
+      case 'kiosk':        baueKiosk(g,        pos.x, pos.y, tileW, tileH); break;
     }
     // Label: dezent, kein Pfahl, kein Rahmen – nur Text auf Bodenhöhe
     const labelY = pos.y + tileH * 0.52;
@@ -5101,6 +5113,23 @@ function baueSchattenbank(g, cx, cy, tw, th) {
   BB.rohr(g, cx + W*0.33, cy - hoehe*0.2, cy - hoehe * 0.7, 0x202030);
 }
 
+
+// ---- Kiosk – kleiner bunter Späti ----
+function baueKiosk(g, cx, cy, tw, th) {
+  const hoehe = th * 0.95;
+  zeichneKlinkerhaus(g, cx, cy, tw * 0.62, th * 0.62, {
+    klinkerFarbe: 0xc23a3a, dachFarbe: 0xf0c040,
+    hoehe, dachart: 'flach', etagen: 1,
+    fensterFarbe: 0xffe89a, tuerFarbe: 0x5a2a10,
+    schild: 'KIOSK', schildFarbe: 0xffffff, seed: 777
+  });
+  // gelb-rote Markise
+  const my = cy - hoehe * 0.5;
+  for (let i = 0; i < 6; i++) {
+    g.fillStyle(i % 2 === 0 ? 0xe03030 : 0xf5f5f5, 0.95);
+    g.fillRect(cx - tw * 0.3 + i * (tw * 0.6 / 6), my, tw * 0.6 / 6 - 1, 8);
+  }
+}
 
 // ---- Arztpraxis – helles Gebäude mit rotem Kreuz ----
 function baueArztpraxis(g, cx, cy, tw, th) {
@@ -5489,8 +5518,8 @@ class StartSzene extends Phaser.Scene {
 class SpielSzene extends Phaser.Scene {
   constructor() {
     super({ key: 'SpielSzene' });
-    this.tileW   = 130;
-    this.tileH   = 65;
+    this.tileW   = 120;
+    this.tileH   = 60;
     // offsetX/Y werden in create() dynamisch berechnet (Zentrierung)
     this.offsetX = 400;
     this.offsetY = 120;
@@ -5544,7 +5573,7 @@ class SpielSzene extends Phaser.Scene {
     // Kartengrenzen in ISO-Koordinaten:
     //   rechts: (COLS + ROWS) * tileW/2     links: -(ROWS) * tileW/2
     //   unten:  (COLS + ROWS) * tileH/2     oben:  0
-    const COLS = 16, ROWS = 12;
+    const COLS = 16, ROWS = 16;
     const karteBreite = (COLS + ROWS) * this.tileW / 2;
     const karteHoehe  = (COLS + ROWS) * this.tileH / 2;
     // Karte horizontal und vertikal zentrieren
@@ -5673,7 +5702,7 @@ class SpielSzene extends Phaser.Scene {
 
     if (bewegt) {
       this.spielerCol = clamp(this.spielerCol + dc, 0, 15);
-      this.spielerRow = clamp(this.spielerRow + dr, 0, 11);
+      this.spielerRow = clamp(this.spielerRow + dr, 0, 15);
       this.inputCooldown = 130;
       this.istAufMove    = true;
       this.walkFrame     = (this.walkFrame + 1) % 4;
@@ -6026,7 +6055,7 @@ window.addEventListener('resize', () => {
   if (scene && scene.sys.isActive()) {
     const W = scene.scale.width;
     const H = scene.scale.height;
-    const COLS = 16, ROWS = 12;
+    const COLS = 16, ROWS = 16;
     scene.offsetX = W / 2 - (COLS - ROWS) * scene.tileW / 4;
     scene.offsetY = Math.max(40, (H - (COLS + ROWS) * scene.tileH / 2) / 2 + 20);
   }
