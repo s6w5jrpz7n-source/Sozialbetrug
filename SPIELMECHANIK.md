@@ -24,7 +24,7 @@ werden. **Sieg:** 1.000.000 € Gesamtvermögen erreichen (und auswandern).
 |---|---|---|---|
 | kontostand (Start 50.000 €) | nein | **ja** | – |
 | losesBargeld (Bargeld) | **ja** | nein | – |
-| schwarzeKasse | ja | nein | 10 %/Monat (Schattenbank) |
+| schwarzeKasse | ja | nein | 5 %/Monat (Schattenbank) |
 | goldBarren (×500 €, „im Garten vergraben") | nein | nein | – |
 | depot (Wertpapiere) | nein | **ja** (außer verschleiert) | 5 %/Monat wenn verschleiert |
 | immobilie | nein | nein | Rate/Instandhaltung |
@@ -55,7 +55,7 @@ werden. **Sieg:** 1.000.000 € Gesamtvermögen erreichen (und auswandern).
     aktiv, sonst netto 0).
 12. Jobcenter-Prüfung (monat%3==1): siehe §9.
 13. Sachbearbeiter-Schmiergeld −150 € (sonst Deal platzt).
-14. Schattenbank-Gebühr −10 % der Schwarzkasse.
+14. Schattenbank-Gebühr −5 % der Schwarzkasse.
 15. Miete: ALG1 −650 € (selbst); ALG2 vom Staat übernommen (zählt zum Counter).
 16. Krankenkasse +120 € (Counter, beide Phasen).
 17. Nebenkosten −200 € (selbst).
@@ -78,7 +78,10 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   NICHT mehr an Gesundheit/Energie gekoppelt); Schein-WG; Umzug (+450 € einmalig,
   dann −150 €/M Kaution, schaltet Erstausstattung frei); Anwalt; Auswandern
   (Sieg); Cheats.
-- **Arbeitsamt:** Pflichttermin (R−5, sonst Sperre); Scheinbewerbung (R−5);
+- **Arbeitsamt:** Pflichttermin (R−5, sonst Sperre). Wahrnehmen ist nur im
+  Fälligkeitsfenster sinnvoll: Liegt der Termin noch >5 Tage in der Zukunft,
+  bleibt er ungenutzt; geht man innerhalb der letzten 5 Tage hin, startet die
+  14-Tage-Frist neu. Scheinbewerbung (R−5);
   Mehrbedarfe (Warmwasser +15, Alleinerziehend +70 [Kind], Ernährung +110
   [Attest echt/gefälscht], BuT +40 [Kind]); Einstiegsgeld (800 € → +2.000 €
   + 338 €/M × 6); Pauschalen (Erstausstattung +1.200 nach Umzug, Möbel +250,
@@ -87,9 +90,11 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   / halber Tag (+120, R+5, E−8).
 - **Bank:** Bargeld einzahlen → Konto (max 200 €/Woche, Transport-Risiko);
   500 € abheben; Aktiendepot kaufen/verkaufen.
-- **Pfandleiher:** Gold kaufen (1 Barren = 500 €, Bargeld→Konto) & verkaufen;
-  Gegenstände verpfänden (Geld aufs Konto, Laune −): Handy 240 / Schmuck 500 /
-  Fernseher 440 / Konsole 360 / Auto 2.400 €; Auslösen = Wert × 1,25.
+- **Pfandleiher:** Gold kaufen & verkaufen in Tranchen (1 Barren = 500 €,
+  Stückelung 1/5/10/25/50/max bzw. 1/5/10/25/alle, Konto↔Garten — wie das
+  Aktiendepot, Menü öffnet nach jeder Aktion erneut); Gegenstände verpfänden
+  (Geld aufs Konto, Laune −): Handy 240 / Schmuck 500 / Fernseher 440 /
+  Konsole 360 / Auto 2.400 €; Auslösen = Wert × 1,25.
 - **Amüsierbetrieb:** Abend (−200 €, Laune +30; 25 % „ertappt" Partner −20;
   20 % Sucht +).
 - **Sportverein:** Soziale Tätigkeit (E−20, R−23, Laune+10, 1 Tag) / Training
@@ -101,13 +106,20 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   Alkohol/Zigaretten 15 € (Laune+8, Ges−3, Sucht-Risiko).
 - **Arztpraxis:** Behandlung (Ges+30, −500 €); Krankschreibung (R−8, E+10);
   Entzug (Sucht heilen, −800 €).
-- **Villa (10/14):** Eigenes begehbares Luxus-Gebäude. Nur bewohnbar, wenn eine
-  Immobilie vorhanden ist UND auf Eigennutzung steht – sonst leeres
-  Baugrundstück. Aktionen: Luxus-Schlafen (E+40, 1 Tag), Pool & Sauna (Laune+20),
-  Gäste empfangen (Laune+10, Partner+10).
-- **Kasino:** Schwarzgeld waschen (100/500/1.000/alles): Rückzahlung 50–120 %
-  (Ø 85 %) → Konto (legal).
-- **Schattenbank:** Bargeld → Schwarzkasse (10 %/M); Schwarzkasse abheben;
+- **Villa (10/14):** Eigenes begehbares Luxus-Gebäude (steht erst nach dem Kauf
+  der Immobilie sichtbar da). Nur bewohnbar, wenn eine Immobilie vorhanden ist
+  UND auf Eigennutzung steht – sonst leeres Baugrundstück. Bei Einzug (Immobilie
+  + Eigennutzung) ZIEHEN ALLE WOHNUNGS-FEATURES IN DIE VILLA UM (Schlafen, Kasse,
+  Kur, Schein-WG, Anwalt, Auswandern, … über das Villa-Menü erreichbar); die alte
+  Wohnung verweist nur noch auf die Villa. Eigene Villa-Aktionen zusätzlich:
+  Luxus-Schlafen (E+40, 1 Tag), Pool & Sauna (Laune+20), Gäste empfangen
+  (Laune+10, Partner+10).
+- **Kirche (6/14):** Sündenerlass (150 € = 50 % der Wohnungs-Bestechung, halbiert
+  das Risiko, nur 1× alle 3 Monate); Beichte (−15 Energie → +10 Laune, 1× alle
+  3 Monate).
+- **Kasino:** Mit Bargeld spielen (verliert/gewinnt loses Bargeld, NICHT mehr aus
+  der Schwarzkasse), Einsatz 100/500/1.000/alles: Auszahlung 50–120 % (Ø 85 %).
+- **Schattenbank:** Bargeld → Schwarzkasse (5 %/M); Schwarzkasse abheben;
   Unterhalts-Tarnung; Immobilie (kaufen 40.000 € EK + 24× 2.500 €, Modus
   Eigennutzung↔Vermieten, sofort tilgen, verkaufen = Wert − Restschuld);
   Depot verschleiern.
@@ -119,9 +131,13 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
 | Papier | Modell |
 |---|---|
 | MSCI World | fix +8 %/M (kein Verlust) |
-| KryptoXX | 50 % Chance +50 %, sonst −25 % |
-| Risiko-Firma AG | 50 % Chance +100 %, sonst −50 % |
+| KryptoXX | statistisch verteilt −25 % … +50 % (Dreieck, Mitte ~+12 %) |
+| Risiko-Firma AG | statistisch verteilt −50 % … +100 % (Dreieck, Mitte ~+25 %) |
 | Immo-Fonds | gleichverteilt +2 % … +8 % |
+
+Risikopapiere liefern keinen festen Binär-Ausgang mehr (vorher −50 %/+100 %),
+sondern eine kontinuierlich um die Mitte gehäufte Dreiecksverteilung
+(r = (rand + rand) / 2).
 
 Depot zählt zur Vermögensprüfung — außer verschleiert (dann −5 %/M Gebühr,
 Amt-unsichtbar).
@@ -204,7 +220,8 @@ Razzia: ab Risiko 70, alle 60s, Chance min(0.40, risiko^1.5/25000)
 Immobilie: Preis 100000, EK 40000, Rate 2500x24, Miete 1250/M, Wert +2%/M
 Einstiegsgeld 800 -> +2000 +338/M x6 | Schein-WG 200/M | Sachbearbeiter 150/M
 Mehrbedarf: Warmwasser15 Alleinerz70 Ernaehrung110 BuT40
-Pfand-Ausloese-Zins x1.25 | Kasino-Waschen 50-120% | Schattenbank/SK-Gebuehr 10%/M
+Pfand-Ausloese-Zins x1.25 | Kasino 50-120% (mit Bargeld) | Schattenbank/SK-Gebuehr 5%/M
+Gold-Barren 500 EUR (Tranchen) | Kirche: Suendenerlass 150 EUR & Beichte, je 1x/3M
 Kredithai-Zins 10%/M | Sucht: 120 EUR/Stufe, Ges-4/Laune-3 pro Stufe
 Start: Konto 50000, Energie 80, Laune 70/70, Gesundheit 80, Risiko 10, ALG1
 ```
