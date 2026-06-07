@@ -352,20 +352,20 @@ const ORTE_CONFIG = [
   {
     id: 'kasino', name: '🎰  Kasino', col: 10, row: 6,
     farbe: 0x6a1a6a, dachFarbe: 0x9a2a9a,
-    beschreibung: 'Wasche Schwarzgeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Kasino behält im Schnitt 15%.',
+    beschreibung: 'Spiele mit losem Bargeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Das Kasino behält im Schnitt 15%.',
     aktionen: [
-      { label: '🎰  100 € waschen  → 50–120% zurück aufs Konto (legal)',  id: 'waschen_100'  },
-      { label: '🎰  500 € waschen  → 50–120% zurück aufs Konto (legal)',  id: 'waschen_500'  },
-      { label: '🎰  1.000 € waschen → 50–120% zurück aufs Konto (legal)', id: 'waschen_1000' },
-      { label: '🎰  Alles waschen   → 50–120% der Schwarzkasse aufs Konto',id: 'waschen_alles'}
+      { label: '🎰  100 € setzen  → 50–120% aufs Konto (legal)',  id: 'waschen_100'  },
+      { label: '🎰  500 € setzen  → 50–120% aufs Konto (legal)',  id: 'waschen_500'  },
+      { label: '🎰  1.000 € setzen → 50–120% aufs Konto (legal)', id: 'waschen_1000' },
+      { label: '🎰  Alles setzen   → 50–120% des Bargelds aufs Konto', id: 'waschen_alles'}
     ]
   },
   {
     id: 'schattenbank', name: '🏴  Schattenbank', col: 14, row: 6,
     farbe: 0x1a1a2a, dachFarbe: 0x0a0a18,
-    beschreibung: 'Wandle Loses Bargeld in sichere Schwarzkasse um. Kostet 10%/Monat Verwaltungsgebühr.',
+    beschreibung: 'Wandle Loses Bargeld in sichere Schwarzkasse um. Kostet 5%/Monat Verwaltungsgebühr.',
     aktionen: [
-      { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 10%/Monat Gebühr)', id: 'alles_sichern'  },
+      { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 5%/Monat Gebühr)', id: 'alles_sichern'  },
       { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
       { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
       { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' },
@@ -3069,7 +3069,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.schwarzeKasse  += betrag;
       gs.losesBargeld    = 0;
       gs.schattenbankAktiv = true;
-      logEvent(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert. 10%/Monat Gebühr.`, 'good');
+      logEvent(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert. 5%/Monat Gebühr.`, 'good');
     }
     if (aktionsId === 'sichern_500') {
       const betrag = Math.min(500, gs.losesBargeld);
@@ -3358,13 +3358,13 @@ function aktionAusfuehren(ortId, aktionsId) {
     let betrag = betraege[aktionsId];
 
     if (aktionsId === 'waschen_alles') {
-      betrag = gs.schwarzeKasse;
-      if (betrag <= 0) { logEvent('⚠️ Keine Schwarzkasse zum Waschen.', 'warn'); return; }
+      betrag = gs.losesBargeld;
+      if (betrag <= 0) { logEvent('⚠️ Kein loses Bargeld zum Setzen.', 'warn'); return; }
     }
 
     if (betrag !== undefined) {
-      if (gs.schwarzeKasse < betrag) {
-        logEvent(`⚠️ Nicht genug Schwarzgeld. Vorhanden: ${formatEuro(gs.schwarzeKasse)}`, 'warn');
+      if (gs.losesBargeld < betrag) {
+        logEvent(`⚠️ Nicht genug loses Bargeld. Vorhanden: ${formatEuro(gs.losesBargeld)}`, 'warn');
         return;
       }
       // Rückzahlung: gleichmäßig verteilt zwischen 50% und 120%
@@ -3373,8 +3373,8 @@ function aktionAusfuehren(ortId, aktionsId) {
       const rueckgabe = Math.round(betrag * faktor);
       const diff      = rueckgabe - betrag;  // positiv = Gewinn, negativ = Verlust
 
-      gs.schwarzeKasse -= betrag;
-      gs.kontostand    += rueckgabe;   // immer aufs Konto – legal als Spielgewinn
+      gs.losesBargeld -= betrag;
+      gs.kontostand   += rueckgabe;   // immer aufs Konto – legal als Spielgewinn
 
       const pct     = Math.round(faktor * 100);
       const pfeil   = diff >= 0 ? '▲' : '▼';
@@ -3429,18 +3429,18 @@ const AKTIEN_KATALOG = [
     id: 'kryptoXX',
     name: '₿ KryptoXX Coin',
     typ: 'spekulation',
-    beschreibung: '50/50: +50% oder −25% pro Monat.',
+    beschreibung: 'Stark schwankend: −25% bis +50% pro Monat (zufällig verteilt).',
     minKauf: 100,
-    up: 0.50, down: -0.25, chanceUp: 0.5,
+    renditeMin: -0.25, renditeMax: 0.50,
     startKurs: 10
   },
   {
     id: 'techzock',
     name: '🚀 Risiko-Firma AG',
     typ: 'spekulation',
-    beschreibung: '50/50: +100% oder −50% pro Monat.',
+    beschreibung: 'Extrem riskant: −50% bis +100% pro Monat (zufällig verteilt).',
     minKauf: 200,
-    up: 1.00, down: -0.50, chanceUp: 0.5,
+    renditeMin: -0.50, renditeMax: 1.00,
     startKurs: 50
   },
   {
@@ -3667,15 +3667,17 @@ function aktuelisiereDepotKurse() {
   gs.depot.forEach(pos => {
     // Renditemodell je Wertpapier:
     //   fix            -> deterministisch (z.B. MSCI +8%)
-    //   up/down/chanceUp -> 50/50-ähnliche Binärchance (Crypto, Risiko-Firma)
-    //   sonst renditeMin..renditeMax (gleichverteilt)
+    //   renditeMin..Max -> zufällig verteilt mit zentraler Tendenz (Mittelwert
+    //                      zweier Zufallszahlen = dreieckverteilt um die Mitte)
+    //   (up/down nur noch für ggf. alte Spielstände)
     let rendite;
     if (typeof pos.fix === 'number') {
       rendite = pos.fix;
     } else if (typeof pos.up === 'number') {
       rendite = (Math.random() < (pos.chanceUp ?? 0.5)) ? pos.up : pos.down;
     } else {
-      rendite = pos.renditeMin + Math.random() * (pos.renditeMax - pos.renditeMin);
+      const r = (Math.random() + Math.random()) / 2;   // Dreieckverteilung
+      rendite = pos.renditeMin + r * (pos.renditeMax - pos.renditeMin);
     }
     const alterKurs = pos.aktuellerKurs;
     pos.aktuellerKurs = Math.max(0.01, pos.aktuellerKurs * (1 + rendite));
@@ -3962,11 +3964,11 @@ function monatsAbschluss() {
     logEvent(`⚠️ Cheat-Risiko +${gs.risikoProMonat}.`, 'danger');
   }
 
-  // ---- Schattenbank-Gebühr: 10% der Schwarzkasse pro Monat ----
+  // ---- Schattenbank-Gebühr: 5% der Schwarzkasse pro Monat ----
   if (gs.schattenbankAktiv && gs.schwarzeKasse > 0) {
-    const gebuehr = Math.floor(gs.schwarzeKasse * 0.10);
+    const gebuehr = Math.floor(gs.schwarzeKasse * 0.05);
     gs.schwarzeKasse -= gebuehr;
-    meldungen.push(`🏴 Schattenbank-Gebühr: -${formatEuro(gebuehr)} (10% der Schwarzkasse).`);
+    meldungen.push(`🏴 Schattenbank-Gebühr: -${formatEuro(gebuehr)} (5% der Schwarzkasse).`);
     logEvent(`🏴 Schattenbank -${formatEuro(gebuehr)}.`, 'warn');
   }
 
