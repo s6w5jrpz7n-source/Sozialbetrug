@@ -2821,8 +2821,11 @@ function aktionAusfuehren(ortId, aktionsId) {
           + 'Komm in den letzten 5 Tagen vor dem Termin vorbei – dann zählt er und die 14 Tage starten neu.', []);
         return;
       }
-      // Termin wahrgenommen → 14 Tage (2 Wochen) neu
-      gs.naechsterAmtsBesuch = 2;
+      // Termin wahrgenommen → ab HEUTE wieder volle 14 Tage.
+      // Die Anzeige rechnet: naechsterAmtsBesuch*7 - (tag-1). Damit dabei
+      // exakt 14 herauskommt (egal an welchem Wochentag man kommt), muss der
+      // bereits vergangene Wochenanteil (tag-1) eingerechnet werden.
+      gs.naechsterAmtsBesuch = 2 + (gs.tag - 1) / 7;
       gs.amtsTermineVerpasst = 0;
       gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100);
       if (gs.algGesperrt) {
@@ -3798,11 +3801,17 @@ function aktuelisiereDepotKurse() {
     let rendite;
     if (typeof pos.fix === 'number') {
       rendite = pos.fix;
-    } else if (typeof pos.up === 'number') {
-      rendite = (Math.random() < (pos.chanceUp ?? 0.5)) ? pos.up : pos.down;
     } else {
+      // Verteilte Rendite (Dreieckverteilung, zentrale Tendenz). Auch alte
+      // Spielstände mit binärem up/down werden auf die gleichen Grenzen
+      // (down..up) abgebildet, damit nichts mehr „alles oder nichts" ist.
+      let lo = pos.renditeMin, hi = pos.renditeMax;
+      if (typeof lo !== 'number' || typeof hi !== 'number') {
+        lo = Math.min(pos.down ?? -0.25, pos.up ?? 0.50);
+        hi = Math.max(pos.down ?? -0.25, pos.up ?? 0.50);
+      }
       const r = (Math.random() + Math.random()) / 2;   // Dreieckverteilung
-      rendite = pos.renditeMin + r * (pos.renditeMax - pos.renditeMin);
+      rendite = lo + r * (hi - lo);
     }
     const alterKurs = pos.aktuellerKurs;
     pos.aktuellerKurs = Math.max(0.01, pos.aktuellerKurs * (1 + rendite));
