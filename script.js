@@ -2128,7 +2128,7 @@ function updateHUD() {
     const restPct = (verbleibendeTage / maxTage) * 100;
     amtBar.style.width      = clamp(restPct, 0, 100) + '%';
     amtBar.style.background = verbleibendeTage <= 0 ? '#e84b4b'
-                            : verbleibendeTage <= 3 ? '#e8a84b'
+                            : verbleibendeTage <= 5 ? '#e8a84b'  // 5-Tage-Fenster: Termin möglich
                             : '#3dd6b0';
     amtVal.textContent = verbleibendeTage <= 0
       ? '⚠️FÄLLIG'
@@ -2598,12 +2598,8 @@ function verbraucheTag(anzahl) {
       // Woche vorziehen – Phaser-Loop wird synchronisiert
       // (zeitAkku in SpielSzene bleibt unverändert, Woche wird manuell getriggert)
       gs.woche++;
-      gs.naechsterAmtsBesuch = Math.max(0, gs.naechsterAmtsBesuch - 1);
-      if (gs.naechsterAmtsBesuch <= 0) {
-        gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100);
-        gs.naechsterAmtsBesuch = 2;
-        logEvent('⚠️ Pflichttermin beim Amt verpasst! Risiko +15.', 'danger');
-      }
+      // Amtstermin-Countdown läuft ausschließlich über spielwocheVorbei()
+      // (verhindert doppelte Dekrementierung)
     }
     // Kleine Energie-Regeneration über Nacht (wenn Tag auf 1 zurückspringt)
     if (gs.tag === 1) {
@@ -2779,6 +2775,14 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- ARBEITSAMT ---
   if (ortId === 'arbeitsamt') {
     if (aktionsId === 'pflichttermin') {
+      const tageRest = Math.max(0, gs.naechsterAmtsBesuch * 7 - (gs.tag - 1));
+      if (!gs.algGesperrt && tageRest > 5) {
+        oeffneModal('📋 Termin noch nicht fällig',
+          `Dein Pflichttermin ist erst in <strong>${tageRest} Tagen</strong>. `
+          + 'Komm in den letzten 5 Tagen vor dem Termin vorbei – dann zählt er und die 14 Tage starten neu.', []);
+        return;
+      }
+      // Termin wahrgenommen → 14 Tage (2 Wochen) neu
       gs.naechsterAmtsBesuch = 2;
       gs.amtsTermineVerpasst = 0;
       gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100);
