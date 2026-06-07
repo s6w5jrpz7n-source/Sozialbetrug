@@ -5285,13 +5285,21 @@ function zeichneStrassendeko(g, tileW, tileH, offsetX, offsetY) {
 //   dx      = Feinjustierung links/rechts (Vielfaches von tileW, optional)
 // ================================================================
 const BUILDING_SPRITES = {
-  bank:       { file: 'assets/buildings/bank.png',           breite: 2.28, ankerY: 0.86, dy: 0.10 },
-  arbeitsamt: { file: 'assets/buildings/arbeitsamt.png',     breite: 2.83, ankerY: 0.92, dy: 0.18 },
-  baustelle:  { file: 'assets/buildings/baustelle.png',      breite: 3.05, ankerY: 0.86, dy: 0.10, dx: 0.25 },
-  pawn:       { file: 'assets/buildings/pfandleiher.png',    breite: 1.31, ankerY: 0.86, dy: 0.10 },
-  amuesier:   { file: 'assets/buildings/amuesierbetrieb.png', breite: 1.75, ankerY: 0.86, dy: 0.10 },
-  kasino:     { file: 'assets/buildings/casino_nacht.png',   breite: 2.28, ankerY: 0.86, dy: 0.08 },
-  supermarkt: { file: 'assets/buildings/supermarkt.png',     breite: 1.55, ankerY: 0.88, dy: 0.06 },
+  bank:        { file: 'assets/buildings/bank.png',           breite: 2.28, ankerY: 0.86, dy: 0.10 },
+  arbeitsamt:  { file: 'assets/buildings/arbeitsamt.png',     breite: 2.83, ankerY: 0.92, dy: 0.18 },
+  baustelle:   { file: 'assets/buildings/baustelle.png',      breite: 3.81, ankerY: 0.86, dy: 0.10, dx: 0.25 },
+  pawn:        { file: 'assets/buildings/pfandleiher.png',    breite: 1.31, ankerY: 0.86, dy: 0.10 },
+  amuesier:    { file: 'assets/buildings/amuesierbetrieb.png', breite: 1.75, ankerY: 0.86, dy: 0.10 },
+  kasino:      { file: 'assets/buildings/casino_nacht.png',   breite: 2.28, ankerY: 0.86, dy: 0.08 },
+  supermarkt:  { file: 'assets/buildings/supermarkt.png',     breite: 1.55, ankerY: 0.88, dy: 0.06 },
+  wohnung:     { file: 'assets/buildings/wohnung.png',        breite: 2.05, ankerY: 0.78, dy: 0.04 },
+  kiosk:       { file: 'assets/buildings/kiosk.png',          breite: 1.95, ankerY: 0.80, dy: 0.04 },
+  sportverein: { file: 'assets/buildings/sportverein.png',    breite: 2.50, ankerY: 0.82, dy: 0.04 },
+  schattenbank:{ file: 'assets/buildings/schattenbank.png',   breite: 2.05, ankerY: 0.78, dy: 0.04 },
+  loanshark:   { file: 'assets/buildings/loanshark.png',      breite: 2.05, ankerY: 0.78, dy: 0.04 },
+  arztpraxis:  { file: 'assets/buildings/arztpraxis.png',     breite: 2.05, ankerY: 0.78, dy: 0.04 },
+  kirche:      { file: 'assets/buildings/kirche.png',         breite: 2.20, ankerY: 0.80, dy: 0.04 },
+  villa:       { file: 'assets/buildings/villa.png',          breite: 2.35, ankerY: 0.78, dy: 0.04 },
 };
 
 // ================================================================
@@ -5314,7 +5322,11 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const pos = isoToScreen(ort.col+0.5, ort.row+0.5, tileW, tileH, offsetX, offsetY);
 
     // ---- Bild-Gebäude (PNG) bevorzugen, falls vorhanden ----
-    const sprite = BUILDING_SPRITES[ort.id];
+    // Villa nur als Sprite zeigen, wenn sie tatsächlich bewohnt ist – sonst
+    // bleibt das leere Baugrundstück (gezeichnet) stehen.
+    const villaUnbewohnt = ort.id === 'villa' &&
+      !(gameState.immobilie && gameState.immobilie.modus === 'eigen');
+    const sprite = villaUnbewohnt ? null : BUILDING_SPRITES[ort.id];
     if (sprite && scene.textures.exists('geb_' + ort.id)) {
       const img = scene.add.image(pos.x + tileW * (sprite.dx || 0), pos.y + tileH * (sprite.dy || 0), 'geb_' + ort.id);
       img.setOrigin(sprite.ankerX ?? 0.5, sprite.ankerY ?? 0.85);
