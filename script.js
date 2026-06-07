@@ -5696,13 +5696,36 @@ class StartSzene extends Phaser.Scene {
     window._startMusik = new Audio('Pixel_Parade_1.mp3');
     window._startMusik.loop   = true;
     window._startMusik.volume = 0.45;
+    // Listener als Rückfall, falls der Browser Autoplay (noch) blockt.
     const _startAudio = () => {
       window._startMusik.play().catch(e => console.warn('Start-Audio:', e));
-      document.removeEventListener('click',   _startAudio);
-      document.removeEventListener('keydown', _startAudio);
+      document.removeEventListener('click',       _startAudio);
+      document.removeEventListener('keydown',     _startAudio);
+      document.removeEventListener('pointerdown', _startAudio);
     };
-    document.addEventListener('click',   _startAudio);
-    document.addEventListener('keydown', _startAudio);
+    const _autoplayVersuch = () => {
+      // Sofort versuchen abzuspielen. Klappt, sobald der Browser es erlaubt
+      // (z.B. nachdem die Seite schon einmal benutzt wurde -> Media Engagement).
+      const p = window._startMusik.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          // Erfolg -> keine Interaktion nötig
+          document.removeEventListener('click',       _startAudio);
+          document.removeEventListener('keydown',     _startAudio);
+          document.removeEventListener('pointerdown', _startAudio);
+        }).catch(() => {
+          // Autoplay blockiert -> auf erste Interaktion warten
+          document.addEventListener('click',       _startAudio, { once: false });
+          document.addEventListener('keydown',     _startAudio, { once: false });
+          document.addEventListener('pointerdown', _startAudio, { once: false });
+        });
+      }
+    };
+    _autoplayVersuch();
+    // Falls die Datei noch nicht ladebereit ist, beim Ladeende erneut versuchen.
+    window._startMusik.addEventListener('canplaythrough', () => {
+      if (window._startMusik.paused) _autoplayVersuch();
+    }, { once: true });
 
     // relY = vertikale Mitte des jeweiligen Buttons im Hintergrundbild
     // (an startbg.png exakt ausgemessen, 1264×843).
