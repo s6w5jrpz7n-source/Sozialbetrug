@@ -5610,12 +5610,14 @@ class StartSzene extends Phaser.Scene {
     document.addEventListener('click',   _startAudio);
     document.addEventListener('keydown', _startAudio);
 
+    // relY = vertikale Mitte des jeweiligen Buttons im Hintergrundbild
+    // (an startbg.png exakt ausgemessen, 1264×843).
     this._menuItems = [
-      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.510, aktion: () => this._neuesSpiel()    },
-      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.585, aktion: () => this._spielLaden()    },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.655, aktion: () => this._einstellungen() },
-      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.725, aktion: () => this._bestenliste()   },
-      { icon: '🚪', label: 'BEENDEN',       relY: 0.790, aktion: () => this._beenden()        },
+      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.537, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.614, aktion: () => this._spielLaden()    },
+      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.680, aktion: () => this._einstellungen() },
+      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.746, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: 'BEENDEN',       relY: 0.811, aktion: () => this._beenden()        },
     ];
 
     this._startObjekte = [];   // alle aufgebauten Objekte (zum Neuaufbau bei Resize)
@@ -5664,7 +5666,7 @@ class StartSzene extends Phaser.Scene {
     if (bgRect) {
       // ---- Das Menü ist bereits IM Bild gezeichnet ----
       // Wir legen nur unsichtbare Klickflächen exakt darüber.
-      const cx = 0.16, zw = 0.205, zh = 0.055;   // relativ zum Bild (deckt die eingebauten Buttons)
+      const cx = 0.139, zw = 0.215, zh = 0.060;   // an startbg.png ausgemessen (Button-Mitte/-Breite/-Höhe)
       MENU_ITEMS.forEach(item => {
         const sx = bgRect.left + cx * bgRect.w;
         const sy = bgRect.top + item.relY * bgRect.h;
