@@ -151,6 +151,10 @@ const gameState = {
 
   // ---- Glücks-Kleeblatt: halbiert einmalig die nächste Razzia-Chance ----
   kleeblatt: false,
+
+  // ---- Kirche: Cooldowns (frühester Monat für nächste Nutzung) ----
+  suendenerlassCooldownMonat: 0,
+  beichteCooldownMonat: 0,
 };
 
 const AUSWANDERN_GRENZE     = 1000000;   // € Gesamtvermögen für den Auswander-Sieg
@@ -347,6 +351,15 @@ const ORTE_CONFIG = [
       { label: '🛌  Luxuriös schlafen (Energie +40, 1 Tag)',   id: 'villa_schlafen' },
       { label: '🏊  Pool & Sauna (Laune +20)',                 id: 'villa_pool' },
       { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' }
+    ]
+  },
+  {
+    id: 'kirche', name: '⛪  Kirche', col: 6, row: 14,
+    farbe: 0xd8d0c0, dachFarbe: 0x8a7a5a,
+    beschreibung: 'Sündenerlass (Risiko halbieren) und Beichte (Trost) – jeweils alle 3 Monate.',
+    aktionen: [
+      { label: '🙏  Sündenerlass (150 €, Risiko halbiert)', id: 'suendenerlass' },
+      { label: '🕯️  Beichte (Energie -15, Laune +10)',      id: 'beichte' }
     ]
   },
   {
@@ -3390,6 +3403,35 @@ function aktionAusfuehren(ortId, aktionsId) {
     }
   }
 
+  // --- KIRCHE ---
+  if (ortId === 'kirche') {
+    if (aktionsId === 'suendenerlass') {
+      if (gs.monat < gs.suendenerlassCooldownMonat) {
+        oeffneModal('🙏 Noch kein Erlass', `Der Pfarrer gewährt erst ab Monat ${gs.suendenerlassCooldownMonat} wieder einen Sündenerlass (alle 3 Monate).`, []);
+        return;
+      }
+      if (gs.kontostand < 150) { logEvent('⚠️ Nicht genug Geld für die Spende (150€).', 'warn'); return; }
+      gs.kontostand  -= 150;
+      gs.risikoRaster = Math.floor(gs.risikoRaster * 0.5);
+      gs.suendenerlassCooldownMonat = gs.monat + 3;
+      logEvent(`🙏 Sündenerlass: Risiko halbiert auf ${gs.risikoRaster}%. -150 €.`, 'good');
+      oeffneModal('🙏 Sündenerlass', `Eine großzügige Spende, ein Vaterunser – der Pfarrer drückt beide Augen zu.<br><br><strong>Risiko halbiert auf ${gs.risikoRaster}%.</strong>`, []);
+      return;
+    }
+    if (aktionsId === 'beichte') {
+      if (gs.monat < gs.beichteCooldownMonat) {
+        oeffneModal('🕯️ Noch keine Beichte', `Beichten kannst du erst wieder ab Monat ${gs.beichteCooldownMonat} (alle 3 Monate).`, []);
+        return;
+      }
+      if (gs.energie < 15) { logEvent('⚠️ Zu wenig Energie für die Beichte.', 'warn'); return; }
+      gs.energie          = clamp(gs.energie - 15, 0, 100);
+      gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
+      gs.beichteCooldownMonat = gs.monat + 3;
+      logEvent('🕯️ Gebeichtet: Energie -15, Laune +10.', 'good');
+      return;
+    }
+  }
+
   // --- KASINO ---
   if (ortId === 'kasino') {
     const betraege = { waschen_100: 100, waschen_500: 500, waschen_1000: 1000 };
@@ -5240,6 +5282,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       case 'supermarkt':   baueSupermarkt(g,   pos.x, pos.y, tileW, tileH); break;
       case 'arztpraxis':   baueArztpraxis(g,   pos.x, pos.y, tileW, tileH); break;
       case 'kiosk':        baueKiosk(g,        pos.x, pos.y, tileW, tileH); break;
+      case 'kirche':       baueKirche(g,       pos.x, pos.y, tileW, tileH); break;
       case 'villa':
         if (gameState.immobilie && gameState.immobilie.modus === 'eigen')
              baueVilla(g,          pos.x, pos.y, tileW, tileH);
@@ -5315,6 +5358,26 @@ function baueSchattenbank(g, cx, cy, tw, th) {
   BB.rohr(g, cx + W*0.33, cy - hoehe*0.2, cy - hoehe * 0.7, 0x202030);
 }
 
+
+// ---- Kirche – heller Bau mit Turm & Kreuz ----
+function baueKirche(g, cx, cy, tw, th) {
+  const hoehe = th * 1.3;
+  zeichneKlinkerhaus(g, cx, cy, tw * 0.85, th * 0.85, {
+    klinkerFarbe: 0xdcd4c4, dachFarbe: 0x7a6a4a,
+    hoehe, dachart: 'sattel', etagen: 2,
+    fensterFarbe: 0xffcf7a, tuerFarbe: 0x5a3a1a,
+    schild: null, seed: 909
+  });
+  // Kirchturm links
+  const txx = cx - tw * 0.34;
+  g.fillStyle(0xcfc7b6, 1); g.fillRect(txx - tw * 0.07, cy - hoehe * 1.55, tw * 0.14, hoehe * 1.55);
+  g.fillStyle(0x8a7a5a, 1); // Spitzdach
+  g.fillTriangle(txx - tw * 0.09, cy - hoehe * 1.55, txx + tw * 0.09, cy - hoehe * 1.55, txx, cy - hoehe * 1.95);
+  // Kreuz auf dem Turm
+  g.fillStyle(0xffd700, 1);
+  g.fillRect(txx - 1.5, cy - hoehe * 2.12, 3, 16);
+  g.fillRect(txx - 6, cy - hoehe * 2.06, 12, 3);
+}
 
 // ---- Villa – Luxus-Domizil (wenn Immobilie selbst genutzt) ----
 function baueVilla(g, cx, cy, tw, th) {
@@ -5603,6 +5666,7 @@ class StartSzene extends Phaser.Scene {
         zahlungsRueckstand: 0, rueckstandMonate: 0,
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
         sachbearbeiterBestochen: false, suchtStufe: 0, kleeblatt: false,
+        suendenerlassCooldownMonat: 0, beichteCooldownMonat: 0,
       });
       this.scene.start('SpielSzene');
     });
