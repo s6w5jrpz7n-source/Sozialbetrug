@@ -5707,11 +5707,11 @@ class StartSzene extends Phaser.Scene {
     // relY = vertikale Mitte des jeweiligen Buttons im Hintergrundbild
     // (an startbg.png exakt ausgemessen, 1264×843).
     this._menuItems = [
-      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.537, aktion: () => this._neuesSpiel()    },
-      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.614, aktion: () => this._spielLaden()    },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.680, aktion: () => this._einstellungen() },
-      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.746, aktion: () => this._bestenliste()   },
-      { icon: '🚪', label: 'BEENDEN',       relY: 0.811, aktion: () => this._beenden()        },
+      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.548, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.611, aktion: () => this._spielLaden()    },
+      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.679, aktion: () => this._einstellungen() },
+      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.747, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: 'BEENDEN',       relY: 0.810, aktion: () => this._beenden()        },
     ];
 
     this._startObjekte = [];   // alle aufgebauten Objekte (zum Neuaufbau bei Resize)
