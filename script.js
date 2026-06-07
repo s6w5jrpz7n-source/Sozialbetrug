@@ -346,9 +346,8 @@ const ORTE_CONFIG = [
   {
     id: 'villa', name: '🏖️  Villa', col: 10, row: 14,
     farbe: 0xf0e6d0, dachFarbe: 0xd8b070,
-    beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt.',
+    beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt. Hier wohnst du jetzt.',
     aktionen: [
-      { label: '🛌  Luxuriös schlafen (Energie +40, 1 Tag)',   id: 'villa_schlafen' },
       { label: '🏊  Pool & Sauna (Laune +20)',                 id: 'villa_pool' },
       { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' }
     ]
@@ -2452,15 +2451,31 @@ function interact(ortId) {
   if (!ort) return;
   const gs = gameState;
 
+  const villaBewohnt = !!(gs.immobilie && gs.immobilie.modus === 'eigen');
+
   // Villa nur bewohnbar, wenn die Immobilie selbst genutzt wird
-  if (ortId === 'villa' && !(gs.immobilie && gs.immobilie.modus === 'eigen')) {
+  if (ortId === 'villa' && !villaBewohnt) {
     oeffneModal('🏖️ Leeres Baugrundstück',
       'Hier könnte deine Villa stehen!<br><br>'
       + 'Kaufe bei der <strong>Schattenbank</strong> eine Immobilie und stelle sie auf <strong>Eigennutzung</strong> – dann ziehst du hier ein.', []);
     return;
   }
+  // Nach Einzug in die Villa ist die alte Wohnung verlassen
+  if (ortId === 'wohnung' && villaBewohnt) {
+    oeffneModal('🏠 Hier wohnst du nicht mehr',
+      'Du bist in deine <strong>Villa</strong> gezogen (unten Mitte).<br><br>'
+      + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Cheats – ist jetzt dort.', []);
+    return;
+  }
 
-  const aktionen = ort.aktionen.map(a => {
+  // Wirksame Aktionsliste: in der bewohnten Villa = alle Wohnungs-Features + Luxus
+  let quellAktionen = ort.aktionen;
+  if (ortId === 'villa' && villaBewohnt) {
+    const wohnung = ORTE_CONFIG.find(o => o.id === 'wohnung');
+    quellAktionen = wohnung.aktionen.concat(ort.aktionen);
+  }
+
+  const aktionen = quellAktionen.map(a => {
     // Dynamische Labels für kontextabhängige Infos
     let label = a.label;
     if (ortId === 'loanshark' && a.id === 'schulden_zahlen') {
@@ -2538,12 +2553,12 @@ function interact(ortId) {
         ? '📈  Depot verschleiert AKTIV (wieder offiziell machen)'
         : '📈  Depot verschleiern (Amt-unsichtbar, 5%/Monat)';
     }
-    if (ortId === 'wohnung' && a.id === 'anwalt') {
+    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'anwalt') {
       label = (gs.strafStufe || 0) > 0
         ? `⚖️  Anwalt anrufen (Status: ${strafStufeName(gs.strafStufe)})`
         : '⚖️  Anwalt anrufen (keine Probleme)';
     }
-    if (ortId === 'wohnung' && a.id === 'auswandern') {
+    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'auswandern') {
       const v = gesamtVermoegen();
       label = v >= AUSWANDERN_GRENZE
         ? '✈️  AUSWANDERN – du kannst gewinnen!'
@@ -2555,17 +2570,17 @@ function interact(ortId) {
         : '🤝  Sachbearbeiter schmieren (150 €/M)';
     }
     // Wohnung: Kur / Schein-WG / Umzug
-    if (ortId === 'wohnung' && a.id === 'kur') {
+    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
         ? `🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`
         : '🏖️  Kur beantragen (volle Erholung)';
     }
-    if (ortId === 'wohnung' && a.id === 'scheinwg') {
+    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'scheinwg') {
       label = gs.scheinWG
         ? '🏠  Schein-WG AKTIV (abmelden)'
         : `🏠  Schein-WG deklarieren (+${SCHEINWG_BETRAG} €/M, riskant)`;
     }
-    if (ortId === 'wohnung' && a.id === 'umzug' && gs.kautionRest > 0) {
+    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'umzug' && gs.kautionRest > 0) {
       label = `📦  Umzug (Kaution-Darlehen läuft: ${formatEuro(gs.kautionRest)})`;
     }
     // Arbeitsamt: Pauschalen Status
@@ -2636,8 +2651,8 @@ function aktionAusfuehren(ortId, aktionsId) {
     return;
   }
 
-  // --- WOHNUNG ---
-  if (ortId === 'wohnung') {
+  // --- WOHNUNG (oder bewohnte Villa) ---
+  if (ortId === 'wohnung' || ortId === 'villa') {
     if (aktionsId === 'schlafen') {
       // Basis-Energiegewinn
       let energieGewinn = 25;
