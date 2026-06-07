@@ -5541,13 +5541,43 @@ class StartSzene extends Phaser.Scene {
     document.addEventListener('click',   _startAudio);
     document.addEventListener('keydown', _startAudio);
 
+    this._menuItems = [
+      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.510, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.585, aktion: () => this._spielLaden()    },
+      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.655, aktion: () => this._einstellungen() },
+      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.725, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: 'BEENDEN',       relY: 0.790, aktion: () => this._beenden()        },
+    ];
+
+    this._startObjekte = [];   // alle aufgebauten Objekte (zum Neuaufbau bei Resize)
+    this._menuButtons  = [];
+
+    // Layout aufbauen – und bei jeder Größenänderung des Canvas neu aufbauen,
+    // damit Klickflächen und Hintergrundbild immer exakt deckungsgleich sind.
+    this._layoutStartMenu();
+    this.scale.on('resize', this._layoutStartMenu, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this._layoutStartMenu, this));
+
+    this.input.keyboard.once('keydown-ENTER', () => this._neuesSpiel());
+    this.input.keyboard.once('keydown-SPACE', () => this._neuesSpiel());
+  }
+
+  _layoutStartMenu() {
+    // Vorherige Objekte entfernen (Resize -> sauberer Neuaufbau)
+    if (this._startObjekte) this._startObjekte.forEach(o => { try { o.destroy(); } catch (e) {} });
+    this._startObjekte = [];
+    this._menuButtons  = [];
+
+    const W = this.scale.width;
+    const H = this.scale.height;
+
     // ---- Hintergrundbild: vollflächig skaliert ----
-    // Jetzt zuverlässig geladen weil preload() fertig ist
     let bgRect = null;   // {left, top, w, h} des angezeigten Bildes
     if (this.textures.exists('startbg')) {
       const bg = this.add.image(W/2, H/2, 'startbg');
       const scale = Math.max(W / bg.width, H / bg.height);
       bg.setScale(scale).setDepth(0);
+      this._startObjekte.push(bg);
       const dw = bg.width * scale, dh = bg.height * scale;
       bgRect = { left: W/2 - dw/2, top: H/2 - dh/2, w: dw, h: dh };
     } else {
@@ -5557,17 +5587,10 @@ class StartSzene extends Phaser.Scene {
       bgFallback.fillRect(0, 0, W, H);
       const skyGfx = this.add.graphics().setDepth(1);
       this._zeichneSkylineFallback(skyGfx, W, H);
+      this._startObjekte.push(bgFallback, skyGfx);
     }
 
-    const MENU_ITEMS = [
-      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.510, aktion: () => this._neuesSpiel()    },
-      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.585, aktion: () => this._spielLaden()    },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.655, aktion: () => this._einstellungen() },
-      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.725, aktion: () => this._bestenliste()   },
-      { icon: '🚪', label: 'BEENDEN',       relY: 0.790, aktion: () => this._beenden()        },
-    ];
-
-    this._menuButtons = [];
+    const MENU_ITEMS = this._menuItems;
 
     if (bgRect) {
       // ---- Das Menü ist bereits IM Bild gezeichnet ----
@@ -5587,6 +5610,7 @@ class StartSzene extends Phaser.Scene {
         });
         zone.on('pointerout', () => hl.clear());
         zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        this._startObjekte.push(hl, zone);
         this._menuButtons.push({ hl, zone });
       });
     } else {
@@ -5612,12 +5636,10 @@ class StartSzene extends Phaser.Scene {
         zone.on('pointerover', () => { zeichne(true); txt.setColor(isFirst?'#ffe866':'#ffffff'); });
         zone.on('pointerout',  () => { zeichne(false); txt.setColor(isFirst?'#ffd700':'#e8e0c8'); });
         zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        this._startObjekte.push(bg2, txt, zone);
         this._menuButtons.push({ bg: bg2, txt, zone });
       });
     }
-
-    this.input.keyboard.once('keydown-ENTER', () => this._neuesSpiel());
-    this.input.keyboard.once('keydown-SPACE', () => this._neuesSpiel());
   }
 
   update() {}
