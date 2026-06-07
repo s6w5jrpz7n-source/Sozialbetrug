@@ -5411,14 +5411,23 @@ const BUILDING_SPRITES = {
 function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
   const COLS = 16, ROWS = 16;
 
-  const gBoden = scene.add.graphics();
-  zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
-
-  const gDeko = scene.add.graphics();
-  zeichneStrassendeko(gDeko, tileW, tileH, offsetX, offsetY);
-
-  const gFuell = scene.add.graphics();
-  zeichneFuellgebaeude(gFuell, tileW, tileH, offsetX, offsetY);
+  // ---- Boden + Straßennetz: Bild bevorzugen, sonst gezeichnet ----
+  if (scene.textures.exists('stadtboden')) {
+    // Das Iso-Feld spannt (COLS+ROWS)*tileW/2 × (COLS+ROWS)*tileH/2 auf.
+    // Die obere Spitze liegt bei isoToScreen(0,0) = (offsetX, offsetY),
+    // die Diamant-Mitte also bei (offsetX, offsetY + (COLS+ROWS)*tileH/4).
+    const feldW = (COLS + ROWS) * tileW / 2;   // 1920
+    const feldH = (COLS + ROWS) * tileH / 2;   // 960
+    const boden = scene.add.image(offsetX, offsetY + feldH / 2, 'stadtboden');
+    boden.setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(0);
+  } else {
+    const gBoden = scene.add.graphics().setDepth(0);
+    zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
+    const gDeko = scene.add.graphics().setDepth(0);
+    zeichneStrassendeko(gDeko, tileW, tileH, offsetX, offsetY);
+    const gFuell = scene.add.graphics().setDepth(0);
+    zeichneFuellgebaeude(gFuell, tileW, tileH, offsetX, offsetY);
+  }
 
   const sortiertOrte = [...ORTE_CONFIG].sort((a, b) => (a.col+a.row) - (b.col+b.row));
   sortiertOrte.forEach(ort => {
@@ -6079,6 +6088,8 @@ class SpielSzene extends Phaser.Scene {
   }
 
   preload() {
+    // Boden + Straßennetz (eine große Iso-Grafik)
+    this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
