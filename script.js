@@ -334,6 +334,7 @@ const ORTE_CONFIG = [
     beschreibung: 'Späti um die Ecke: Rubbellose, Alkohol & Zigaretten. Vorsicht – macht süchtig.',
     aktionen: [
       { label: '🎟️  Rubbellos kaufen (5€ · Glück?)',                       id: 'rubbellos' },
+      { label: '🎟️  5 Rubbellose kaufen (25€ · mehr Chancen)',            id: 'rubbellos_5' },
       { label: '🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)',  id: 'genussmittel' }
     ]
   },
@@ -1112,6 +1113,94 @@ function zeigeBetrugFlash() {
   el.classList.add('show');
   soundAlarm && soundAlarm();
   setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+// "NIETE"-Stempel beim Rubbellos (mit Knall). Re-entrant: jeder Aufruf startet
+// die Animation neu, sodass mehrere Nieten schnell hintereinander knallen.
+function zeigeNieteStempel() {
+  const el = document.getElementById('niete-flash');
+  if (!el) return;
+  el.classList.remove('show');
+  void el.offsetWidth;            // Reflow → Animation neu starten
+  el.classList.add('show');
+  soundStempel && soundStempel();
+  clearTimeout(el._nieteTimer);
+  el._nieteTimer = setTimeout(() => el.classList.remove('show'), 700);
+}
+
+// Ein einzelnes Los ziehen → Gewinnbetrag (0 = Niete).
+function rubbellosZiehung() {
+  const r = Math.random();
+  if (r < 0.60)  return 0;
+  if (r < 0.85)  return 10;
+  if (r < 0.95)  return 30;
+  if (r < 0.99)  return 200;
+  if (r < 0.999) return 2000;
+  return 50000;
+}
+
+// Kauft `anzahl` Rubbellose à 5 €. Nieten → schnelle NIETE-Stempel mit Knall,
+// jeder Gewinn → Fanfare.
+function kaufeRubbellose(anzahl) {
+  const gs = gameState;
+  const kosten = 5 * anzahl;
+  if (gs.kontostand < kosten) {
+    logEvent(`⚠️ Kein Geld für ${anzahl === 1 ? 'ein Rubbellos' : anzahl + ' Rubbellose'} (${formatEuro(kosten)}).`, 'warn');
+    return;
+  }
+  gs.kontostand -= kosten;
+
+  const gewinne = [];
+  let summe = 0, nieten = 0, maxGewinn = 0;
+  for (let i = 0; i < anzahl; i++) {
+    const g = rubbellosZiehung();
+    gewinne.push(g);
+    summe += g;
+    if (g === 0) nieten++; else maxGewinn = Math.max(maxGewinn, g);
+  }
+  gs.kontostand += summe;
+
+  // Nieten knallen schnell nacheinander als Stempel
+  let stempelIndex = 0;
+  gewinne.forEach(g => {
+    if (g === 0) { setTimeout(zeigeNieteStempel, stempelIndex * 160); stempelIndex++; }
+  });
+  const stempelDauer = stempelIndex * 160;
+
+  // Jeder Gewinn → Fanfare
+  if (summe > 0) { soundFanfare && soundFanfare(); soundGeld && soundGeld(); }
+
+  if (anzahl === 1) {
+    if (summe > 0) {
+      oeffneModal('🎟️ Rubbellos', summe >= 2000
+        ? `🎉 <strong>JACKPOT!</strong> Du gewinnst <strong>${formatEuro(summe)}</strong>!`
+        : `Gewonnen: <strong>${formatEuro(summe)}</strong>.`, []);
+      logEvent(`🎟️ Rubbellos: +${formatEuro(summe)}.`, 'good');
+    } else {
+      logEvent('🎟️ Rubbellos: Niete.', 'warn');
+    }
+  } else {
+    const netto  = summe - kosten;
+    const detail = gewinne.map(g => g === 0 ? '✖️' : `+${formatEuro(g)}`).join('   ');
+    if (summe > 0) {
+      oeffneModal(maxGewinn >= 2000 ? '🎉 JACKPOT!' : '🎟️ 5 Rubbellose',
+        `${detail}<br><br>Gewinn gesamt: <strong>${formatEuro(summe)}</strong> `
+        + `(Einsatz ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`, []);
+      logEvent(`🎟️ 5 Lose: +${formatEuro(summe)} bei ${nieten} Nieten.`, netto >= 0 ? 'good' : 'warn');
+    } else {
+      // alle Nieten → Meldung erst nach den Stempeln
+      setTimeout(() => oeffneModal('🎟️ 5 Rubbellose',
+        `Alles Nieten! ${detail}<br><br>${formatEuro(kosten)} verspielt.`, []), stempelDauer + 200);
+      logEvent(`🎟️ 5 Lose: 5 Nieten, -${formatEuro(kosten)}.`, 'warn');
+    }
+  }
+
+  // Sucht-Risiko (steigt leicht mit Einsatz)
+  if (Math.random() < 0.15 * Math.min(2, anzahl) && gs.suchtStufe < 3) {
+    gs.suchtStufe++;
+    logEvent(`🎰 Das Zocken packt dich… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+  }
+  updateHUD();
 }
 
 function sozialbetrugErwischt() {
@@ -1976,6 +2065,37 @@ function soundGeld() {
   [1047, 1319, 1568].forEach((f, i) => {
     playTone(f, 'sine', now + i * 0.07, 0.15, 0.25 - i*0.05, 0.005, 0.08);
   });
+}
+
+/** Triumphierende Fanfare beim Rubbellos-Gewinn (Blechbläser-Arpeggio) */
+function soundFanfare() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  // C5 – E5 – G5 – C6, mit kurzem Schmettern (zwei Wellenformen übereinander)
+  const noten = [523.3, 659.3, 784.0, 1046.5];
+  noten.forEach((f, i) => {
+    const t = now + i * 0.12;
+    playTone(f, 'sawtooth', t, 0.22, 0.22, 0.01, 0.10);
+    playTone(f, 'square',   t, 0.22, 0.10, 0.01, 0.10);
+  });
+  // Schlussakkord
+  const tEnd = now + noten.length * 0.12;
+  [523.3, 659.3, 784.0, 1046.5].forEach(f => playTone(f, 'sawtooth', tEnd, 0.45, 0.14, 0.01, 0.25));
+}
+
+/** Kurzer, harter „Stempel"-Knall (für den NIETE-Stempel) */
+function soundStempel() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const g   = audioCtx.createGain();
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(150, now);
+  osc.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+  g.gain.setValueAtTime(0.35, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+  osc.start(now); osc.stop(now + 0.18);
 }
 
 /** Game-Over-Sound: absteigend, finalistisch */
@@ -3344,35 +3464,9 @@ function aktionAusfuehren(ortId, aktionsId) {
 
   // --- KIOSK ---
   if (ortId === 'kiosk') {
-    // ---- Rubbellos ----
-    if (aktionsId === 'rubbellos') {
-      if (gs.kontostand < 5) { logEvent('⚠️ Kein Geld für ein Rubbellos.', 'warn'); return; }
-      gs.kontostand -= 5;
-      const r = Math.random();
-      let gewinn = 0;
-      if (r < 0.60)       gewinn = 0;
-      else if (r < 0.85)  gewinn = 10;
-      else if (r < 0.95)  gewinn = 30;
-      else if (r < 0.99)  gewinn = 200;
-      else if (r < 0.999) gewinn = 2000;
-      else                gewinn = 50000;
-      if (gewinn > 0) {
-        gs.kontostand += gewinn;
-        soundGeld && soundGeld();
-        oeffneModal('🎟️ Rubbellos', gewinn >= 2000
-          ? `🎉 <strong>JACKPOT!</strong> Du gewinnst <strong>${formatEuro(gewinn)}</strong>!`
-          : `Gewonnen: <strong>${formatEuro(gewinn)}</strong>.`, []);
-        logEvent(`🎟️ Rubbellos: +${formatEuro(gewinn)}.`, 'good');
-      } else {
-        logEvent('🎟️ Rubbellos: Niete.', 'warn');
-      }
-      // kleines Sucht-Risiko (Glücksspiel)
-      if (Math.random() < 0.15 && gs.suchtStufe < 3) {
-        gs.suchtStufe++;
-        logEvent(`🎰 Das Zocken packt dich… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
-      }
-      return;
-    }
+    // ---- Rubbellos (1 oder 5 auf einmal) ----
+    if (aktionsId === 'rubbellos')   { kaufeRubbellose(1); return; }
+    if (aktionsId === 'rubbellos_5') { kaufeRubbellose(5); return; }
     // ---- Alkohol & Zigaretten ----
     if (aktionsId === 'genussmittel') {
       if (gs.kontostand < 15) { logEvent('⚠️ Kein Geld für Genussmittel.', 'warn'); return; }

@@ -102,7 +102,9 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
 - **Supermarkt:** Lebensmittel Bio 800 (Ges+10,Laune+10) / Normal 500 / Billig
   250 (Ges−5,Laune−10/M; 2× Folge → Partner−15); Geschenk 500 € (ab 5.000 €
   kehrt Frau zurück); Minijob.
-- **Kiosk:** Rubbellos 5 € (Gewinnstaffel bis 50.000 € Jackpot, 1:1000);
+- **Kiosk:** Rubbellos 5 € einzeln oder 5 Lose à 5 € (25 €) auf einmal
+  (Gewinnstaffel bis 50.000 € Jackpot, 1:1000). Niete → „NIETE"-Stempel mit
+  Knall (bei mehreren Nieten schnell hintereinander), Gewinn → Fanfare.
   Alkohol/Zigaretten 15 € (Laune+8, Ges−3, Sucht-Risiko).
 - **Arztpraxis:** Behandlung (Ges+30, −500 €); Krankschreibung (R−8, E+10);
   Entzug (Sucht heilen, −800 €).
