@@ -128,6 +128,9 @@ const gameState = {
   // ---- Immobilie (Schattenbank / Strohmann) ----
   // null oder { wert, miete, modus:'eigen'|'vermietet' }
   immobilie: null,
+  // Villa-Trick: Amt glaubt, wir wohnen in der Einliegerwohnung; in Wahrheit
+  // vermieten wir sie schwarz für 650 €/M und leben in der Villa.
+  einliegerVermietet: false,
 
   // ---- Zahlungsrückstand (universell) ----
   zahlungsRueckstand: 0,    // offene, nicht bezahlte Verpflichtungen
@@ -211,6 +214,7 @@ const IMMO_LAUFZEIT        = 24;         // Monate Ratenzahlung
 const IMMO_RATE            = Math.round((IMMO_KAUFPREIS - IMMO_EIGENKAPITAL) / IMMO_LAUFZEIT); // 2.500 €/M
 const IMMO_MIETE           = 1250;       // €/Monat KdU bzw. Mieteinnahmen
 const IMMO_WERT_WACHSTUM   = 1.02;       // +2% Wert pro Monat
+const EINLIEGER_MIETE      = 650;        // €/Monat schwarz aus der Einliegerwohnung
 
 // Bürgergeld-Freibetrag auf Erwerbseinkommen (Minijob):
 //   erste 100 € frei, 100–520 € → 20% frei, 520–1000 € → 30% frei
@@ -349,7 +353,8 @@ const ORTE_CONFIG = [
     beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt. Hier wohnst du jetzt.',
     aktionen: [
       { label: '🏊  Pool & Sauna (Laune +20)',                 id: 'villa_pool' },
-      { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' }
+      { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' },
+      { label: '🚪  Einliegerwohnung schwarz vermieten',        id: 'villa_einlieger' }
     ]
   },
   {
@@ -1136,6 +1141,7 @@ function sozialbetrugErwischt() {
     gs.ernaehrungFake = false;
     gs.unterhaltsTarnung = false;
     gs.scheinWG = false;
+    gs.einliegerVermietet = false;
     if (gs.immobilie && gs.immobilie.modus === 'eigen') gs.immobilie.modus = 'vermietet';
     soundAlarm && soundAlarm();
     logEvent('🔒 Gefängnis! 3 Monate Haft, Schwarzgeld konfisziert.', 'danger');
@@ -2510,6 +2516,11 @@ function interact(ortId) {
       const n = gs.goldBarren || 0;
       label = `🥇  Gold ausgraben & verkaufen (${n} Barren · ${formatEuro(n * 500)})`;
     }
+    if (ortId === 'villa' && a.id === 'villa_einlieger') {
+      label = gs.einliegerVermietet
+        ? `🚪  Einliegerwohnung vermietet (+${formatEuro(EINLIEGER_MIETE)}/M schwarz) – kündigen`
+        : `🚪  Einliegerwohnung schwarz vermieten (+${formatEuro(EINLIEGER_MIETE)}/M)`;
+    }
     // Arbeitsamt: Mehrbedarfe zeigen Aktiv-Status
     if (ortId === 'arbeitsamt' && a.id.startsWith('mb_')) {
       const key = a.id.slice(3);
@@ -3416,6 +3427,25 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
       logEvent('🍸 Gäste in der Villa empfangen: Laune +10, Partner +10.', 'good');
     }
+    if (aktionsId === 'villa_einlieger') {
+      if (gs.einliegerVermietet) {
+        gs.einliegerVermietet = false;
+        oeffneModal('🚪 Einliegerwohnung gekündigt',
+          'Du vermietest die Einliegerwohnung nicht mehr schwarz. '
+          + 'Kein Zusatz-Cash, aber auch kein Risiko mehr aus dieser Masche.', []);
+        logEvent('🚪 Einliegerwohnung-Masche beendet.', '');
+      } else {
+        gs.einliegerVermietet = true;
+        gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
+        oeffneModal('🚪 Einliegerwohnung schwarz vermietet',
+          'Offiziell bist du in die <strong>Einliegerwohnung</strong> der Villa gezogen – '
+          + 'so wirkt die Amt-Miete plausibel. In Wahrheit vermietest du sie für '
+          + `<strong>${formatEuro(EINLIEGER_MIETE)}/Monat</strong> in bar weiter und lebst `
+          + 'selbst luxuriös in der Villa.<br><br>Die Miete fließt monatlich in die '
+          + 'schwarze Kasse. Risiko +5 – fällt bei der Jobcenter-Prüfung auf, wenn du Pech hast.', []);
+        logEvent(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)}/M. Risiko +5.`, 'warn');
+      }
+    }
   }
 
   // --- KIRCHE ---
@@ -3944,6 +3974,18 @@ function monatsAbschluss() {
     meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+2 %).`);
   }
 
+  // ---- Villa-Trick: Einliegerwohnung schwarz vermietet ----
+  // Nur sinnvoll, wenn du selbst in der Villa wohnst (Immobilie auf Eigennutzung).
+  if (gs.einliegerVermietet && gs.immobilie && gs.immobilie.modus === 'eigen') {
+    gs.schwarzeKasse += EINLIEGER_MIETE;
+    gs.risikoRaster   = clamp(gs.risikoRaster + 4, 0, 100);
+    meldungen.push(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse. Risiko +4.`);
+    logEvent(`🚪 Einliegerwohnung +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse.`, 'warn');
+  } else if (gs.einliegerVermietet) {
+    // Villa nicht mehr selbst bewohnt → Masche entfällt automatisch
+    gs.einliegerVermietet = false;
+  }
+
   // ---- Mietkaution-Darlehen: Rate vom Konto ----
   if (gs.kautionRest > 0) {
     const rate = Math.min(KAUTION_RATE, gs.kautionRest);
@@ -4007,6 +4049,7 @@ function monatsAbschluss() {
     if (gs.unterhaltsTarnung) fakeFaktoren += (gs.kindergeldKinder || []).length;
     if (gs.scheinWG) fakeFaktoren += 1;
     if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') fakeFaktoren += 1;
+    if (gs.einliegerVermietet) fakeFaktoren += 1;
     if (fakeFaktoren > 0) {
       let chance = Math.min(0.85, 0.15 * fakeFaktoren);
       if (gs.sachbearbeiterBestochen) chance *= 0.5;   // geschmierter Sachbearbeiter
@@ -4032,6 +4075,11 @@ function monatsAbschluss() {
           rueck += gs.immobilie.miete * 3;
           gs.immobilie.modus = 'vermietet';   // KdU-Masche auffgeflogen → nur noch vermieten
           gestrichen.push('Immobilien-KdU-Masche');
+        }
+        if (gs.einliegerVermietet) {
+          rueck += EINLIEGER_MIETE * 3;
+          gs.einliegerVermietet = false;
+          gestrichen.push('Einliegerwohnung-Schwarzvermietung');
         }
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
@@ -5699,7 +5747,7 @@ class StartSzene extends Phaser.Scene {
         unterhaltsTarnung: false, kurCooldownMonat: 0, scheinWG: false,
         kautionRest: 0, umzugGemacht: false,
         pauschalen: { erstausstattung: false, moebel: false },
-        bekleidungCooldownMonat: 0, immobilie: null,
+        bekleidungCooldownMonat: 0, immobilie: null, einliegerVermietet: false,
         zahlungsRueckstand: 0, rueckstandMonate: 0,
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
         sachbearbeiterBestochen: false, suchtStufe: 0, kleeblatt: false,

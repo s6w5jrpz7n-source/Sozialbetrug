@@ -113,7 +113,11 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   Kur, Schein-WG, Anwalt, Auswandern, … über das Villa-Menü erreichbar); die alte
   Wohnung verweist nur noch auf die Villa. Eigene Villa-Aktionen zusätzlich:
   Luxus-Schlafen (E+40, 1 Tag), Pool & Sauna (Laune+20), Gäste empfangen
-  (Laune+10, Partner+10).
+  (Laune+10, Partner+10). **Einliegerwohnung schwarz vermieten** (Trick): Das
+  Amt glaubt, du seist in die kleine Einliegerwohnung eingezogen (macht die
+  Amt-Miete plausibel) – tatsächlich vermietest du sie für 650 €/M in die
+  schwarze Kasse und lebst in der Villa. Toggle, Risiko +5 beim Aktivieren,
+  +4/M laufend, +1 Prüf-Faktor; fliegt auf → Rückforderung 650 € × 3.
 - **Kirche (6/14):** Sündenerlass (150 € = 50 % der Wohnungs-Bestechung, halbiert
   das Risiko, nur 1× alle 3 Monate); Beichte (−15 Energie → +10 Laune, 1× alle
   3 Monate).
@@ -152,7 +156,8 @@ Amt-unsichtbar).
 ## 9. Grauzonen-Maschen (erhöhen fakeFaktoren der Prüfung)
 - Schein-WG (+200 €/M), Unterhalts-Tarnung (Auslands-Kindergeld behalten, +1
   Faktor je Kind), Ernährungs-Attest gefälscht (+110 €/M), Immobilien-KdU-
-  Eigennutzung (Amt-Miete in Schwarzkasse).
+  Eigennutzung (Amt-Miete in Schwarzkasse), Einliegerwohnung schwarz vermietet
+  (+650 €/M in Schwarzkasse, nur in der bewohnten Villa).
 - Jobcenter-Prüfung (monat%3==1): Chance = min(0,85; 0,15 × fakeFaktoren),
   halbiert bei geschmiertem Sachbearbeiter. Bei Auffliegen: Rückforderung
   (3 Monatsbeträge je Masche) + Risiko +30 + Maschen gestrichen + strafrecht-
