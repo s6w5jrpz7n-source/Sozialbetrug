@@ -2381,6 +2381,59 @@ document.addEventListener('keydown', e => {
 // ================================================================
 // ABSCHNITT 13: ORTE-INTERAKTION
 // ================================================================
+// ================================================================
+// GOLD: Kauf/Verkauf in Tranchen (wie Aktiendepot)
+// ================================================================
+const GOLD_PREIS = 500;
+function goldKaufen(n) {
+  const gs = gameState;
+  const maxN = Math.floor((gs.losesBargeld + gs.kontostand) / GOLD_PREIS);
+  n = Math.min(n, maxN);
+  if (n <= 0) { logEvent('⚠️ Nicht genug Geld für Gold.', 'warn'); return; }
+  let rest = n * GOLD_PREIS;
+  const ausLose = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausLose; rest -= ausLose;
+  gs.kontostand -= rest;
+  gs.goldBarren += n;
+  logEvent(`🥇 ${n} Goldbarren gekauft (${formatEuro(n * GOLD_PREIS)}) – im Garten vergraben.`, 'good');
+  soundGeld && soundGeld();
+  updateHUD();
+  oeffneGoldKaufMenu();   // Menü offen halten (wie Depot)
+}
+function oeffneGoldKaufMenu() {
+  const gs = gameState;
+  const maxN = Math.floor((gs.losesBargeld + gs.kontostand) / GOLD_PREIS);
+  if (maxN <= 0) {
+    oeffneModal('🥇 Goldbarren kaufen', `Du brauchst mindestens ${formatEuro(GOLD_PREIS)} (Bargeld oder Konto) für einen Barren.`, []);
+    return;
+  }
+  const tranchen = [1, 5, 10, 25, 50].filter(x => x <= maxN);
+  if (!tranchen.includes(maxN)) tranchen.push(maxN);
+  const aktionen = tranchen.map(x => ({ label: `🥇 ${x} Barren (${formatEuro(x * GOLD_PREIS)})`, callback: () => goldKaufen(x) }));
+  oeffneModal('🥇 Goldbarren kaufen',
+    `Preis: <strong>${formatEuro(GOLD_PREIS)}</strong>/Barren (Bargeld zuerst, dann Konto). Bezahlbar: max. <strong>${maxN}</strong>. Bereits vergraben: <strong>${gs.goldBarren || 0}</strong>.`,
+    aktionen);
+}
+function goldVerkaufen(n) {
+  const gs = gameState;
+  n = Math.min(n, gs.goldBarren || 0);
+  if (n <= 0) { logEvent('⚠️ Kein Gold vorhanden.', 'warn'); return; }
+  const erloes = n * GOLD_PREIS;
+  gs.goldBarren -= n;
+  gs.losesBargeld += erloes;
+  logEvent(`🥇 ${n} Goldbarren ausgegraben & verkauft: +${formatEuro(erloes)} loses Bargeld.`, 'good');
+  soundGeld && soundGeld();
+  updateHUD();
+  if (gs.goldBarren > 0) oeffneGoldVerkaufMenu();
+}
+function oeffneGoldVerkaufMenu() {
+  const gs = gameState;
+  if ((gs.goldBarren || 0) <= 0) { oeffneModal('🥇 Gold verkaufen', 'Du hast kein Gold im Garten vergraben.', []); return; }
+  const tranchen = [1, 5, 10, 25].filter(x => x <= gs.goldBarren);
+  const aktionen = tranchen.map(x => ({ label: `🥇 ${x} Barren verkaufen (${formatEuro(x * GOLD_PREIS)})`, callback: () => goldVerkaufen(x) }));
+  aktionen.push({ label: `🥇 Alle ${gs.goldBarren} verkaufen (${formatEuro(gs.goldBarren * GOLD_PREIS)})`, primary: true, callback: () => goldVerkaufen(gs.goldBarren) });
+  oeffneModal('🥇 Goldbarren verkaufen', `Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`, aktionen);
+}
+
 function interact(ortId) {
   const ort = ORTE_CONFIG.find(o => o.id === ortId);
   if (!ort) return;
@@ -2923,27 +2976,8 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- PFANDLEIHER ---
   if (ortId === 'pawn') {
     // ---- Gold kaufen: 1 Barren = 500 € (Bargeld zuerst, dann Konto) ----
-    if (aktionsId === 'gold_kaufen') {
-      const preis = 500;
-      if (gs.losesBargeld + gs.kontostand < preis) {
-        logEvent('⚠️ Mindestens 500 € (Bargeld oder Konto) für einen Goldbarren nötig.', 'warn'); return;
-      }
-      let rest = preis;
-      const ausLose = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausLose; rest -= ausLose;
-      gs.kontostand -= rest;
-      gs.goldBarren += 1;
-      logEvent('🥇 1 Goldbarren gekauft (500 €) und im Garten vergraben – unsichtbar für Behörden.', 'good');
-      soundGeld && soundGeld();
-    }
-    // ---- Gold ausgraben & verkaufen → loses Bargeld ----
-    if (aktionsId === 'gold_verkaufen') {
-      if (gs.goldBarren <= 0) { logEvent('⚠️ Kein Gold im Garten vergraben.', 'warn'); return; }
-      const erloese = gs.goldBarren * 500;
-      gs.losesBargeld += erloese;
-      logEvent(`🥇 ${gs.goldBarren} Goldbarren ausgegraben & verkauft: +${formatEuro(erloese)} loses Bargeld.`, 'good');
-      gs.goldBarren = 0;
-      soundGeld && soundGeld();
-    }
+    if (aktionsId === 'gold_kaufen')    { oeffneGoldKaufMenu();    return; }
+    if (aktionsId === 'gold_verkaufen') { oeffneGoldVerkaufMenu(); return; }
     // ---- Verpfänden ⇄ Auslösen ----
     if (aktionsId.startsWith('pfand_')) {
       const itemId = aktionsId.slice(6);
