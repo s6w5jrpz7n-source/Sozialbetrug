@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v8 – Flüssige Bewegung';
+const BUILD_MARKE = 'v9 – Tempo & Nebel';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -5464,7 +5464,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const cx = offsetX, cy = offsetY + feldH / 2;
     const Ax = feldW / 2, Ay = feldH / 2;
     const Bx = -feldW / 2, By = feldH / 2;
-    const R = 3;   // Ring-Radius (deckt den Viewport auch bei folgender Kamera)
+    const R = 2;   // Ring-Radius (deckt den Viewport; kleiner = bessere Performance)
     // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
     // Straßen passen exakt). Später kommen hier echte Gebäude drauf.
     // Leichte Überlappung (OS) lässt die Kacheln einander überdecken → keine
@@ -6290,6 +6290,27 @@ class SpielSzene extends Phaser.Scene {
     // Begehbarkeit: alle Felder außer Gebäude-Feldern (Straße + Bürgersteig + Lücken)
     this.blockierteFelder = new Set();
     ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
+    // Zusätzlich: gesamte Grundfläche jedes Gebäudes aus dem Layout sperren,
+    // damit der Spieler nicht durch das (mehrere Kacheln breite) Haus läuft.
+    {
+      const _layout = (this.cache && this.cache.json && this.cache.json.exists('layout'))
+        ? this.cache.json.get('layout') : null;
+      const _fW = (16 + 16) * this.tileW / 2, _fH = (16 + 16) * this.tileH / 2;
+      const _left = this.offsetX - _fW / 2, _top = this.offsetY;
+      if (_layout && Array.isArray(_layout.objects)) {
+        _layout.objects.filter(o => o.type === 'building').forEach(o => {
+          // zentral-untere Region = Gebäude-Standfläche (nicht der ganze Vorplatz)
+          for (let u = 0.35; u <= 0.65; u += 0.15) {
+            for (let v = 0.58; v <= 0.86; v += 0.14) {
+              const t = this.screenZuTile(_left + (o.fx + u * o.fw) * _fW, _top + (o.fy + v * o.fh) * _fH);
+              if (t) this.blockierteFelder.add(t.col + ',' + t.row);
+            }
+          }
+        });
+      }
+    }
+    // Sicherheit: Startfeld des Spielers immer begehbar lassen
+    this.blockierteFelder.delete(this.spielerCol + ',' + this.spielerRow);
     this.pfad = [];          // aktueller Lauf-Pfad (Point-and-Click)
     this.pfadZielOrt = null;  // Gebäude, mit dem nach Ankunft interagiert wird
 
@@ -6316,7 +6337,7 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
-    this.SPEED = 210;             // Lauftempo in px/Sekunde
+    this.SPEED = 70;              // Lauftempo in px/Sekunde (gemächlich)
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
@@ -6337,7 +6358,7 @@ class SpielSzene extends Phaser.Scene {
     // (Häuser bleiben schemenhaft sichtbar) → erklärt, warum man nicht weiter kann.
     if (this.textures.exists('fog')) {
       this.add.image(this.offsetX, this.offsetY + fH / 2, 'fog')
-        .setOrigin(0.5, 0.5).setDepth(50000);
+        .setOrigin(0.5, 0.5).setDisplaySize(4400, 2800).setDepth(50000);
     }
 
     // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
@@ -6380,6 +6401,9 @@ class SpielSzene extends Phaser.Scene {
   update(time, delta) {
     if (gameState.gameOver) return;
     const dt = delta / 1000;
+    // Geklemmter dt für die Bewegung: verhindert „Sprints" nach Frame-Aussetzern
+    // (Performance-Spikes) → konstantes Lauftempo statt erst schnell, dann langsam.
+    const dtMove = Math.min(delta, 40) / 1000;
 
     // Regen + NPCs immer animieren
     this.animiereRegen(dt, this.scale.width, this.scale.height);
@@ -6442,14 +6466,14 @@ class SpielSzene extends Phaser.Scene {
     if (vx || vy) {
       this.pfad = []; this.pfadZielOrt = null;   // Tastatur bricht Klick-Pfad ab
       const len = Math.hypot(vx, vy);
-      const sx = (vx / len) * this.SPEED * dt;
-      const sy = (vy / len) * this.SPEED * dt;
+      const sx = (vx / len) * this.SPEED * dtMove;
+      const sy = (vy / len) * this.SPEED * dtMove;
       if      (this.weltBegehbar(this.spielerX + sx, this.spielerY + sy)) { this.spielerX += sx; this.spielerY += sy; moved = true; }
       else if (this.weltBegehbar(this.spielerX + sx, this.spielerY))      { this.spielerX += sx; moved = true; }
       else if (this.weltBegehbar(this.spielerX, this.spielerY + sy))      { this.spielerY += sy; moved = true; }
     } else if (this.pfad.length) {
       // Klick-Pfad: flüssig zum nächsten Wegpunkt (mehrere pro Frame möglich)
-      let rest = this.SPEED * dt;
+      let rest = this.SPEED * dtMove;
       while (rest > 0 && this.pfad.length) {
         const ziel = this.pfad[0];
         const dx = ziel.x - this.spielerX, dy = ziel.y - this.spielerY;
@@ -6467,7 +6491,7 @@ class SpielSzene extends Phaser.Scene {
 
     if (moved) {
       this.istAufMove = true;
-      this._walkAcc += this.SPEED * dt;
+      this._walkAcc += this.SPEED * dtMove;
       if (this._walkAcc >= 13) { this._walkAcc = 0; this.walkFrame = (this.walkFrame + 1) % 4; }
       this.aktualisiereTile();
       this.zeichneSpieler(true);
