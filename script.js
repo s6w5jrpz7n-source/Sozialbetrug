@@ -5446,13 +5446,25 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
 
   // ---- Boden + Straßennetz: Bild bevorzugen, sonst gezeichnet ----
   if (scene.textures.exists('stadtboden')) {
-    // Das Iso-Feld spannt (COLS+ROWS)*tileW/2 × (COLS+ROWS)*tileH/2 auf.
-    // Die obere Spitze liegt bei isoToScreen(0,0) = (offsetX, offsetY),
-    // die Diamant-Mitte also bei (offsetX, offsetY + (COLS+ROWS)*tileH/4).
     const feldW = (COLS + ROWS) * tileW / 2;   // 1920
     const feldH = (COLS + ROWS) * tileH / 2;   // 960
-    const boden = scene.add.image(offsetX, offsetY + feldH / 2, 'stadtboden');
-    boden.setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(0);
+    // Zentraler (spielbarer) Diamant + nahtlos gekachelte Stadt drumherum.
+    // Das Straßenraster hat Periode 4 Kacheln, der Block ist 16 Kacheln groß
+    // (Vielfaches von 4) → beim Verschieben um ±16 Kacheln passen die Straßen
+    // exakt. Gitter-Vektoren: A = +16 Spalten, B = +16 Reihen.
+    const cx = offsetX, cy = offsetY + feldH / 2;
+    const Ax = feldW / 2, Ay = feldH / 2;
+    const Bx = -feldW / 2, By = feldH / 2;
+    const R = 3;   // Ring-Radius (deckt den Viewport auch bei folgender Kamera)
+    for (let i = -R; i <= R; i++) {
+      for (let j = -R; j <= R; j++) {
+        const bx = cx + i * Ax + j * Bx;
+        const by = cy + i * Ay + j * By;
+        const t = scene.add.image(bx, by, 'stadtboden');
+        t.setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH)
+         .setDepth(i === 0 && j === 0 ? 0 : -1);   // Umgebung hinter allem
+      }
+    }
   } else {
     const gBoden = scene.add.graphics().setDepth(0);
     zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
