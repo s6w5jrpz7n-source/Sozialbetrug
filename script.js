@@ -5456,15 +5456,28 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const Ax = feldW / 2, Ay = feldH / 2;
     const Bx = -feldW / 2, By = feldH / 2;
     const R = 3;   // Ring-Radius (deckt den Viewport auch bei folgender Kamera)
-    for (let i = -R; i <= R; i++) {
-      for (let j = -R; j <= R; j++) {
-        const bx = cx + i * Ax + j * Bx;
-        const by = cy + i * Ay + j * By;
-        const t = scene.add.image(bx, by, 'stadtboden');
-        t.setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH)
-         .setDepth(i === 0 && j === 0 ? 0 : -1);   // Umgebung hinter allem
+    const hatTiles = scene.textures.exists('citytile_1');
+    const OS = 1.06;   // leichte Überlappung gegen Naht-Lücken (Winkel 1.83 vs 2:1)
+    // Umgebung von außen nach innen zeichnen, Mitte zuletzt
+    const zellen = [];
+    for (let i = -R; i <= R; i++) for (let j = -R; j <= R; j++) zellen.push([i, j]);
+    zellen.sort((a, b) => (Math.abs(b[0]) + Math.abs(b[1])) - (Math.abs(a[0]) + Math.abs(a[1])));
+    zellen.forEach(([i, j]) => {
+      const bx = cx + i * Ax + j * Bx;
+      const by = cy + i * Ay + j * By;
+      if (i === 0 && j === 0) {
+        scene.add.image(bx, by, 'stadtboden')
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(0);
+      } else if (hatTiles) {
+        // deterministische Variante je Position (stabil über Redraws)
+        const v = 1 + (((i * 928371 + j * 1299721) % 5) + 5) % 5;
+        scene.add.image(bx, by, 'citytile_' + v)
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW * OS, feldH * OS).setDepth(-1);
+      } else {
+        scene.add.image(bx, by, 'stadtboden')
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(-1);
       }
-    }
+    });
   } else {
     const gBoden = scene.add.graphics().setDepth(0);
     zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
@@ -6158,6 +6171,10 @@ class SpielSzene extends Phaser.Scene {
   preload() {
     // Boden + Straßennetz (eine große Iso-Grafik)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
+    // Generische bebaute Stadt-Kacheln für die Umgebung (Backdrop)
+    for (let n = 1; n <= 5; n++) {
+      this.load.image('citytile_' + n, 'assets/buildings/citytile_' + n + '.png');
+    }
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
