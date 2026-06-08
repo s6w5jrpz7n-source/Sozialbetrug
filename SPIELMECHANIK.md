@@ -108,6 +108,9 @@ Monatsbericht an, den Betrag beim Kredithai zu leihen.
   Alkohol/Zigaretten 15 € (Laune+8, Ges−3, Sucht-Risiko).
 - **Arztpraxis:** Behandlung (Ges+30, −500 €); Krankschreibung (R−8, E+10);
   Entzug (Sucht heilen, −800 €).
+- **Park / Dealer (14/14):** Beim zwielichtigen Dealer „was holen" (80 € **Bargeld**):
+  Laune +25, aber Gesundheit −12, Partner −5, Risiko +6 und 35 % Sucht-Risiko.
+  Satirisch/abstrakt – klar negative Folgen.
 - **Villa (10/14):** Eigenes begehbares Luxus-Gebäude (steht erst nach dem Kauf
   der Immobilie sichtbar da). Nur bewohnbar, wenn eine Immobilie vorhanden ist
   UND auf Eigennutzung steht – sonst leeres Baugrundstück. Bei Einzug (Immobilie
@@ -191,7 +194,7 @@ Jeder ernste Bust (Razzia oder Jobcenter-Prüfung) eskaliert + zeigt einen groß
   65 % Erfolg.
 
 ## 12. Sucht (suchtStufe 0–3)
-Steigt durch Amüsierbetrieb/Alkohol/Glücksspiel. Monatlich: −120 €/Stufe,
+Steigt durch Amüsierbetrieb/Alkohol/Glücksspiel/Dealer. Monatlich: −120 €/Stufe,
 Gesundheit −4/Stufe, Laune −3/Stufe. Heilung nur durch Entzug in der Arztpraxis.
 
 ## 13. Familie

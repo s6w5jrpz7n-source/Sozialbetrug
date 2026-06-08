@@ -404,6 +404,14 @@ const ORTE_CONFIG = [
       { label: '💸  Schulden zurückzahlen (aktuell: 0 €)',                    id: 'schulden_zahlen' },
       { label: '🤝  Schuldenerlass verhandeln (Risiko +20, 50/50)',           id: 'schulden_verhandeln' }
     ]
+  },
+  {
+    id: 'dealer', name: '🌳  Park', col: 14, row: 14,
+    farbe: 0x3a6a2a, dachFarbe: 0x2a4a1a,
+    beschreibung: 'Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.',
+    aktionen: [
+      { label: '💊  Beim Dealer was holen (80 € Bargeld)', id: 'stoff_kaufen' }
+    ]
   }
 ];
 
@@ -3482,6 +3490,31 @@ function aktionAusfuehren(ortId, aktionsId) {
     }
   }
 
+  // --- PARK / DEALER ---
+  if (ortId === 'dealer') {
+    if (aktionsId === 'stoff_kaufen') {
+      const preis = 80;
+      if (gs.losesBargeld < preis) {
+        oeffneModal('💊 Dealer will Bargeld',
+          `Der Typ im Gebüsch nimmt nur <strong>${formatEuro(preis)}</strong> in bar – keine Karte. `
+          + 'Besorg dir loses Bargeld (z. B. Schwarzarbeit auf der Baustelle).', []);
+        return;
+      }
+      gs.losesBargeld     -= preis;
+      gs.happinessSpieler  = clamp(gs.happinessSpieler + 25, 0, 100);
+      gs.gesundheit        = clamp(gs.gesundheit - 12, 0, 100);
+      gs.happinessPartner  = clamp(gs.happinessPartner - 5, 0, 100);
+      gs.risikoRaster      = clamp(gs.risikoRaster + 6, 0, 100);
+      logEvent('💊 Was beim Dealer geholt: Laune +25, aber Gesundheit -12, Partner -5, Risiko +6.', 'warn');
+      if (Math.random() < 0.35 && gs.suchtStufe < 3) {
+        gs.suchtStufe++;
+        logEvent(`💊 Das zieht dich runter… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+      }
+      if (gs.gesundheit <= 0) triggerGameOver('gesundheit');
+      return;
+    }
+  }
+
   // --- ARZTPRAXIS ---
   if (ortId === 'arztpraxis') {
     if (aktionsId === 'arzt_behandlung') {
@@ -5470,6 +5503,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       case 'arztpraxis':   baueArztpraxis(g,   pos.x, pos.y, tileW, tileH); break;
       case 'kiosk':        baueKiosk(g,        pos.x, pos.y, tileW, tileH); break;
       case 'kirche':       baueKirche(g,       pos.x, pos.y, tileW, tileH); break;
+      case 'dealer':       bauePark(g,         pos.x, pos.y, tileW, tileH); break;
       case 'villa':
         if (gameState.immobilie && gameState.immobilie.modus === 'eigen')
              baueVilla(g,          pos.x, pos.y, tileW, tileH);
@@ -5564,6 +5598,32 @@ function baueKirche(g, cx, cy, tw, th) {
   g.fillStyle(0xffd700, 1);
   g.fillRect(txx - 1.5, cy - hoehe * 2.12, 3, 16);
   g.fillRect(txx - 6, cy - hoehe * 2.06, 12, 3);
+}
+
+// ---- Park mit zwielichtigem Dealer ----
+function bauePark(g, cx, cy, tw, th) {
+  // Rasenfläche (Iso-Raute)
+  isoFill(g, cx, cy, tw * 0.95, th * 0.95, 0x3a6a2a, 1);
+  // angedeuteter Weg
+  g.fillStyle(0x8a7a5a, 0.45);
+  g.fillRect(cx - tw * 0.05, cy - th * 0.10, tw * 0.10, th * 0.42);
+  // Baum rechts
+  const txx = cx + tw * 0.22, tyy = cy + th * 0.02;
+  g.fillStyle(0x4a3018, 1); g.fillRect(txx - 2.5, tyy - th * 0.45, 5, th * 0.45);
+  g.fillStyle(0x2e7a34, 1); g.fillCircle(txx, tyy - th * 0.55, tw * 0.15);
+  g.fillStyle(0x3a8c40, 1); g.fillCircle(txx - tw * 0.06, tyy - th * 0.48, tw * 0.09);
+  g.fillStyle(0x256a2c, 1); g.fillCircle(txx + tw * 0.05, tyy - th * 0.50, tw * 0.08);
+  // Parkbank links
+  g.fillStyle(0x6a4a2a, 1); g.fillRect(cx - tw * 0.34, cy + th * 0.02, tw * 0.18, 3);
+  g.fillStyle(0x5a3a1a, 1);
+  g.fillRect(cx - tw * 0.34, cy + th * 0.02, 3, 7);
+  g.fillRect(cx - tw * 0.34 + tw * 0.18 - 3, cy + th * 0.02, 3, 7);
+  // zwielichtiger Dealer (Kapuzenfigur im Schatten)
+  const dxp = cx - tw * 0.05, dyp = cy - th * 0.04;
+  g.fillStyle(0x16161e, 1); g.fillRect(dxp - 5, dyp - th * 0.38, 10, th * 0.38);   // Mantel
+  g.fillStyle(0x101016, 1);
+  g.fillTriangle(dxp - 7, dyp - th * 0.30, dxp + 7, dyp - th * 0.30, dxp, dyp - th * 0.54); // Kapuze
+  g.fillStyle(0x2a2a33, 1); g.fillCircle(dxp, dyp - th * 0.40, 4.5);               // Gesicht im Dunkel
 }
 
 // ---- Villa – Luxus-Domizil (wenn Immobilie selbst genutzt) ----
