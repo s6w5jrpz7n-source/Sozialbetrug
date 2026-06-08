@@ -5456,28 +5456,17 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const Ax = feldW / 2, Ay = feldH / 2;
     const Bx = -feldW / 2, By = feldH / 2;
     const R = 3;   // Ring-Radius (deckt den Viewport auch bei folgender Kamera)
-    const hatTiles = scene.textures.exists('citytile_1');
-    const OS = 1.06;   // leichte Überlappung gegen Naht-Lücken (Winkel 1.83 vs 2:1)
-    // Umgebung von außen nach innen zeichnen, Mitte zuletzt
-    const zellen = [];
-    for (let i = -R; i <= R; i++) for (let j = -R; j <= R; j++) zellen.push([i, j]);
-    zellen.sort((a, b) => (Math.abs(b[0]) + Math.abs(b[1])) - (Math.abs(a[0]) + Math.abs(a[1])));
-    zellen.forEach(([i, j]) => {
-      const bx = cx + i * Ax + j * Bx;
-      const by = cy + i * Ay + j * By;
-      if (i === 0 && j === 0) {
+    // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
+    // Straßen passen exakt). Später kommen hier echte Gebäude drauf.
+    for (let i = -R; i <= R; i++) {
+      for (let j = -R; j <= R; j++) {
+        const bx = cx + i * Ax + j * Bx;
+        const by = cy + i * Ay + j * By;
         scene.add.image(bx, by, 'stadtboden')
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(0);
-      } else if (hatTiles) {
-        // deterministische Variante je Position (stabil über Redraws)
-        const v = 1 + (((i * 928371 + j * 1299721) % 5) + 5) % 5;
-        scene.add.image(bx, by, 'citytile_' + v)
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW * OS, feldH * OS).setDepth(-1);
-      } else {
-        scene.add.image(bx, by, 'stadtboden')
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH).setDepth(-1);
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH)
+          .setDepth(i === 0 && j === 0 ? -19 : -20);   // Umgebung hinter allem
       }
-    });
+    }
   } else {
     const gBoden = scene.add.graphics().setDepth(0);
     zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
@@ -5585,12 +5574,14 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(1);
+    // Iso-Tiefe = Boden-Y (untere Mitte) → Spieler sortiert korrekt davor/dahinter
+    const baseY = y + o.fh * 0.85 * feldH;
+    scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '9px', fontFamily: '"Courier New", monospace',
         color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
-      }).setOrigin(0.5, 1).setDepth(10);
+      }).setOrigin(0.5, 1).setDepth(baseY + 0.3);
     }
   });
 
@@ -5598,11 +5589,11 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
   const dealer = orte['dealer'];
   if (dealer) {
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
-    bauePark(scene.add.graphics().setDepth(1), pos.x, pos.y, tileW, tileH);
+    bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
     scene.add.text(pos.x, pos.y + tileH * 0.52, dealer.name, {
       fontSize: '9px', fontFamily: '"Courier New", monospace',
       color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
-    }).setOrigin(0.5, 0).setDepth(10);
+    }).setOrigin(0.5, 0).setDepth(pos.y + 0.3);
   }
 }
 
@@ -6226,12 +6217,8 @@ class SpielSzene extends Phaser.Scene {
   }
 
   preload() {
-    // Boden + Straßennetz (eine große Iso-Grafik)
+    // Boden + Straßennetz (eine große Iso-Grafik, wird auch außen herum gekachelt)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
-    // Generische bebaute Stadt-Kacheln für die Umgebung (Backdrop)
-    for (let n = 1; n <= 5; n++) {
-      this.load.image('citytile_' + n, 'assets/buildings/citytile_' + n + '.png');
-    }
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
@@ -6272,21 +6259,21 @@ class SpielSzene extends Phaser.Scene {
     // Kollisions-Daten – angepasst an pos.x+0.5-Offset
     ORTE_CONFIG.forEach(o => this.ortRects.push({ id: o.id, col: o.col, row: o.row }));
 
-    // NPCs
-    this.npcGfx = this.add.graphics();
+    // NPCs (unter den Gebäuden – laufen auf den Straßen)
+    this.npcGfx = this.add.graphics().setDepth(-5);
     this.initNPCs();
 
-    // Animierter Dealer im Park (eigener Layer, pro Frame neu gezeichnet)
-    this.dealerGfx  = this.add.graphics().setDepth(6);
+    // Animierter Dealer im Park (Tiefe wird in animiereDealer nach Boden-Y gesetzt)
+    this.dealerGfx  = this.add.graphics();
     this.dealerAnimT = 0;
 
-    // Spieler (muss NACH allen statischen Grafiken kommen → höchste Z-Order)
-    this.spielerGfx   = this.add.graphics().setDepth(20);
-    this.highlightGfx = this.add.graphics().setDepth(15);
+    // Spieler – Tiefe wird pro Frame nach Boden-Y gesetzt (Iso-Sortierung mit Gebäuden)
+    this.spielerGfx   = this.add.graphics();
+    this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
 
-    // Regen
-    this.regenGfx = this.add.graphics().setDepth(25);
+    // Regen (über allem)
+    this.regenGfx = this.add.graphics().setDepth(99999);
     this.initRegen(W, H);
 
     // Steuerung
@@ -6435,6 +6422,8 @@ class SpielSzene extends Phaser.Scene {
     );
     const cx = pos.x;
     const cy = pos.y - 8;
+    // Iso-Tiefe nach Boden-Y: Spieler verschwindet hinter Gebäuden, die vor ihm stehen
+    this.spielerGfx.setDepth(pos.y);
 
     // Bein-Frames (4 Walk-Frames)
     const frames = laufen ? [
@@ -6621,6 +6610,7 @@ class SpielSzene extends Phaser.Scene {
     if (!ort) { this.dealerGfx.clear(); return; }
     const { tileW: tw, tileH: th } = this;
     const base = isoToScreen(ort.col + 0.5, ort.row + 0.5, tw, th, this.offsetX, this.offsetY);
+    this.dealerGfx.setDepth(base.y + 0.2);   // Iso-Tiefe wie Gebäude/Spieler
     const dxp = base.x - tw * 0.05, dyp = base.y - th * 0.04;
     const t = this.dealerAnimT;
     const glance = Math.sin(t * 1.7) * 2.4;          // Kopf links/rechts (nervös)
