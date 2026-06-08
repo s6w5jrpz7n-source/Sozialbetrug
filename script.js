@@ -6380,8 +6380,16 @@ class SpielSzene extends Phaser.Scene {
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.down))  { dr =  1; bewegt = true; }
 
     if (bewegt) {
-      this.spielerCol = clamp(this.spielerCol + dc, 0, 15);
-      this.spielerRow = clamp(this.spielerRow + dr, 0, 15);
+      const nc = clamp(this.spielerCol + dc, 0, 15);
+      const nr = clamp(this.spielerRow + dr, 0, 15);
+      // Spieler bleibt auf der Straße (Straßennetz). Gebäude-Felder sind tabu.
+      if (!istStrasse(nc, nr)) {
+        this.zeichneSpieler(false);   // Richtung/Frame zurücksetzen, aber nicht bewegen
+        this.inputCooldown = 90;
+        return;
+      }
+      this.spielerCol = nc;
+      this.spielerRow = nr;
       this.inputCooldown = 130;
       this.istAufMove    = true;
       this.walkFrame     = (this.walkFrame + 1) % 4;
@@ -6683,11 +6691,20 @@ class SpielSzene extends Phaser.Scene {
     updateHUD(); pruefeRisiko();
   }
 
+  // Nächstgelegenes Gebäude in Reichweite (Chebyshev ≤ 2) – Gebäude liegen
+  // bis zu 2 Felder neben der Straße, daher größere Reichweite + "nächstes".
+  nahesGebaeude() {
+    let best = null, bestD = 99;
+    this.ortRects.forEach(o => {
+      const d = Math.max(Math.abs(o.col - this.spielerCol), Math.abs(o.row - this.spielerRow));
+      if (d <= 2 && d < bestD) { bestD = d; best = o; }
+    });
+    return best;
+  }
+
   aktualisiereHighlight() {
     this.highlightGfx.clear();
-    const nah = this.ortRects.find(o =>
-      Math.abs(o.col - this.spielerCol) <= 1 && Math.abs(o.row - this.spielerRow) <= 1
-    );
+    const nah = this.nahesGebaeude();
     if (nah) {
       const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
       this.highlightGfx.lineStyle(3, 0xe8b84b, 0.9);
@@ -6698,9 +6715,7 @@ class SpielSzene extends Phaser.Scene {
   }
 
   versucheInteraktion() {
-    const nah = this.ortRects.find(o =>
-      Math.abs(o.col - this.spielerCol) <= 1 && Math.abs(o.row - this.spielerRow) <= 1
-    );
+    const nah = this.nahesGebaeude();
     if (nah) interact(nah.id);
     else logEvent('ℹ️ Näher an ein Gebäude gehen (E).', '');
   }
