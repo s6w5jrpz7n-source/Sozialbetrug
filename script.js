@@ -4,6 +4,15 @@
 //  Bargeld-Transport, verbessertes Balancing, updateUI Tick-Sync
 // ================================================================
 
+// Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
+// Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
+const BUILD_MARKE = 'v7 – Layout & Straße';
+document.addEventListener('DOMContentLoaded', () => {
+  const st = document.querySelector('.subtitle');
+  if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
+  console.log('[Sozialbetrug] script.js BUILD', BUILD_MARKE);
+});
+
 // ================================================================
 // ABSCHNITT 1: SPIEL-ZUSTAND  (Single Source of Truth)
 // ================================================================
