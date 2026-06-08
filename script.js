@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v9 – Tempo & Nebel';
+const BUILD_MARKE = 'v10 – Nebel & Tempo';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6337,7 +6337,7 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
-    this.SPEED = 70;              // Lauftempo in px/Sekunde (gemächlich)
+    this.SPEED = 140;             // Lauftempo in px/Sekunde
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
