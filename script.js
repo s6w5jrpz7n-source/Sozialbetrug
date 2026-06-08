@@ -5618,12 +5618,8 @@ function bauePark(g, cx, cy, tw, th) {
   g.fillStyle(0x5a3a1a, 1);
   g.fillRect(cx - tw * 0.34, cy + th * 0.02, 3, 7);
   g.fillRect(cx - tw * 0.34 + tw * 0.18 - 3, cy + th * 0.02, 3, 7);
-  // zwielichtiger Dealer (Kapuzenfigur im Schatten)
-  const dxp = cx - tw * 0.05, dyp = cy - th * 0.04;
-  g.fillStyle(0x16161e, 1); g.fillRect(dxp - 5, dyp - th * 0.38, 10, th * 0.38);   // Mantel
-  g.fillStyle(0x101016, 1);
-  g.fillTriangle(dxp - 7, dyp - th * 0.30, dxp + 7, dyp - th * 0.30, dxp, dyp - th * 0.54); // Kapuze
-  g.fillStyle(0x2a2a33, 1); g.fillCircle(dxp, dyp - th * 0.40, 4.5);               // Gesicht im Dunkel
+  // Hinweis: Die Dealer-Figur wird NICHT hier statisch gezeichnet, sondern
+  // pro Frame animiert in animiereDealer() (dealerGfx).
 }
 
 // ---- Villa – Luxus-Domizil (wenn Immobilie selbst genutzt) ----
@@ -6186,6 +6182,10 @@ class SpielSzene extends Phaser.Scene {
     this.npcGfx = this.add.graphics();
     this.initNPCs();
 
+    // Animierter Dealer im Park (eigener Layer, pro Frame neu gezeichnet)
+    this.dealerGfx  = this.add.graphics().setDepth(6);
+    this.dealerAnimT = 0;
+
     // Spieler (muss NACH allen statischen Grafiken kommen → höchste Z-Order)
     this.spielerGfx   = this.add.graphics().setDepth(20);
     this.highlightGfx = this.add.graphics().setDepth(15);
@@ -6236,6 +6236,8 @@ class SpielSzene extends Phaser.Scene {
     this.animiereRegen(dt, this.scale.width, this.scale.height);
     this.npcTick += dt;
     if (this.npcTick >= 0.09) { this.npcTick = 0; this.animiereNPCs(); }
+    this.dealerAnimT += dt;
+    this.animiereDealer();
 
     if (modalOffen) return;
 
@@ -6515,6 +6517,36 @@ class SpielSzene extends Phaser.Scene {
       this.npcGfx.fillCircle(nx - 1, ny - 10, 1.2);
       this.npcGfx.fillCircle(nx + 3, ny - 10, 1.2);
     });
+  }
+
+  // Animierter Dealer im Park (Ort 'dealer' bei col/row 14/14).
+  // Nervöses Loitern: Kopf glanzt nach „Cops", leichtes Wippen, ab und zu Deal-Funkeln.
+  animiereDealer() {
+    if (!this.dealerGfx) return;
+    const ort = ORTE_CONFIG.find(o => o.id === 'dealer');
+    if (!ort) { this.dealerGfx.clear(); return; }
+    const { tileW: tw, tileH: th } = this;
+    const base = isoToScreen(ort.col + 0.5, ort.row + 0.5, tw, th, this.offsetX, this.offsetY);
+    const dxp = base.x - tw * 0.05, dyp = base.y - th * 0.04;
+    const t = this.dealerAnimT;
+    const glance = Math.sin(t * 1.7) * 2.4;          // Kopf links/rechts (nervös)
+    const sway   = Math.sin(t * 0.9) * 1.1;          // Körper-Wippen
+    const g = this.dealerGfx;
+    g.clear();
+    // Schatten
+    g.fillStyle(0x000000, 0.20); g.fillEllipse(dxp + sway, dyp + 2, 16, 5);
+    // Mantel
+    g.fillStyle(0x16161e, 1); g.fillRect(dxp - 5 + sway, dyp - th * 0.38, 10, th * 0.38);
+    // Kapuze (mit Glance)
+    g.fillStyle(0x101016, 1);
+    g.fillTriangle(dxp - 7 + sway, dyp - th * 0.30, dxp + 7 + sway, dyp - th * 0.30,
+                   dxp + glance + sway, dyp - th * 0.54);
+    // Gesicht im Dunkel
+    g.fillStyle(0x2a2a33, 1); g.fillCircle(dxp + glance + sway, dyp - th * 0.40, 4.5);
+    // gelegentliches „Deal"-Funkeln in der Hand
+    if (Math.sin(t * 0.6) > 0.93) {
+      g.fillStyle(0xffe87a, 0.85); g.fillCircle(dxp + 8 + sway, dyp - th * 0.20, 1.8);
+    }
   }
 
   // ----------------------------------------------------------------
