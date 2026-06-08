@@ -5443,11 +5443,11 @@ const BUILDING_SPRITES = {
 // ================================================================
 function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
   const COLS = 16, ROWS = 16;
+  const feldW = (COLS + ROWS) * tileW / 2;   // 1920
+  const feldH = (COLS + ROWS) * tileH / 2;   // 960
 
   // ---- Boden + Straßennetz: Bild bevorzugen, sonst gezeichnet ----
   if (scene.textures.exists('stadtboden')) {
-    const feldW = (COLS + ROWS) * tileW / 2;   // 1920
-    const feldH = (COLS + ROWS) * tileH / 2;   // 960
     // Zentraler (spielbarer) Diamant + nahtlos gekachelte Stadt drumherum.
     // Das Straßenraster hat Periode 4 Kacheln, der Block ist 16 Kacheln groß
     // (Vielfaches von 4) → beim Verschieben um ±16 Kacheln passen die Straßen
@@ -5485,6 +5485,14 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     zeichneStrassendeko(gDeko, tileW, tileH, offsetX, offsetY);
     const gFuell = scene.add.graphics().setDepth(0);
     zeichneFuellgebaeude(gFuell, tileW, tileH, offsetX, offsetY);
+  }
+
+  // ---- Manuelles Layout aus dem Editor (layout/layout.json) ----
+  const layout = (scene.cache && scene.cache.json && scene.cache.json.exists('layout'))
+    ? scene.cache.json.get('layout') : null;
+  if (layout && Array.isArray(layout.objects) && layout.objects.length) {
+    wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, feldH);
+    return;
   }
 
   const sortiertOrte = [...ORTE_CONFIG].sort((a, b) => (a.col+a.row) - (b.col+b.row));
@@ -5547,7 +5555,56 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
   });
 }
 
+// ================================================================
+// Manuelles Layout anwenden (aus dem Browser-Editor / layout.json).
+//   Jedes Objekt hat fx,fy,fw,fh relativ zum zentralen Feld (feldW×feldH).
+//   - Gebäude werden absolut platziert UND ihr Trigger (col/row) nachgezogen.
+//   - Props werden nur gezeichnet.
+//   - Der Park/Dealer ist nicht im Layout → bleibt an seiner ORTE-Position.
+// ================================================================
+function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, feldH) {
+  const fieldLeft = offsetX - feldW / 2, fieldTop = offsetY;
+  const orte = {}; ORTE_CONFIG.forEach(o => orte[o.id] = o);
 
+  // 1) Trigger-Position (col/row) jedes Gebäudes aus dem Layout neu berechnen
+  layout.objects.forEach(o => {
+    if (o.type !== 'building' || !orte[o.id]) return;
+    const bx = fieldLeft + (o.fx + o.fw / 2) * feldW;   // Bodenpunkt = untere Mitte
+    const by = fieldTop  + (o.fy + o.fh * 0.85) * feldH;
+    const dc = (bx - offsetX) / (tileW / 2);            // col - row
+    const sr = (by - offsetY) / (tileH / 2) - 1;        // col + row
+    orte[o.id].col = clamp(Math.round((sr + dc) / 2), 0, 15);
+    orte[o.id].row = clamp(Math.round((sr - dc) / 2), 0, 15);
+  });
+
+  // 2) Objekte zeichnen (nach Boden-Y sortiert → hinten zuerst)
+  const objs = [...layout.objects].sort((a, b) => (a.fy + a.fh) - (b.fy + b.fh));
+  objs.forEach(o => {
+    if (o.id === 'villa' && !(gameState.immobilie && gameState.immobilie.modus === 'eigen')) return;
+    const key = o.type === 'building' ? ('geb_' + o.id) : o.id;
+    if (!scene.textures.exists(key)) return;
+    const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
+    const w = o.fw * feldW, h = o.fh * feldH;
+    scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(1);
+    if (o.type === 'building' && orte[o.id]) {
+      scene.add.text(x + w / 2, y + h, orte[o.id].name, {
+        fontSize: '9px', fontFamily: '"Courier New", monospace',
+        color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+      }).setOrigin(0.5, 1).setDepth(10);
+    }
+  });
+
+  // 3) Park/Dealer (nicht im Layout) an seiner ORTE-Position zeichnen
+  const dealer = orte['dealer'];
+  if (dealer) {
+    const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
+    bauePark(scene.add.graphics().setDepth(1), pos.x, pos.y, tileW, tileH);
+    scene.add.text(pos.x, pos.y + tileH * 0.52, dealer.name, {
+      fontSize: '9px', fontFamily: '"Courier New", monospace',
+      color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+    }).setOrigin(0.5, 0).setDepth(10);
+  }
+}
 
 // ----------------------------------------------------------------
 // Schattenbank – Fast-schwarzes Gebäude, kein Schild, diskret
@@ -6179,6 +6236,14 @@ class SpielSzene extends Phaser.Scene {
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
     }
+    // Natur-Props (für ein evtl. vorhandenes Layout)
+    for (let n = 0; n < 35; n++) {
+      const id = 'prop_' + String(n).padStart(2, '0');
+      this.load.image(id, 'assets/props/' + id + '.png');
+    }
+    // Manuelles Layout (aus dem Editor) – fehlt es, fällt alles auf Standard zurück
+    this.load.json('layout', 'layout/layout.json');
+    this.load.on('loaderror', () => {});   // fehlendes Layout still ignorieren
   }  // Audio läuft sonst über natives HTMLAudioElement
 
   create() {
