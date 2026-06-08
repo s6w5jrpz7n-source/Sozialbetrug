@@ -6304,8 +6304,21 @@ class SpielSzene extends Phaser.Scene {
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
 
-    // Regen (über allem)
-    this.regenGfx = this.add.graphics().setDepth(99999);
+    // ---- Kamera folgt dem Spieler (Stadt scrollt mit) ----
+    const startPos = isoToScreen(this.spielerCol + 0.5, this.spielerRow + 0.5,
+                                 this.tileW, this.tileH, this.offsetX, this.offsetY);
+    this.camTarget = this.add.zone(startPos.x, startPos.y, 1, 1);  // unsichtbares Folgeziel
+    const fW = (16 + 16) * this.tileW / 2, fH = (16 + 16) * this.tileH / 2;
+    // Grenzen großzügig im gekachelten Stadtbereich → nie schwarzer Rand
+    this.cameras.main.setBounds(
+      this.offsetX - fW / 2 - 1.5 * fW, this.offsetY - 1.5 * fH,
+      fW + 3 * fW, fH + 3 * fH
+    );
+    this.cameras.main.startFollow(this.camTarget, true, 0.12, 0.12);
+    this.cameras.main.centerOn(startPos.x, startPos.y);
+
+    // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
+    this.regenGfx = this.add.graphics().setDepth(99999).setScrollFactor(0);
     this.initRegen(W, H);
 
     // Steuerung
@@ -6467,6 +6480,8 @@ class SpielSzene extends Phaser.Scene {
     const cy = pos.y - 8;
     // Iso-Tiefe nach Boden-Y: Spieler verschwindet hinter Gebäuden, die vor ihm stehen
     this.spielerGfx.setDepth(pos.y);
+    // Kamera-Folgeziel mitführen
+    if (this.camTarget) this.camTarget.setPosition(pos.x, pos.y);
 
     // Bein-Frames (4 Walk-Frames)
     const frames = laufen ? [
