@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v10 – Nebel & Tempo';
+const BUILD_MARKE = 'v11 – Glow & Nebel';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -5566,6 +5566,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
 function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, feldH) {
   const fieldLeft = offsetX - feldW / 2, fieldTop = offsetY;
   const orte = {}; ORTE_CONFIG.forEach(o => orte[o.id] = o);
+  scene.gebaeudeSprites = {};   // id → Bild (für Highlight-Glow)
 
   // 1) Trigger-Position (col/row) jedes Gebäudes aus dem Layout neu berechnen
   layout.objects.forEach(o => {
@@ -5598,6 +5599,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
       img.setInteractive({ pixelPerfect: true });
       img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
+      scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
     }
     if (o.type === 'building' && orte[o.id]) {
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
@@ -6337,7 +6339,7 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
-    this.SPEED = 140;             // Lauftempo in px/Sekunde
+    this.SPEED = 154;             // Lauftempo in px/Sekunde
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
@@ -6926,14 +6928,26 @@ class SpielSzene extends Phaser.Scene {
   }
 
   aktualisiereHighlight() {
-    this.highlightGfx.clear();
     const nah = this.nahesGebaeude();
-    if (nah) {
-      const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-      this.highlightGfx.lineStyle(3, 0xe8b84b, 0.9);
-      this.highlightGfx.strokeEllipse(pos.x, pos.y + this.tileH * 0.2, this.tileW * 1.1, this.tileH * 0.65);
-      this.highlightGfx.lineStyle(1, 0xe8b84b, 0.25);
-      this.highlightGfx.strokeEllipse(pos.x, pos.y + this.tileH * 0.2, this.tileW * 1.35, this.tileH * 0.85);
+    const sprite = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
+
+    // Aktives Gebäude leuchtet gelb auf (WebGL-Glow). Wechselt nur bei Bedarf.
+    if (sprite !== this._glowSprite) {
+      if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
+      if (sprite && sprite.preFX) sprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
+      this._glowSprite = sprite || null;
+    }
+
+    // Fallback (kein Sprite [z. B. Park] oder kein WebGL): gelber Rahmen
+    this.highlightGfx.clear();
+    if (nah && (!sprite || !sprite.preFX)) {
+      this.highlightGfx.lineStyle(3, 0xffe87a, 0.95);
+      if (sprite) {
+        this.highlightGfx.strokeRect(sprite.x, sprite.y, sprite.displayWidth, sprite.displayHeight);
+      } else {
+        const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+        this.highlightGfx.strokeRect(pos.x - this.tileW * 0.5, pos.y - this.tileH * 1.3, this.tileW, this.tileH * 1.7);
+      }
     }
   }
 
