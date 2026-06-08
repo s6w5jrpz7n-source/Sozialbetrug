@@ -5585,7 +5585,12 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     const w = o.fw * feldW, h = o.fh * feldH;
     // Iso-Tiefe = Boden-Y (untere Mitte) → Spieler sortiert korrekt davor/dahinter
     const baseY = y + o.fh * 0.85 * feldH;
-    scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
+    const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
+    if (o.type === 'building' && orte[o.id]) {
+      // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
+      img.setInteractive({ pixelPerfect: true });
+      img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
+    }
     if (o.type === 'building' && orte[o.id]) {
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '9px', fontFamily: '"Courier New", monospace',
@@ -5599,6 +5604,10 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
   if (dealer) {
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
     bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
+    // anklickbare Zone über dem Park
+    scene.add.zone(pos.x, pos.y - tileH * 0.3, tileW * 1.3, tileH * 1.8)
+      .setInteractive()
+      .on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt('dealer'); });
     scene.add.text(pos.x, pos.y + tileH * 0.52, dealer.name, {
       fontSize: '9px', fontFamily: '"Courier New", monospace',
       color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
@@ -6268,6 +6277,20 @@ class SpielSzene extends Phaser.Scene {
     // Kollisions-Daten – angepasst an pos.x+0.5-Offset
     ORTE_CONFIG.forEach(o => this.ortRects.push({ id: o.id, col: o.col, row: o.row }));
 
+    // Begehbarkeit: alle Felder außer Gebäude-Feldern (Straße + Bürgersteig + Lücken)
+    this.blockierteFelder = new Set();
+    ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
+    this.pfad = [];          // aktueller Lauf-Pfad (Point-and-Click)
+    this.pfadZielOrt = null;  // Gebäude, mit dem nach Ankunft interagiert wird
+
+    // ---- Klick-Steuerung: auf Boden klicken → hinlaufen ----
+    this.input.on('pointerdown', (pointer, currentlyOver) => {
+      if (this._menuAktiv || modalOffen) return;
+      if (currentlyOver && currentlyOver.length) return;   // Gebäude geklickt → eigener Handler
+      const t = this.screenZuTile(pointer.worldX, pointer.worldY);
+      if (t) this.geheZuTile(t.col, t.row);
+    });
+
     // NPCs (unter den Gebäuden – laufen auf den Straßen)
     this.npcGfx = this.add.graphics().setDepth(-5);
     this.initNPCs();
@@ -6381,7 +6404,20 @@ class SpielSzene extends Phaser.Scene {
 
     if (this.inputCooldown > 0) { this.inputCooldown -= delta; return; }
 
-    // Bewegung
+    // --- Point-and-Click: aktuellen Pfad Schritt für Schritt abgehen ---
+    if (this.pfad && this.pfad.length) {
+      const next = this.pfad.shift();
+      this.spielerCol = next.col;
+      this.spielerRow = next.row;
+      this._schrittAnim();
+      if (this.pfad.length === 0 && this.pfadZielOrt) {
+        const ortId = this.pfadZielOrt; this.pfadZielOrt = null;
+        setTimeout(() => interact(ortId), 170);
+      }
+      return;
+    }
+
+    // Bewegung (Tastatur – freie Bewegung auf begehbaren Feldern)
     let bewegt = false, dc = 0, dr = 0;
     if      (Phaser.Input.Keyboard.JustDown(this.cursors.left))  { dc = -1; bewegt = true; }
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) { dc =  1; bewegt = true; }
@@ -6389,27 +6425,17 @@ class SpielSzene extends Phaser.Scene {
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.down))  { dr =  1; bewegt = true; }
 
     if (bewegt) {
+      this.pfad = []; this.pfadZielOrt = null;   // manuelle Steuerung bricht Klick-Pfad ab
       const nc = clamp(this.spielerCol + dc, 0, 15);
       const nr = clamp(this.spielerRow + dr, 0, 15);
-      // Spieler bleibt auf der Straße (Straßennetz). Gebäude-Felder sind tabu.
-      if (!istStrasse(nc, nr)) {
-        this.zeichneSpieler(false);   // Richtung/Frame zurücksetzen, aber nicht bewegen
+      if (!this.begehbar(nc, nr)) {
+        this.zeichneSpieler(false);   // gegen Gebäude gelaufen – stehen bleiben
         this.inputCooldown = 90;
         return;
       }
       this.spielerCol = nc;
       this.spielerRow = nr;
-      this.inputCooldown = 130;
-      this.istAufMove    = true;
-      this.walkFrame     = (this.walkFrame + 1) % 4;
-      this.walkTimer     = this.WALK_FPS;
-      this.zeichneSpieler(true);
-      this.aktualisiereHighlight();
-      clearTimeout(this._idleTimeout);
-      this._idleTimeout = setTimeout(() => {
-        this.istAufMove = false;
-        this.zeichneSpieler(false);
-      }, 350);
+      this._schrittAnim();
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.interactKey) ||
@@ -6698,6 +6724,78 @@ class SpielSzene extends Phaser.Scene {
       this.wochenSeitMonat = 0; monatsAbschluss();
     }
     updateHUD(); pruefeRisiko();
+  }
+
+  // Lauf-Schritt-Animation (gemeinsam für Tastatur und Klick-Pfad)
+  _schrittAnim() {
+    this.inputCooldown = 130;
+    this.istAufMove    = true;
+    this.walkFrame     = (this.walkFrame + 1) % 4;
+    this.walkTimer     = this.WALK_FPS;
+    this.zeichneSpieler(true);
+    this.aktualisiereHighlight();
+    clearTimeout(this._idleTimeout);
+    this._idleTimeout = setTimeout(() => { this.istAufMove = false; this.zeichneSpieler(false); }, 350);
+  }
+
+  // Begehbar = im Feld und kein Gebäude-Feld (Straße/Bürgersteig/Lücken frei)
+  begehbar(c, r) {
+    return c >= 0 && c <= 15 && r >= 0 && r <= 15 && !this.blockierteFelder.has(c + ',' + r);
+  }
+
+  // Bildschirm-/Weltkoordinate → Kachel (col,row)
+  screenZuTile(X, Y) {
+    const dcr = (X - this.offsetX) / (this.tileW / 2);     // c - r
+    const scr = (Y - this.offsetY) / (this.tileH / 2) - 1; // c + r
+    const c = Math.round((scr + dcr) / 2);
+    const r = Math.round((scr - dcr) / 2);
+    if (c < 0 || c > 15 || r < 0 || r > 15) return null;
+    return { col: c, row: r };
+  }
+
+  // Breitensuche über begehbare Felder. istZiel(c,r) → bool. Liefert Pfad
+  // (Liste von {col,row} ohne Start) oder null.
+  bfs(startC, startR, istZiel) {
+    const key = (c, r) => c + ',' + r;
+    const q = [{ col: startC, row: startR }];
+    const prev = { [key(startC, startR)]: null };
+    let ziel = null;
+    while (q.length) {
+      const cur = q.shift();
+      if (istZiel(cur.col, cur.row) && !(cur.col === startC && cur.row === startR)) { ziel = cur; break; }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nc = cur.col + dx, nr = cur.row + dy;
+        if (nc < 0 || nc > 15 || nr < 0 || nr > 15) continue;
+        const k = key(nc, nr);
+        if (k in prev) continue;
+        if (!this.begehbar(nc, nr)) continue;
+        prev[k] = { col: cur.col, row: cur.row };
+        q.push({ col: nc, row: nr });
+      }
+    }
+    if (!ziel) return null;
+    const pfad = []; let c = ziel;
+    while (c && !(c.col === startC && c.row === startR)) { pfad.unshift(c); c = prev[key(c.col, c.row)]; }
+    return pfad;
+  }
+
+  // Klick auf Boden → dorthin laufen
+  geheZuTile(c, r) {
+    if (!this.begehbar(c, r)) return;
+    const p = this.bfs(this.spielerCol, this.spielerRow, (cc, rr) => cc === c && rr === r);
+    if (p) { this.pfad = p; this.pfadZielOrt = null; }
+  }
+
+  // Klick auf Gebäude → davor laufen und interagieren
+  klickAufOrt(id) {
+    const ort = ORTE_CONFIG.find(o => o.id === id);
+    if (!ort) return;
+    const cheb = Math.max(Math.abs(ort.col - this.spielerCol), Math.abs(ort.row - this.spielerRow));
+    if (cheb <= 2) { this.pfad = []; this.pfadZielOrt = null; interact(id); return; }
+    const p = this.bfs(this.spielerCol, this.spielerRow,
+      (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
+    if (p && p.length) { this.pfad = p; this.pfadZielOrt = id; }
+    else { this.pfad = []; interact(id); }   // unerreichbar → trotzdem interagieren
   }
 
   // Nächstgelegenes Gebäude in Reichweite (Chebyshev ≤ 2) – Gebäude liegen
