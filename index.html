@@ -567,23 +567,23 @@
     #niete-flash .niete-text {
       font-family: var(--mono);
       font-weight: 900;
-      color: #9aa0a6;
+      color: #e23b3b;
       font-size: clamp(2rem, 9vw, 7rem);
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      text-shadow: 0 3px 0 #2a2a2a;
-      border: 6px solid #9aa0a6;
+      text-shadow: 0 3px 0 #5a0000, 0 0 22px rgba(226,59,59,0.6);
+      border: 6px solid #e23b3b;
       border-radius: 10px;
       padding: 0.1em 0.32em;
       transform: rotate(-12deg);
     }
-    #niete-flash.show .niete-text { animation: nieteStamp 0.7s cubic-bezier(.2,1.5,.3,1) forwards; }
+    #niete-flash.show .niete-text { animation: nieteStamp 1.5s cubic-bezier(.2,1.5,.3,1) forwards; }
     @keyframes nieteStamp {
       0%   { transform: rotate(-12deg) scale(2.2); opacity: 0; }
-      22%  { transform: rotate(-12deg) scale(1);   opacity: 0.95; }
-      30%  { transform: rotate(-12deg) scale(1.06); }
-      40%  { transform: rotate(-12deg) scale(1); }
-      80%  { opacity: 0.95; }
+      10%  { transform: rotate(-12deg) scale(1);   opacity: 0.97; }
+      14%  { transform: rotate(-12deg) scale(1.06); }
+      20%  { transform: rotate(-12deg) scale(1); }
+      85%  { opacity: 0.97; }
       100% { transform: rotate(-12deg) scale(1.05); opacity: 0; }
     }
 

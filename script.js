@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v7 – Layout & Straße';
+const BUILD_MARKE = 'v8 – Flüssige Bewegung';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -1142,7 +1142,7 @@ function zeigeNieteStempel() {
   el.classList.add('show');
   soundStempel && soundStempel();
   clearTimeout(el._nieteTimer);
-  el._nieteTimer = setTimeout(() => el.classList.remove('show'), 700);
+  el._nieteTimer = setTimeout(() => el.classList.remove('show'), 1500);
 }
 
 // Ein einzelnes Los ziehen → Gewinnbetrag (0 = Niete).
@@ -5467,12 +5467,15 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const R = 3;   // Ring-Radius (deckt den Viewport auch bei folgender Kamera)
     // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
     // Straßen passen exakt). Später kommen hier echte Gebäude drauf.
+    // Leichte Überlappung (OS) lässt die Kacheln einander überdecken → keine
+    // sichtbare Naht/Linie zwischen den Kacheln.
+    const OS = 1.012;
     for (let i = -R; i <= R; i++) {
       for (let j = -R; j <= R; j++) {
         const bx = cx + i * Ax + j * Bx;
         const by = cy + i * Ay + j * By;
         scene.add.image(bx, by, 'stadtboden')
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH)
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW * OS, feldH * OS)
           .setDepth(i === 0 && j === 0 ? -19 : -20);   // Umgebung hinter allem
       }
     }
@@ -5583,8 +5586,13 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-Y (untere Mitte) → Spieler sortiert korrekt davor/dahinter
-    const baseY = y + o.fh * 0.85 * feldH;
+    // Iso-Tiefe = Boden-Y der ZUGEORDNETEN Kachel (nicht der Sprite-Unterkante!).
+    // Sonst sortiert ein hohes Gebäude mit großem Vorplatz vor dem Spieler, der
+    // auf eben diesem Vorplatz steht. Kachel-Mitte ist konsistent mit der Spieler-Tiefe.
+    const op = orte[o.id]
+      ? isoToScreen(orte[o.id].col + 0.5, orte[o.id].row + 0.5, tileW, tileH, offsetX, offsetY)
+      : { y: y + o.fh * 0.85 * feldH };
+    const baseY = op.y;
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
@@ -6237,6 +6245,8 @@ class SpielSzene extends Phaser.Scene {
   preload() {
     // Boden + Straßennetz (eine große Iso-Grafik, wird auch außen herum gekachelt)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
+    // Nebel-Overlay (zeigt die Grenze des bespielbaren Bereichs)
+    this.load.image('fog', 'assets/fog.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
@@ -6283,12 +6293,11 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];          // aktueller Lauf-Pfad (Point-and-Click)
     this.pfadZielOrt = null;  // Gebäude, mit dem nach Ankunft interagiert wird
 
-    // ---- Klick-Steuerung: auf Boden klicken → hinlaufen ----
+    // ---- Klick-Steuerung: auf Boden klicken → exakt dorthin laufen ----
     this.input.on('pointerdown', (pointer, currentlyOver) => {
       if (this._menuAktiv || modalOffen) return;
       if (currentlyOver && currentlyOver.length) return;   // Gebäude geklickt → eigener Handler
-      const t = this.screenZuTile(pointer.worldX, pointer.worldY);
-      if (t) this.geheZuTile(t.col, t.row);
+      this.geheZuWelt(pointer.worldX, pointer.worldY);
     });
 
     // NPCs (unter den Gebäuden – laufen auf den Straßen)
@@ -6299,23 +6308,37 @@ class SpielSzene extends Phaser.Scene {
     this.dealerGfx  = this.add.graphics();
     this.dealerAnimT = 0;
 
-    // Spieler – Tiefe wird pro Frame nach Boden-Y gesetzt (Iso-Sortierung mit Gebäuden)
+    // Spieler – kontinuierliche Weltposition (flüssige Bewegung)
+    const startPos = isoToScreen(this.spielerCol + 0.5, this.spielerRow + 0.5,
+                                 this.tileW, this.tileH, this.offsetX, this.offsetY);
+    this.spielerX = startPos.x;   // Welt-Koordinaten der Füße
+    this.spielerY = startPos.y;
+    this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
+    this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
+    this._walkAcc = 0;
+    this.SPEED = 210;             // Lauftempo in px/Sekunde
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
 
     // ---- Kamera folgt dem Spieler (Stadt scrollt mit) ----
-    const startPos = isoToScreen(this.spielerCol + 0.5, this.spielerRow + 0.5,
-                                 this.tileW, this.tileH, this.offsetX, this.offsetY);
-    this.camTarget = this.add.zone(startPos.x, startPos.y, 1, 1);  // unsichtbares Folgeziel
+    this.camTarget = this.add.zone(this.spielerX, this.spielerY, 1, 1);  // unsichtbares Folgeziel
     const fW = (16 + 16) * this.tileW / 2, fH = (16 + 16) * this.tileH / 2;
     // Grenzen großzügig im gekachelten Stadtbereich → nie schwarzer Rand
     this.cameras.main.setBounds(
       this.offsetX - fW / 2 - 1.5 * fW, this.offsetY - 1.5 * fH,
       fW + 3 * fW, fH + 3 * fH
     );
-    this.cameras.main.startFollow(this.camTarget, true, 0.12, 0.12);
-    this.cameras.main.centerOn(startPos.x, startPos.y);
+    this.cameras.main.startFollow(this.camTarget, true, 0.16, 0.16);
+    this.cameras.main.centerOn(this.spielerX, this.spielerY);
+
+    // ---- Nebel: zeigt die Grenze des bespielbaren Bereichs ----
+    // Über dem zentralen Diamanten transparent, nach außen zunehmend neblig
+    // (Häuser bleiben schemenhaft sichtbar) → erklärt, warum man nicht weiter kann.
+    if (this.textures.exists('fog')) {
+      this.add.image(this.offsetX, this.offsetY + fH / 2, 'fog')
+        .setOrigin(0.5, 0.5).setDepth(50000);
+    }
 
     // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
     this.regenGfx = this.add.graphics().setDepth(99999).setScrollFactor(0);
@@ -6407,55 +6430,58 @@ class SpielSzene extends Phaser.Scene {
     this.hudTickTimer += dt;
     if (this.hudTickTimer >= 0.5) { this.hudTickTimer = 0; updateHUD(); }
 
-    // Walk-Animation
-    this.walkTimer -= dt;
-    if (this.walkTimer <= 0 && this.istAufMove) {
-      this.walkTimer = this.WALK_FPS;
-      this.walkFrame = (this.walkFrame + 1) % 4;
-      this.zeichneSpieler(true);
-    }
+    // ---- Bewegung: flüssig & frei auf der begehbaren Fläche ----
+    let moved = false;
 
-    if (this.inputCooldown > 0) { this.inputCooldown -= delta; return; }
-
-    // --- Point-and-Click: aktuellen Pfad Schritt für Schritt abgehen ---
-    if (this.pfad && this.pfad.length) {
-      const next = this.pfad.shift();
-      this.spielerCol = next.col;
-      this.spielerRow = next.row;
-      this._schrittAnim();
-      if (this.pfad.length === 0 && this.pfadZielOrt) {
+    // Tastatur: kontinuierlich, solange gedrückt (Bildschirmrichtungen)
+    let vx = 0, vy = 0;
+    if (this.cursors.left.isDown)  vx -= 1;
+    if (this.cursors.right.isDown) vx += 1;
+    if (this.cursors.up.isDown)    vy -= 1;
+    if (this.cursors.down.isDown)  vy += 1;
+    if (vx || vy) {
+      this.pfad = []; this.pfadZielOrt = null;   // Tastatur bricht Klick-Pfad ab
+      const len = Math.hypot(vx, vy);
+      const sx = (vx / len) * this.SPEED * dt;
+      const sy = (vy / len) * this.SPEED * dt;
+      if      (this.weltBegehbar(this.spielerX + sx, this.spielerY + sy)) { this.spielerX += sx; this.spielerY += sy; moved = true; }
+      else if (this.weltBegehbar(this.spielerX + sx, this.spielerY))      { this.spielerX += sx; moved = true; }
+      else if (this.weltBegehbar(this.spielerX, this.spielerY + sy))      { this.spielerY += sy; moved = true; }
+    } else if (this.pfad.length) {
+      // Klick-Pfad: flüssig zum nächsten Wegpunkt (mehrere pro Frame möglich)
+      let rest = this.SPEED * dt;
+      while (rest > 0 && this.pfad.length) {
+        const ziel = this.pfad[0];
+        const dx = ziel.x - this.spielerX, dy = ziel.y - this.spielerY;
+        const dist = Math.hypot(dx, dy);
+        if (dist <= rest) { this.spielerX = ziel.x; this.spielerY = ziel.y; this.pfad.shift(); rest -= dist; }
+        else { this.spielerX += (dx / dist) * rest; this.spielerY += (dy / dist) * rest; rest = 0; }
+      }
+      moved = true;
+      if (this.pfad.length === 0 && this.pfadZielOrt) {   // nur bei Doppelklick gesetzt
         const ortId = this.pfadZielOrt; this.pfadZielOrt = null;
-        setTimeout(() => interact(ortId), 170);
+        this.cameras.main.centerOn(this.spielerX, this.spielerY);   // Kamera fixieren → kein Nachziehen hinterm Menü
+        interact(ortId);
       }
-      return;
     }
 
-    // Bewegung (Tastatur – freie Bewegung auf begehbaren Feldern)
-    let bewegt = false, dc = 0, dr = 0;
-    if      (Phaser.Input.Keyboard.JustDown(this.cursors.left))  { dc = -1; bewegt = true; }
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) { dc =  1; bewegt = true; }
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.up))    { dr = -1; bewegt = true; }
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.down))  { dr =  1; bewegt = true; }
-
-    if (bewegt) {
-      this.pfad = []; this.pfadZielOrt = null;   // manuelle Steuerung bricht Klick-Pfad ab
-      const nc = clamp(this.spielerCol + dc, 0, 15);
-      const nr = clamp(this.spielerRow + dr, 0, 15);
-      if (!this.begehbar(nc, nr)) {
-        this.zeichneSpieler(false);   // gegen Gebäude gelaufen – stehen bleiben
-        this.inputCooldown = 90;
-        return;
-      }
-      this.spielerCol = nc;
-      this.spielerRow = nr;
-      this._schrittAnim();
+    if (moved) {
+      this.istAufMove = true;
+      this._walkAcc += this.SPEED * dt;
+      if (this._walkAcc >= 13) { this._walkAcc = 0; this.walkFrame = (this.walkFrame + 1) % 4; }
+      this.aktualisiereTile();
+      this.zeichneSpieler(true);
+      this.aktualisiereHighlight();
+    } else if (this.istAufMove) {
+      this.istAufMove = false;
+      this.zeichneSpieler(false);
     }
 
+    // Interagieren (E / Enter)
     if (Phaser.Input.Keyboard.JustDown(this.interactKey) ||
         Phaser.Input.Keyboard.JustDown(this.interactEnter)) {
       this.versucheInteraktion();
     }
-
     // SPACE = Woche überspringen (sofort)
     if (Phaser.Input.Keyboard.JustDown(this.skipKey)) {
       this.skipWoche();
@@ -6471,17 +6497,13 @@ class SpielSzene extends Phaser.Scene {
     this.spielerGfx.clear();
     const g = this.spielerGfx;
 
-    // Spieler steht auf Kachelzentrum (col+0.5, row+0.5 wie Gebäude)
-    const pos = isoToScreen(
-      this.spielerCol + 0.5, this.spielerRow + 0.5,
-      this.tileW, this.tileH, this.offsetX, this.offsetY
-    );
-    const cx = pos.x;
-    const cy = pos.y - 8;
+    // Kontinuierliche Weltposition der Füße
+    const cx = this.spielerX;
+    const cy = this.spielerY - 8;
     // Iso-Tiefe nach Boden-Y: Spieler verschwindet hinter Gebäuden, die vor ihm stehen
-    this.spielerGfx.setDepth(pos.y);
+    this.spielerGfx.setDepth(this.spielerY);
     // Kamera-Folgeziel mitführen
-    if (this.camTarget) this.camTarget.setPosition(pos.x, pos.y);
+    if (this.camTarget) this.camTarget.setPosition(this.spielerX, this.spielerY);
 
     // Bein-Frames (4 Walk-Frames)
     const frames = laufen ? [
@@ -6794,23 +6816,78 @@ class SpielSzene extends Phaser.Scene {
     return pfad;
   }
 
-  // Klick auf Boden → dorthin laufen
-  geheZuTile(c, r) {
-    if (!this.begehbar(c, r)) return;
-    const p = this.bfs(this.spielerCol, this.spielerRow, (cc, rr) => cc === c && rr === r);
-    if (p) { this.pfad = p; this.pfadZielOrt = null; }
+  // Welt-Koordinate begehbar?
+  weltBegehbar(x, y) {
+    const t = this.screenZuTile(x, y);
+    return !!t && this.begehbar(t.col, t.row);
   }
 
-  // Klick auf Gebäude → davor laufen und interagieren
+  // spielerCol/Row aus der kontinuierlichen Position ableiten (für Interaktion)
+  aktualisiereTile() {
+    const t = this.screenZuTile(this.spielerX, this.spielerY);
+    if (t) { this.spielerCol = t.col; this.spielerRow = t.row; }
+  }
+
+  // Sichtlinie zwischen zwei Weltpunkten komplett begehbar?
+  hatSicht(x1, y1, x2, y2) {
+    const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 22));
+    for (let i = 0; i <= n; i++) {
+      if (!this.weltBegehbar(x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n)) return false;
+    }
+    return true;
+  }
+
+  // Wegpunkte glätten (String-Pulling) → natürliche Diagonalen statt Gitterlinien
+  vereinfachePfad(pts) {
+    const alle = [{ x: this.spielerX, y: this.spielerY }, ...pts];
+    const out = []; let i = 0;
+    while (i < alle.length - 1) {
+      let j = alle.length - 1;
+      while (j > i + 1 && !this.hatSicht(alle[i].x, alle[i].y, alle[j].x, alle[j].y)) j--;
+      out.push(alle[j]); i = j;
+    }
+    return out;
+  }
+
+  // Klick auf Boden → exakt dorthin laufen (flüssiger, geglätteter Pfad)
+  geheZuWelt(x, y) {
+    const ziel = this.screenZuTile(x, y);
+    if (!ziel || !this.begehbar(ziel.col, ziel.row)) return;
+    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
+    const tp = this.bfs(start.col, start.row, (c, r) => c === ziel.col && r === ziel.row);
+    if (!tp) return;
+    let pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
+    if (pts.length) pts[pts.length - 1] = { x, y };   // exakter Klickpunkt als Ziel
+    else pts = [{ x, y }];
+    this.pfad = this.vereinfachePfad(pts);
+    this.pfadZielOrt = null;
+  }
+
+  // Klick auf Gebäude → davorlaufen. Einfachklick = nur hin; Doppelklick = hin + Menü.
   klickAufOrt(id) {
     const ort = ORTE_CONFIG.find(o => o.id === id);
     if (!ort) return;
-    const cheb = Math.max(Math.abs(ort.col - this.spielerCol), Math.abs(ort.row - this.spielerRow));
-    if (cheb <= 2) { this.pfad = []; this.pfadZielOrt = null; interact(id); return; }
-    const p = this.bfs(this.spielerCol, this.spielerRow,
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const doppel = this._letzterOrtKlick && this._letzterOrtKlick.id === id &&
+                   (now - this._letzterOrtKlick.t) < 350;
+    this._letzterOrtKlick = { id, t: now };
+
+    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
+    const cheb = Math.max(Math.abs(ort.col - start.col), Math.abs(ort.row - start.row));
+    if (cheb <= 2) {                       // schon nah genug
+      this.pfad = [];
+      if (doppel) { this.cameras.main.centerOn(this.spielerX, this.spielerY); interact(id); }
+      return;
+    }
+    const tp = this.bfs(start.col, start.row,
       (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
-    if (p && p.length) { this.pfad = p; this.pfadZielOrt = id; }
-    else { this.pfad = []; interact(id); }   // unerreichbar → trotzdem interagieren
+    if (tp && tp.length) {
+      const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
+      this.pfad = this.vereinfachePfad(pts);
+      this.pfadZielOrt = doppel ? id : null;   // nur Doppelklick öffnet bei Ankunft
+    } else if (doppel) {
+      interact(id);   // unerreichbar → trotzdem öffnen
+    }
   }
 
   // Nächstgelegenes Gebäude in Reichweite (Chebyshev ≤ 2) – Gebäude liegen
@@ -6838,8 +6915,11 @@ class SpielSzene extends Phaser.Scene {
 
   versucheInteraktion() {
     const nah = this.nahesGebaeude();
-    if (nah) interact(nah.id);
-    else logEvent('ℹ️ Näher an ein Gebäude gehen (E).', '');
+    if (nah) {
+      this.pfad = []; this.pfadZielOrt = null;
+      this.cameras.main.centerOn(this.spielerX, this.spielerY);   // Kamera fixieren → ruhiger Hintergrund
+      interact(nah.id);
+    } else logEvent('ℹ️ Näher an ein Gebäude gehen (E).', '');
   }
 
   /** Überspringt die aktuelle Woche sofort (SPACE-Taste) */
