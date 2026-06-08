@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v11 – Glow & Nebel';
+const BUILD_MARKE = 'v12 – Heller Nebel';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -5587,13 +5587,11 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-Y der ZUGEORDNETEN Kachel (nicht der Sprite-Unterkante!).
-    // Sonst sortiert ein hohes Gebäude mit großem Vorplatz vor dem Spieler, der
-    // auf eben diesem Vorplatz steht. Kachel-Mitte ist konsistent mit der Spieler-Tiefe.
-    const op = orte[o.id]
-      ? isoToScreen(orte[o.id].col + 0.5, orte[o.id].row + 0.5, tileW, tileH, offsetX, offsetY)
-      : { y: y + o.fh * 0.85 * feldH };
-    const baseY = op.y;
+    // Iso-Tiefe = Boden-Y der GEBÄUDE-STANDFLÄCHE (~60 % der Sprite-Höhe), NICHT
+    // der Sprite-Unterkante. Bei hohen Gebäuden mit großem Vorplatz (Sprite ragt
+    // über den Gehsteig) liegt die echte Standfläche höher; sonst sortiert das
+    // Gebäude vor dem Spieler, der davor auf dem Gehsteig vorbeiläuft.
+    const baseY = y + h * 0.60;
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
@@ -6339,7 +6337,7 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
-    this.SPEED = 154;             // Lauftempo in px/Sekunde
+    this.SPEED = 185;             // Lauftempo in px/Sekunde
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
