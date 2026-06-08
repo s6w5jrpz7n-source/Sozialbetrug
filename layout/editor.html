@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sozialbetrug – Layout-Editor</title>
+<style>
+  * { box-sizing: border-box; }
+  html,body { margin:0; height:100%; background:#0e1220; color:#cdd6f4;
+    font-family:"Courier New",monospace; overflow:hidden; }
+  #bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    padding:8px 12px; background:#161b2e; border-bottom:1px solid #2e3e60; }
+  #bar button, #bar select { font-family:inherit; font-size:13px; padding:5px 10px;
+    background:#23304f; color:#e8eeff; border:1px solid #3a4e7a; border-radius:4px; cursor:pointer; }
+  #bar button:hover { background:#2e3e60; }
+  #bar .prim { background:#3dd6b0; color:#06251d; font-weight:bold; border-color:#3dd6b0; }
+  #bar label { font-size:12px; color:#9fb0d8; display:flex; align-items:center; gap:5px; }
+  #hint { font-size:11px; color:#7f8db5; }
+  #wrap { position:absolute; top:46px; bottom:0; left:0; right:0; overflow:auto; background:#0a0d18;
+    background-image:linear-gradient(45deg,#11162400 25%,#141a2e 25%,#141a2e 50%,#11162400 50%,#11162400 75%,#141a2e 75%);
+    background-size:24px 24px; }
+  canvas { display:block; }
+  #sel { font-size:12px; color:#e8b84b; min-width:120px; }
+  #dlg { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; }
+  #dlg div { background:#161b2e; padding:16px; border:1px solid #3a4e7a; border-radius:8px; width:min(640px,92vw); }
+  #dlg textarea { width:100%; height:240px; background:#0a0d18; color:#9fe8c0; border:1px solid #2e3e60; font-family:monospace; font-size:11px; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <strong style="color:#e8b84b">🏗️ Layout-Editor</strong>
+  <select id="add"><option value="">+ Hinzufügen…</option></select>
+  <button id="scaleUp">＋ größer</button>
+  <button id="scaleDn">－ kleiner</button>
+  <button id="del">🗑 Löschen</button>
+  <label><input type="checkbox" id="grid" checked> Raster</label>
+  <button id="reset">↺ Gebäude zurücksetzen</button>
+  <button id="export" class="prim">💾 Export</button>
+  <span id="sel">nichts ausgewählt</span>
+  <span id="hint">Ziehen = verschieben · Mausrad = skalieren · Entf = löschen · Pfeiltasten = fein</span>
+</div>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="dlg"><div>
+  <p style="margin:0 0 8px">Kopiere diesen Text und schick ihn mir (oder die heruntergeladene <b>layout.json</b>):</p>
+  <textarea id="out" readonly></textarea>
+  <div style="text-align:right;margin-top:8px"><button onclick="document.getElementById('dlg').style.display='none'">Schließen</button></div>
+</div></div>
+
+<script>
+// ---------- Engine-Konstanten (müssen zur script.js passen) ----------
+const tileW=120, tileH=60, fieldW=1920, fieldH=960, MARGIN=720;
+const offX=960, offY=0;                 // Iso-Ursprung im Feld
+const worldW=fieldW+2*MARGIN, worldH=fieldH+2*MARGIN;
+function iso(c,r){ return { x: offX+(c-r)*tileW/2, y: offY+(c+r)*tileH/2 }; }
+
+const BUILDINGS=[
+ {id:'wohnung',file:'wohnung.png',col:2,row:2,breite:2.05,ankerY:0.78,dy:0.04,dx:0},
+ {id:'arbeitsamt',file:'arbeitsamt.png',col:6,row:2,breite:2.83,ankerY:0.92,dy:0.18,dx:0},
+ {id:'sportverein',file:'sportverein.png',col:10,row:2,breite:2.50,ankerY:0.82,dy:0.04,dx:0},
+ {id:'supermarkt',file:'supermarkt.png',col:14,row:2,breite:1.55,ankerY:0.88,dy:0.06,dx:0},
+ {id:'bank',file:'bank.png',col:2,row:6,breite:2.28,ankerY:0.86,dy:0.10,dx:0},
+ {id:'pawn',file:'pfandleiher.png',col:6,row:6,breite:1.31,ankerY:0.86,dy:0.10,dx:0},
+ {id:'kasino',file:'casino_nacht.png',col:10,row:6,breite:2.28,ankerY:0.86,dy:0.08,dx:0},
+ {id:'schattenbank',file:'schattenbank.png',col:14,row:6,breite:2.05,ankerY:0.78,dy:0.04,dx:0},
+ {id:'baustelle',file:'baustelle.png',col:2,row:10,breite:3.81,ankerY:0.86,dy:0.10,dx:0.25},
+ {id:'amuesier',file:'amuesierbetrieb.png',col:6,row:10,breite:1.75,ankerY:0.86,dy:0.10,dx:0},
+ {id:'loanshark',file:'loanshark.png',col:10,row:10,breite:2.05,ankerY:0.78,dy:0.04,dx:0},
+ {id:'arztpraxis',file:'arztpraxis.png',col:14,row:10,breite:2.05,ankerY:0.78,dy:0.04,dx:0},
+ {id:'kiosk',file:'kiosk.png',col:2,row:14,breite:1.95,ankerY:0.80,dy:0.04,dx:0},
+ {id:'kirche',file:'kirche.png',col:6,row:14,breite:2.20,ankerY:0.80,dy:0.04,dx:0},
+ {id:'villa',file:'villa.png',col:10,row:14,breite:2.35,ankerY:0.78,dy:0.04,dx:0},
+];
+const PROPS=[]; for(let i=0;i<35;i++) PROPS.push('prop_'+String(i).padStart(2,'0')+'.png');
+
+const imgCache={};
+function load(src){ return new Promise(res=>{ if(imgCache[src])return res(imgCache[src]);
+  const im=new Image(); im.onload=()=>{imgCache[src]=im;res(im);}; im.onerror=()=>res(null); im.src=src; }); }
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+cv.width=worldW; cv.height=worldH;
+cv.style.width=(worldW*0.5)+'px';     // halb so groß angezeigt, scrollbar
+let ground=null, objects=[], sel=null;
+
+function buildingPath(f){ return '../assets/buildings/'+f; }
+function propPath(f){ return '../assets/props/'+f; }
+
+async function placeBuilding(b){
+  const im=await load(buildingPath(b.file)); if(!im)return;
+  const c=iso(b.col+0.5,b.row+0.5);
+  const w=tileW*b.breite, h=w*im.naturalHeight/im.naturalWidth;
+  objects.push({type:'building', id:b.id, file:b.file, img:im,
+    x: MARGIN + c.x + tileW*(b.dx||0) - w/2,
+    y: MARGIN + c.y + tileH*(b.dy||0) - h*b.ankerY, w, h});
+}
+async function addProp(file){
+  const im=await load(propPath(file)); if(!im)return;
+  const w=tileW*1.3, h=w*im.naturalHeight/im.naturalWidth;
+  objects.push({type:'prop', id:file.replace('.png',''), file, img:im,
+    x: MARGIN+fieldW/2 - w/2, y: MARGIN+fieldH/2 - h/2, w, h});
+  sel=objects[objects.length-1];
+}
+async function addBuildingById(id){
+  const b=BUILDINGS.find(x=>x.id===id); if(!b)return;
+  await placeBuilding(b); sel=objects[objects.length-1];
+}
+
+async function init(){
+  ground=await load(buildingPath('stadtboden.png'));
+  for(const b of BUILDINGS) await placeBuilding(b);
+  // Dropdown füllen
+  const se=document.getElementById('add');
+  const og1=document.createElement('optgroup'); og1.label='Gebäude (erneut)';
+  BUILDINGS.forEach(b=>{const o=document.createElement('option');o.value='B:'+b.id;o.textContent=b.id;og1.appendChild(o);});
+  const og2=document.createElement('optgroup'); og2.label='Props';
+  PROPS.forEach(p=>{const o=document.createElement('option');o.value='P:'+p;o.textContent=p;og2.appendChild(o);});
+  se.appendChild(og1); se.appendChild(og2);
+  draw();
+}
+
+// ---------- Zeichnen ----------
+function draw(){
+  ctx.clearRect(0,0,worldW,worldH);
+  ctx.fillStyle='#4f7a44'; ctx.fillRect(0,0,worldW,worldH);   // Wiese (Vorschau)
+  if(ground) ctx.drawImage(ground, MARGIN, MARGIN, fieldW, fieldH);
+  if(document.getElementById('grid').checked) drawGrid();
+  const ord=[...objects].sort((a,b)=>(a.y+a.h)-(b.y+b.h));
+  for(const o of ord){ ctx.drawImage(o.img,o.x,o.y,o.w,o.h);
+    if(o===sel){ ctx.strokeStyle='#e8b84b'; ctx.lineWidth=3; ctx.strokeRect(o.x,o.y,o.w,o.h);
+      ctx.fillStyle='#e8b84b'; ctx.fillRect(o.x+o.w-12,o.y+o.h-12,12,12); } }
+}
+function drawGrid(){
+  ctx.lineWidth=1;
+  for(let i=0;i<=16;i++){ const a=iso(i,0),b=iso(i,16),c=iso(0,i),d=iso(16,i);
+    const road=(i%4===0); ctx.strokeStyle=road?'rgba(255,220,80,.6)':'rgba(255,255,255,.18)'; ctx.lineWidth=road?3:1;
+    ctx.beginPath();ctx.moveTo(MARGIN+a.x,MARGIN+a.y);ctx.lineTo(MARGIN+b.x,MARGIN+b.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(MARGIN+c.x,MARGIN+c.y);ctx.lineTo(MARGIN+d.x,MARGIN+d.y);ctx.stroke(); }
+}
+
+// ---------- Maus ----------
+const hc=document.createElement('canvas'), hctx=hc.getContext('2d');
+function hit(o,wx,wy){ if(wx<o.x||wx>o.x+o.w||wy<o.y||wy>o.y+o.h)return false;
+  hc.width=Math.max(1,o.w|0); hc.height=Math.max(1,o.h|0); hctx.clearRect(0,0,hc.width,hc.height);
+  hctx.drawImage(o.img,0,0,o.w,o.h);
+  try{ return hctx.getImageData((wx-o.x)|0,(wy-o.y)|0,1,1).data[3]>20; }catch(e){ return true; } }
+function toWorld(ev){ const r=cv.getBoundingClientRect();
+  return { x:(ev.clientX-r.left)*(cv.width/r.width), y:(ev.clientY-r.top)*(cv.height/r.height) }; }
+let drag=null;
+cv.addEventListener('mousedown',ev=>{ const p=toWorld(ev);
+  const ord=[...objects].sort((a,b)=>(a.y+a.h)-(b.y+b.h));
+  let pick=null; for(let i=ord.length-1;i>=0;i--){ if(hit(ord[i],p.x,p.y)){pick=ord[i];break;} }
+  sel=pick; if(pick) drag={dx:p.x-pick.x, dy:p.y-pick.y}; draw(); refresh(); });
+window.addEventListener('mousemove',ev=>{ if(!drag||!sel)return; const p=toWorld(ev);
+  sel.x=p.x-drag.dx; sel.y=p.y-drag.dy; draw(); });
+window.addEventListener('mouseup',()=>drag=null);
+cv.addEventListener('wheel',ev=>{ if(!sel)return; ev.preventDefault();
+  const f=ev.deltaY<0?1.06:0.94; const cx=sel.x+sel.w/2, cy=sel.y+sel.h/2;
+  sel.w*=f; sel.h*=f; sel.x=cx-sel.w/2; sel.y=cy-sel.h/2; draw(); refresh(); },{passive:false});
+window.addEventListener('keydown',ev=>{ if(!sel)return;
+  const s=ev.shiftKey?10:1;
+  if(ev.key==='ArrowLeft'){sel.x-=s;draw();} if(ev.key==='ArrowRight'){sel.x+=s;draw();}
+  if(ev.key==='ArrowUp'){sel.y-=s;draw();}   if(ev.key==='ArrowDown'){sel.y+=s;draw();}
+  if(ev.key==='Delete'||ev.key==='Backspace'){ objects=objects.filter(o=>o!==sel); sel=null; draw(); refresh(); } });
+
+function scaleSel(f){ if(!sel)return; const cx=sel.x+sel.w/2, cy=sel.y+sel.h/2;
+  sel.w*=f; sel.h*=f; sel.x=cx-sel.w/2; sel.y=cy-sel.h/2; draw(); }
+function refresh(){ document.getElementById('sel').textContent = sel? ('▶ '+sel.id) : 'nichts ausgewählt'; }
+
+// ---------- Buttons ----------
+document.getElementById('add').addEventListener('change',e=>{ const v=e.target.value; e.target.value='';
+  if(v.startsWith('B:')) addBuildingById(v.slice(2)).then(()=>{draw();refresh();});
+  else if(v.startsWith('P:')) addProp(v.slice(2)).then(()=>{draw();refresh();}); });
+document.getElementById('scaleUp').onclick=()=>scaleSel(1.08);
+document.getElementById('scaleDn').onclick=()=>scaleSel(0.93);
+document.getElementById('del').onclick=()=>{ if(sel){objects=objects.filter(o=>o!==sel);sel=null;draw();refresh();} };
+document.getElementById('grid').onchange=draw;
+document.getElementById('reset').onclick=async()=>{ objects=objects.filter(o=>o.type!=='building');
+  for(const b of BUILDINGS) await placeBuilding(b); sel=null; draw(); refresh(); };
+document.getElementById('export').onclick=()=>{
+  const out={ ground:'stadtboden.png', fieldW, fieldH, margin:MARGIN,
+    objects: objects.map(o=>({ id:o.id, type:o.type,
+      fx:+((o.x-MARGIN)/fieldW).toFixed(5), fy:+((o.y-MARGIN)/fieldH).toFixed(5),
+      fw:+(o.w/fieldW).toFixed(5), fh:+(o.h/fieldH).toFixed(5) })) };
+  const txt=JSON.stringify(out,null,1);
+  document.getElementById('out').value=txt; document.getElementById('dlg').style.display='flex';
+  const blob=new Blob([txt],{type:'application/json'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='layout.json'; a.click(); };
+
+init();
+</script>
+</body>
+</html>
