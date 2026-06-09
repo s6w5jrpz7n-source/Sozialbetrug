@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v12 – Heller Nebel';
+const BUILD_MARKE = 'v13 – Kollision';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6258,7 +6258,8 @@ class SpielSzene extends Phaser.Scene {
     }
     // Manuelles Layout (aus dem Editor) – fehlt es, fällt alles auf Standard zurück
     this.load.json('layout', 'layout/layout.json');
-    this.load.on('loaderror', () => {});   // fehlendes Layout still ignorieren
+    this.load.json('collision', 'layout/collision.json');   // pixelgenaue Standflächen
+    this.load.on('loaderror', () => {});   // fehlende Datei still ignorieren
   }  // Audio läuft sonst über natives HTMLAudioElement
 
   create() {
@@ -6287,19 +6288,20 @@ class SpielSzene extends Phaser.Scene {
     // Kollisions-Daten – angepasst an pos.x+0.5-Offset
     ORTE_CONFIG.forEach(o => this.ortRects.push({ id: o.id, col: o.col, row: o.row }));
 
-    // Begehbarkeit: alle Felder außer Gebäude-Feldern (Straße + Bürgersteig + Lücken)
+    // Begehbarkeit: alle Felder außer Gebäude-Standflächen.
     this.blockierteFelder = new Set();
-    ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
-    // Zusätzlich: gesamte Grundfläche jedes Gebäudes aus dem Layout sperren,
-    // damit der Spieler nicht durch das (mehrere Kacheln breite) Haus läuft.
-    {
+    if (this.cache && this.cache.json && this.cache.json.exists('collision')) {
+      // Pixelgenaue Standflächen (offline aus den PNGs berechnet) – exakt.
+      this.cache.json.get('collision').forEach(s => this.blockierteFelder.add(s));
+    } else {
+      // Fallback: grobe Schätzung aus dem Layout-Rechteck.
+      ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
       const _layout = (this.cache && this.cache.json && this.cache.json.exists('layout'))
         ? this.cache.json.get('layout') : null;
       const _fW = (16 + 16) * this.tileW / 2, _fH = (16 + 16) * this.tileH / 2;
       const _left = this.offsetX - _fW / 2, _top = this.offsetY;
       if (_layout && Array.isArray(_layout.objects)) {
         _layout.objects.filter(o => o.type === 'building').forEach(o => {
-          // zentral-untere Region = Gebäude-Standfläche (nicht der ganze Vorplatz)
           for (let u = 0.35; u <= 0.65; u += 0.15) {
             for (let v = 0.58; v <= 0.86; v += 0.14) {
               const t = this.screenZuTile(_left + (o.fx + u * o.fw) * _fW, _top + (o.fy + v * o.fh) * _fH);
