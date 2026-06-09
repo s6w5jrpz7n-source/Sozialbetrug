@@ -148,6 +148,11 @@
                 text-shadow: 0 0 10px rgba(232,75,75,0.5); }
     /* Auf großen (Desktop-)Bildschirmen reicht das rechte HUD → Topbar dezent */
     @media (min-width: 900px) { #topbar { opacity: 0.96; } }
+    /* Hochformat (Handy): rechte Seitenleiste ausblenden → Spiel füllt den Screen.
+       Die wichtigen Werte stehen in der schwebenden Topbar; Save/Load im Header. */
+    @media (orientation: portrait) {
+      #hud { display: none; }
+    }
 
     /* =================================================================
        HUD-PANEL – das polished rechte Panel

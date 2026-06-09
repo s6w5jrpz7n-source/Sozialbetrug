@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v14 – Status-Leiste';
+const BUILD_MARKE = 'v15 – Hochformat-Start';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -5932,7 +5932,49 @@ class StartSzene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    // ---- Hintergrundbild: vollflächig skaliert ----
+    // ===== HOCHFORMAT (Handy): Titelbild oben + große Tipp-Buttons darunter =====
+    if (H > W * 1.05 && this.textures.exists('startbg')) {
+      const bgFill = this.add.graphics().setDepth(0);
+      bgFill.fillStyle(0x080b14, 1); bgFill.fillRect(0, 0, W, H);
+      this._startObjekte.push(bgFill);
+
+      const bg = this.add.image(W / 2, 8, 'startbg').setOrigin(0.5, 0).setDepth(1);
+      let s = W / bg.width;
+      if (bg.height * s > H * 0.45) s = (H * 0.45) / bg.height;   // Titel max. 45% Höhe
+      bg.setScale(s);
+      this._startObjekte.push(bg);
+
+      const items = this._menuItems;
+      const n = items.length;
+      const top = 8 + bg.height * s + Math.min(28, H * 0.03);
+      const gap = 12;
+      const bh = Math.max(44, Math.min(66, (H - top - 24 - gap * (n - 1)) / n));
+      const bw = Math.min(W * 0.88, 460);
+      items.forEach((item, i) => {
+        const bx = W / 2, by = top + i * (bh + gap) + bh / 2;
+        const first = i === 0;
+        const g = this.add.graphics().setDepth(2);
+        const draw = (hover) => {
+          g.clear();
+          g.fillStyle(first ? 0x3a2a00 : 0x141a2e, hover ? 1 : 0.95);
+          g.fillRoundedRect(bx - bw / 2, by - bh / 2, bw, bh, 10);
+          g.lineStyle(2, first ? 0xffd700 : 0x3a4e7a, 1);
+          g.strokeRoundedRect(bx - bw / 2, by - bh / 2, bw, bh, 10);
+        };
+        draw(false);
+        const txt = this.add.text(bx, by, `${item.icon}  ${item.label}`, {
+          fontFamily: '"Courier New", monospace', fontSize: Math.max(16, Math.floor(bh * 0.34)) + 'px',
+          fontStyle: 'bold', color: first ? '#ffd700' : '#e8eeff', stroke: '#000000', strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(3);
+        const zone = this.add.zone(bx, by, bw, bh).setDepth(4).setInteractive({ useHandCursor: true });
+        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        this._startObjekte.push(g, txt, zone);
+        this._menuButtons.push({ bg: g, txt, zone });
+      });
+      return;
+    }
+
+    // ---- Hintergrundbild: vollflächig skaliert (Querformat/Desktop) ----
     let bgRect = null;   // {left, top, w, h} des angezeigten Bildes
     if (this.textures.exists('startbg')) {
       const bg = this.add.image(W/2, H/2, 'startbg');
