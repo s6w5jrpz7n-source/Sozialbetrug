@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v29 – Größe';
+const BUILD_MARKE = 'v30 – Blase & Kamera';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6479,7 +6479,10 @@ class SpielSzene extends Phaser.Scene {
       this.offsetX - fW / 2 - 1.5 * fW, this.offsetY - 1.5 * fH,
       fW + 3 * fW, fH + 3 * fH
     );
-    this.cameras.main.startFollow(this.camTarget, false, 0.16, 0.16);
+    // lerp 1 = die Kamera sitzt exakt auf dem Spieler (kein Nachziehen/Nachzittern,
+    // wenn er stehen bleibt). roundPixels true = Scroll auf ganze Pixel gerundet
+    // → Gebäude „vibrieren" beim Laufen nicht mehr.
+    this.cameras.main.startFollow(this.camTarget, true, 1, 1);
     this.cameras.main.centerOn(this.spielerX, this.spielerY);
 
     // ---- Adaptiver Zoom: auf jedem Gerät etwa gleich viel Fläche sichtbar ----
@@ -6489,7 +6492,7 @@ class SpielSzene extends Phaser.Scene {
       const z = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);
       this.cameras.main.setZoom(z);
     };
-    this.cameras.main.setRoundPixels(false);  // glatte Sub-Pixel-Bewegung (kein Kanten-Springen)
+    this.cameras.main.setRoundPixels(true);   // Scroll auf ganze Pixel → kein Gebäude-Vibrieren
     this._setzeZoom();
     this.scale.on('resize', this._setzeZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this._setzeZoom, this));
@@ -6524,8 +6527,10 @@ class SpielSzene extends Phaser.Scene {
     this.bettlerSprite = this.add.sprite(-9999, -9999, 'bettler_stand')
       .setOrigin(0.5, 1).setScale(BETTLER_H / 176).setVisible(false);   // Höhe wird je Pose einheitlich gesetzt
     this.bettlerBubble = this.add.text(0, 0, "Haste mal 'n Euro?", {
-      fontFamily: '"Courier New", monospace', fontSize: '11px', fontStyle: 'bold',
-      color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 6, y: 4 },
+      fontFamily: '"Share Tech Mono", "Courier New", monospace', fontSize: '18px', fontStyle: 'bold',
+      color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 9, y: 6 },
+      // hohe Auflösung → auch bei rausgezoomter Kamera scharf/lesbar
+      resolution: Math.max(2, Math.min(window.devicePixelRatio || 2, 3)),
     }).setOrigin(0.5, 1).setDepth(95000).setVisible(false);
     this.bettlerZone   = this.add.zone(-9999, -9999, 40, 60).setDepth(96000).setInteractive();
     this.bettlerZone.on('pointerdown', () => this.klickBettler());
@@ -7066,7 +7071,7 @@ class SpielSzene extends Phaser.Scene {
     // Sprechblase, wenn er (im Wander-Modus) nah genug ist
     const bubbleAn = this._bettlerMode === 'wander' && dist < 135;
     this.bettlerBubble.setVisible(bubbleAn);
-    if (bubbleAn) this.bettlerBubble.setPosition(this._bettlerX, this._bettlerY - 56);
+    if (bubbleAn) this.bettlerBubble.setPosition(this._bettlerX, this._bettlerY - BETTLER_H - 8);
     // Klickzone mitführen (über dem Bettler-Körper)
     this.bettlerZone.setPosition(this._bettlerX, this._bettlerY - 26);
 
