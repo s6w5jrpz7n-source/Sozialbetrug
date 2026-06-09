@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v19 – Feinschliff';
+const BUILD_MARKE = 'v20 – Flimmern';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6416,7 +6416,7 @@ class SpielSzene extends Phaser.Scene {
       this.offsetX - fW / 2 - 1.5 * fW, this.offsetY - 1.5 * fH,
       fW + 3 * fW, fH + 3 * fH
     );
-    this.cameras.main.startFollow(this.camTarget, true, 0.16, 0.16);
+    this.cameras.main.startFollow(this.camTarget, false, 0.16, 0.16);
     this.cameras.main.centerOn(this.spielerX, this.spielerY);
 
     // ---- Adaptiver Zoom: auf jedem Gerät etwa gleich viel Fläche sichtbar ----
@@ -6426,7 +6426,7 @@ class SpielSzene extends Phaser.Scene {
       const z = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);
       this.cameras.main.setZoom(z);
     };
-    this.cameras.main.setRoundPixels(true);   // reduziert Flimmern bei Bewegung
+    this.cameras.main.setRoundPixels(false);  // glatte Sub-Pixel-Bewegung (kein Kanten-Springen)
     this._setzeZoom();
     this.scale.on('resize', this._setzeZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this._setzeZoom, this));
