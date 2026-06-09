@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v20 – Flimmern';
+const BUILD_MARKE = 'v22 – Kollision-Fix';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
