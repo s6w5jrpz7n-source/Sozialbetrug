@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v27 – Spieler-Sprite';
+const BUILD_MARKE = 'v28 – Frames sauber';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6360,11 +6360,11 @@ class SpielSzene extends Phaser.Scene {
     this.load.json('layout', 'layout/layout.json');
     this.load.json('collision', 'layout/collision.json');   // pixelgenaue Standflächen
     // Bettler-Animationen (4 Frames Stehen/Betteln, 8 Frames Gehen im Profil)
-    this.load.spritesheet('bettler_stand', 'assets/bettler_stand.png', { frameWidth: 152, frameHeight: 176 });
-    this.load.spritesheet('bettler_walk',  'assets/bettler_walk.png',  { frameWidth: 158, frameHeight: 171 });
+    this.load.spritesheet('bettler_stand', 'assets/bettler_stand.png', { frameWidth: 96,  frameHeight: 176 });
+    this.load.spritesheet('bettler_walk',  'assets/bettler_walk.png',  { frameWidth: 108, frameHeight: 171 });
     // Spieler-Animationen (7 Frames Front-Walk, 8 Frames Seitenprofil)
-    this.load.spritesheet('spieler_front', 'assets/spieler_front.png', { frameWidth: 88,  frameHeight: 159 });
-    this.load.spritesheet('spieler_side',  'assets/spieler_side.png',  { frameWidth: 157, frameHeight: 171 });
+    this.load.spritesheet('spieler_front', 'assets/spieler_front.png', { frameWidth: 75,  frameHeight: 159 });
+    this.load.spritesheet('spieler_side',  'assets/spieler_side.png',  { frameWidth: 108, frameHeight: 171 });
     this.load.on('loaderror', () => {});   // fehlende Datei still ignorieren
   }  // Audio läuft sonst über natives HTMLAudioElement
 
