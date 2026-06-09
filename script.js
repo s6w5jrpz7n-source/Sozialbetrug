@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v13 – Kollision';
+const BUILD_MARKE = 'v14 – Status-Leiste';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -2241,6 +2241,15 @@ function logEvent(text, typ = '') {
 // ================================================================
 function updateHUD() {
   const gs = gameState;
+
+  // ---- Schwebende Status-Leiste oben (immer sichtbar) ----
+  const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  _set('tb-energie', Math.round(gs.energie));
+  _set('tb-gesund',  Math.round(gs.gesundheit));
+  _set('tb-konto',   formatEuro(gs.kontostand));
+  _set('tb-schwarz', formatEuro(gs.schwarzeKasse));
+  _set('tb-bargeld', formatEuro(gs.losesBargeld));
+  _set('tb-staat',   formatEuro(gs.vomStaatGesamt || 0));
 
   // ---- Zeit (Monat / Woche / Tag) ----
   const zeitEl = document.getElementById('hud-zeit');

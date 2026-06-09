@@ -112,6 +112,44 @@
     #game-container canvas { display: block; }
 
     /* =================================================================
+       SCHWEBENDE STATUS-LEISTE (oben, immer sichtbar – mobil-tauglich)
+    ================================================================= */
+    #topbar {
+      position: absolute;
+      top: 8px; left: 8px; right: 8px;
+      z-index: 50;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      pointer-events: none;   /* blockiert Klicks aufs Spiel nicht */
+    }
+    .tb-pills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .tb-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(180deg, rgba(20,30,55,0.92), rgba(12,20,40,0.92));
+      border: 1px solid var(--border-hi); border-radius: 16px;
+      padding: 3px 11px 3px 8px;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold;
+      color: var(--text-hi);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    }
+    .tb-ico { font-size: 0.92rem; line-height: 1; }
+    .tb-energie { border-color: #3dd6b0; } .tb-energie #tb-energie { color: #3dd6b0; }
+    .tb-gesund  { border-color: #e85b6a; } .tb-gesund  #tb-gesund  { color: #ff8a96; }
+    .tb-konto   #tb-konto   { color: #3dd6b0; }
+    .tb-schwarz #tb-schwarz { color: #a0d8b0; }
+    .tb-bargeld #tb-bargeld { color: #e8a84b; }
+    #tb-staat-box {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(10,14,24,0.85);
+      border: 1px solid rgba(232,75,75,0.4); border-radius: 8px;
+      padding: 2px 14px;
+    }
+    .tb-staat-label { font-size: 0.5rem; letter-spacing: 1.5px; color: #e8924b; }
+    #tb-staat { font-size: 1.05rem; font-weight: 900; color: #e84b4b;
+                text-shadow: 0 0 10px rgba(232,75,75,0.5); }
+    /* Auf großen (Desktop-)Bildschirmen reicht das rechte HUD → Topbar dezent */
+    @media (min-width: 900px) { #topbar { opacity: 0.96; } }
+
+    /* =================================================================
        HUD-PANEL – das polished rechte Panel
     ================================================================= */
     #hud {
@@ -661,7 +699,22 @@
   <div id="main">
 
     <!-- Phaser-Canvas -->
-    <div id="game-container"></div>
+    <div id="game-container">
+      <!-- Schwebende Status-Leiste (immer sichtbar, mobil-tauglich) -->
+      <div id="topbar">
+        <div class="tb-pills">
+          <div class="tb-pill tb-energie"><span class="tb-ico">⚡</span><span id="tb-energie">80</span></div>
+          <div class="tb-pill tb-gesund"><span class="tb-ico">❤️</span><span id="tb-gesund">80</span></div>
+          <div class="tb-pill tb-konto"><span class="tb-ico">🏦</span><span id="tb-konto">50.000 €</span></div>
+          <div class="tb-pill tb-schwarz"><span class="tb-ico">🖤</span><span id="tb-schwarz">0 €</span></div>
+          <div class="tb-pill tb-bargeld"><span class="tb-ico">💵</span><span id="tb-bargeld">0 €</span></div>
+        </div>
+        <div id="tb-staat-box">
+          <span class="tb-staat-label">💀 VOM STAAT KASSIERT</span>
+          <span id="tb-staat">0 €</span>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== HUD ===== -->
     <div id="hud">
