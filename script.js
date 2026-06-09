@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v24 – Bettler-Jagd';
+const BUILD_MARKE = 'v25 – Bettler lebt';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6481,13 +6481,26 @@ class SpielSzene extends Phaser.Scene {
     this.regenGfx = this.add.graphics().setDepth(99999).setScrollFactor(0);
     this.initRegen(W, H);
 
-    // ---- Spenden-Bettler: alle 10 Minuten Spielzeit erscheint ein Bettler,
-    // der den Spieler verfolgt. Erst wenn er ihn erwischt, kommt das Popup.
-    // (pausiert automatisch, wenn die App minimiert ist, da Phaser dann anhält)
+    // ---- Spenden-Bettler ----
+    // Läuft von Anfang an zufällig durch die Stadt (Wander-Modus). Kommt er dem
+    // Spieler nahe, zeigt er eine Sprechblase. Nach 10 Minuten wird er
+    // aufdringlich (Angriff → verfolgt den Spieler, beim Kontakt kommt das
+    // Popup). Doppelklick auf ihn öffnet das Spenden-Menü jederzeit.
     this.bettlerGfx    = this.add.graphics();
-    this._bettlerAktiv = false;
+    this.bettlerBubble = this.add.text(0, 0, "Haste mal 'n Euro?", {
+      fontFamily: '"Courier New", monospace', fontSize: '11px', fontStyle: 'bold',
+      color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 6, y: 4 },
+    }).setOrigin(0.5, 1).setDepth(95000).setVisible(false);
+    this.bettlerZone   = this.add.zone(-9999, -9999, 34, 54).setDepth(96000).setInteractive();
+    this.bettlerZone.on('pointerdown', () => this.klickBettler());
+    this._bettlerExists = false;
+    this._bettlerMode   = 'wander';   // 'wander' | 'attack'
     this._bettlerX = 0; this._bettlerY = 0;
+    this._bettlerZielX = 0; this._bettlerZielY = 0;
     this._bettlerFrame = 0; this._bettlerWalkT = 0;
+    this._bettlerTapZeit = 0;
+    this.initBettler();
+    // Alle 10 Minuten Spielzeit wird er aufdringlich (Angriff).
     this._spendeTimer = this.time.addEvent({
       delay: 10 * 60 * 1000, loop: true,
       callback: () => this.spawnBettler(),
@@ -6540,8 +6553,8 @@ class SpielSzene extends Phaser.Scene {
     this.dealerAnimT += dt;
     this.animiereDealer();
 
-    // Verfolgender Bettler (läuft auch, während andere Spiellogik gerade pausiert)
-    if (this._bettlerAktiv && !modalOffen && !this._menuAktiv) this.updateBettler(dtMove);
+    // Bettler (läuft auch, während andere Spiellogik gerade pausiert)
+    if (!modalOffen && !this._menuAktiv) this.updateBettler(dtMove);
 
     if (modalOffen) return;
 
@@ -6979,43 +6992,114 @@ class SpielSzene extends Phaser.Scene {
 
   // ---- Spenden-Bettler: spawnen, verfolgen, erwischen ----
   // Lässt einen Bettler weit weg vom Spieler erscheinen, der ihn dann verfolgt.
-  spawnBettler() {
+  // Bettler an einem zufälligen, begehbaren Punkt ins Leben rufen (Wander-Modus).
+  initBettler() {
     try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
-    if (this._bettlerAktiv || gameState.gameOver) return;
-    // weit entfernten, begehbaren Startpunkt suchen
+    if (this._bettlerExists || gameState.gameOver) return;
     let best = null, bestD = -1;
     for (let i = 0; i < 40; i++) {
       const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
       if (!this.begehbar(c, r)) continue;
       const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
       const d = Phaser.Math.Distance.Between(p.x, p.y, this.spielerX, this.spielerY);
-      if (d > bestD) { bestD = d; best = p; }
+      if (d > bestD) { bestD = d; best = p; }   // möglichst weit weg starten
     }
     if (!best) return;
     this._bettlerX = best.x; this._bettlerY = best.y;
-    this._bettlerAktiv = true;
+    this._bettlerExists = true;
+    this._bettlerMode = 'wander';
     this._bettlerFrame = 0; this._bettlerWalkT = 0;
-    logEvent('🧎 Ein zerlumpter Bettler hat dich entdeckt und schlurft auf dich zu …', 'warn');
+    this.neuesWanderZiel();
   }
 
-  // Pro Frame: Bettler Richtung Spieler bewegen; bei Kontakt → Popup.
-  updateBettler(dt) {
-    const dx = this.spielerX - this._bettlerX;
-    const dy = this.spielerY - this._bettlerY;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 26) {                       // erwischt!
-      this._bettlerAktiv = false;
-      this.bettlerGfx.clear();
-      this.zeigeBettler();
-      return;
+  // 10-Min-Timer / Test-Knopf: Bettler wird aufdringlich und greift an.
+  spawnBettler() {
+    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (gameState.gameOver) return;
+    if (!this._bettlerExists) this.initBettler();
+    if (!this._bettlerExists) return;
+    this._bettlerMode = 'attack';
+    logEvent('🧎 Der Bettler wird aufdringlich und stürzt sich auf dich!', 'warn');
+  }
+
+  // Neues, zufälliges Wanderziel (begehbare Kachel) wählen.
+  neuesWanderZiel() {
+    for (let i = 0; i < 40; i++) {
+      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+      if (!this.begehbar(c, r)) continue;
+      const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      this._bettlerZielX = p.x; this._bettlerZielY = p.y; return;
     }
-    const bs = 105 * dt;                   // etwas langsamer als der Spieler (139)
-    const sx = (dx / dist) * bs, sy = (dy / dist) * bs;
-    // wie der Spieler gleiten; wenn völlig blockiert, notfalls direkt durch
-    if      (this.weltBegehbar(this._bettlerX + sx, this._bettlerY + sy)) { this._bettlerX += sx; this._bettlerY += sy; }
-    else if (this.weltBegehbar(this._bettlerX + sx, this._bettlerY))      { this._bettlerX += sx; }
-    else if (this.weltBegehbar(this._bettlerX, this._bettlerY + sy))      { this._bettlerY += sy; }
-    else { this._bettlerX += sx; this._bettlerY += sy; }
+  }
+
+  // Bettler einen Schritt Richtung (zx,zy) bewegen. true = bewegt, false = blockiert.
+  _bettlerSchritt(zx, zy, speed, dt) {
+    const dx = zx - this._bettlerX, dy = zy - this._bettlerY;
+    const d = Math.hypot(dx, dy) || 1;
+    const sx = (dx / d) * speed * dt, sy = (dy / d) * speed * dt;
+    if      (this.weltBegehbar(this._bettlerX + sx, this._bettlerY + sy)) { this._bettlerX += sx; this._bettlerY += sy; return true; }
+    else if (this.weltBegehbar(this._bettlerX + sx, this._bettlerY))      { this._bettlerX += sx; return true; }
+    else if (this.weltBegehbar(this._bettlerX, this._bettlerY + sy))      { this._bettlerY += sy; return true; }
+    return false;
+  }
+
+  // Klick auf den Bettler: Doppelklick öffnet das Spenden-Menü.
+  klickBettler() {
+    const now = this.time.now;
+    if (now - this._bettlerTapZeit < 350) {     // Doppelklick erkannt
+      this._bettlerTapZeit = 0;
+      if (!modalOffen && !this._menuAktiv) oeffneSpendenModal();
+    } else {
+      this._bettlerTapZeit = now;
+    }
+  }
+
+  // Bettler entfernen (z. B. nach "Nicht mehr fragen").
+  despawnBettler() {
+    this._bettlerExists = false;
+    this.bettlerGfx.clear();
+    this.bettlerBubble.setVisible(false);
+    this.bettlerZone.setPosition(-9999, -9999);
+  }
+
+  // Pro Frame: Bettler bewegen (wandern oder angreifen), Sprechblase, Klickzone.
+  updateBettler(dt) {
+    if (!this._bettlerExists) return;
+    try { if (localStorage.getItem('spende_aus') === '1') { this.despawnBettler(); return; } } catch (e) {}
+
+    const dist = Math.hypot(this.spielerX - this._bettlerX, this.spielerY - this._bettlerY);
+
+    if (this._bettlerMode === 'attack') {
+      if (dist < 26) {                          // erwischt → Popup, danach wieder wandern
+        this._bettlerMode = 'wander';
+        this.neuesWanderZiel();
+        this.bettlerBubble.setVisible(false);
+        this.zeigeBettler();
+      } else {
+        // gezielt zum Spieler; wenn blockiert, notfalls direkt durch (nie hängenbleiben)
+        if (!this._bettlerSchritt(this.spielerX, this.spielerY, 105, dt)) {
+          const dx = this.spielerX - this._bettlerX, dy = this.spielerY - this._bettlerY;
+          const d = Math.hypot(dx, dy) || 1;
+          this._bettlerX += (dx / d) * 105 * dt; this._bettlerY += (dy / d) * 105 * dt;
+        }
+      }
+    } else {                                     // wander
+      const zd = Math.hypot(this._bettlerZielX - this._bettlerX, this._bettlerZielY - this._bettlerY);
+      if (zd < 16 || !this._bettlerSchritt(this._bettlerZielX, this._bettlerZielY, 52, dt)) {
+        this.neuesWanderZiel();                  // Ziel erreicht oder blockiert → neues Ziel
+      }
+    }
+
+    // Sprechblase, wenn er (im Wander-Modus) nah genug ist
+    const nah = dist < 135;
+    this.bettlerBubble.setVisible(this._bettlerMode === 'wander' && nah);
+    if (this._bettlerMode === 'wander' && nah) {
+      this.bettlerBubble.setPosition(this._bettlerX, this._bettlerY - 42);
+    }
+    // Klickzone mitführen (über dem Bettler-Körper)
+    this.bettlerZone.setPosition(this._bettlerX, this._bettlerY - 16);
+
+    // Lauf-Animation + zeichnen
     this._bettlerWalkT += dt;
     if (this._bettlerWalkT > 0.12) { this._bettlerWalkT = 0; this._bettlerFrame = (this._bettlerFrame + 1) % 4; }
     this.drawBettler(this._bettlerX, this._bettlerY);
