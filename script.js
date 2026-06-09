@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v26 – Bettler-Grafik';
+const BUILD_MARKE = 'v27 – Spieler-Sprite';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6362,6 +6362,9 @@ class SpielSzene extends Phaser.Scene {
     // Bettler-Animationen (4 Frames Stehen/Betteln, 8 Frames Gehen im Profil)
     this.load.spritesheet('bettler_stand', 'assets/bettler_stand.png', { frameWidth: 152, frameHeight: 176 });
     this.load.spritesheet('bettler_walk',  'assets/bettler_walk.png',  { frameWidth: 158, frameHeight: 171 });
+    // Spieler-Animationen (7 Frames Front-Walk, 8 Frames Seitenprofil)
+    this.load.spritesheet('spieler_front', 'assets/spieler_front.png', { frameWidth: 88,  frameHeight: 159 });
+    this.load.spritesheet('spieler_side',  'assets/spieler_side.png',  { frameWidth: 157, frameHeight: 171 });
     this.load.on('loaderror', () => {});   // fehlende Datei still ignorieren
   }  // Audio läuft sonst über natives HTMLAudioElement
 
@@ -6445,7 +6448,21 @@ class SpielSzene extends Phaser.Scene {
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
     this.SPEED = 139;             // Lauftempo in px/Sekunde
-    this.spielerGfx   = this.add.graphics();
+    // Spieler-Sprites: Front-Walk (7 Frames) + Seitenprofil (8 Frames)
+    if (this.textures.exists('spieler_front') && !this.anims.exists('spieler_front')) {
+      this.anims.create({ key: 'spieler_front',
+        frames: this.anims.generateFrameNumbers('spieler_front', { start: 0, end: 6 }),
+        frameRate: 10, repeat: -1 });
+    }
+    if (this.textures.exists('spieler_side') && !this.anims.exists('spieler_side')) {
+      this.anims.create({ key: 'spieler_side',
+        frames: this.anims.generateFrameNumbers('spieler_side', { start: 0, end: 7 }),
+        frameRate: 11, repeat: -1 });
+    }
+    this.spielerSprite = this.add.sprite(this.spielerX, this.spielerY,
+      this.textures.exists('spieler_front') ? 'spieler_front' : undefined)
+      .setOrigin(0.5, 1).setScale(0.31);   // Füße = Position, ~50px hoch
+    this._spielerDX = 0; this._spielerDY = 1;   // letzte Laufrichtung (default: nach unten)
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
 
@@ -6613,6 +6630,7 @@ class SpielSzene extends Phaser.Scene {
 
     // ---- Bewegung: flüssig & frei auf der begehbaren Fläche ----
     let moved = false;
+    const _vorherX = this.spielerX, _vorherY = this.spielerY;   // für Laufrichtung
 
     // Tastatur: kontinuierlich, solange gedrückt (Bildschirmrichtungen)
     let vx = 0, vy = 0;
@@ -6648,8 +6666,8 @@ class SpielSzene extends Phaser.Scene {
 
     if (moved) {
       this.istAufMove = true;
-      this._walkAcc += this.SPEED * dtMove;
-      if (this._walkAcc >= 13) { this._walkAcc = 0; this.walkFrame = (this.walkFrame + 1) % 4; }
+      const ddx = this.spielerX - _vorherX, ddy = this.spielerY - _vorherY;
+      if (ddx || ddy) { this._spielerDX = ddx; this._spielerDY = ddy; }   // Laufrichtung merken
       this.aktualisiereTile();
       this.zeichneSpieler(true);
       this.aktualisiereHighlight();
@@ -6675,108 +6693,30 @@ class SpielSzene extends Phaser.Scene {
   zeichneSpieler(laufen) {
     // Spieler-Position für Savegame exportieren
     window._spielerPosExport = { col: this.spielerCol, row: this.spielerRow };
-    this.spielerGfx.clear();
-    const g = this.spielerGfx;
 
-    // Kontinuierliche Weltposition der Füße
-    const cx = this.spielerX;
-    const cy = this.spielerY - 8;
-    // Iso-Tiefe nach Boden-Y: Spieler verschwindet hinter Gebäuden, die vor ihm stehen
-    this.spielerGfx.setDepth(this.spielerY);
+    const s = this.spielerSprite;
+    if (s) s.setPosition(this.spielerX, this.spielerY).setDepth(this.spielerY);
     // Kamera-Folgeziel mitführen
     if (this.camTarget) this.camTarget.setPosition(this.spielerX, this.spielerY);
+    if (!s) return;
 
-    // Bein-Frames (4 Walk-Frames)
-    const frames = laufen ? [
-      [-4, 5,  4, -5],
-      [-2, 2,  2, -2],
-      [ 4, -5,-4,  5],
-      [ 2, -2,-2,  2],
-    ] : [[0,0,0,0]];
-    const [lxO, lyO, rxO, ryO] = frames[this.walkFrame % frames.length];
+    if (!laufen) {
+      // Stehen: ruhige Front-Pose, Animation anhalten
+      s.anims.stop();
+      if (this.textures.exists('spieler_front')) s.setTexture('spieler_front', 0);
+      s.setFlipX(false);
+      return;
+    }
 
-    // Schatten
-    g.fillStyle(0x000000, 0.28);
-    g.fillEllipse(cx + 2, cy + 20, 30, 11);
-
-    // Linkes Bein
-    g.fillStyle(0x2e3668, 1);
-    g.fillRect(cx - 5 + lxO, cy + 9 + lyO, 6, 11);
-    g.fillStyle(0x1e2448, 1);
-    g.fillRect(cx - 7 + lxO, cy + 18 + lyO, 9, 4);
-
-    // Rechtes Bein
-    g.fillStyle(0x2e3668, 1);
-    g.fillRect(cx + 1 + rxO, cy + 9 + ryO, 6, 11);
-    g.fillStyle(0x1e2448, 1);
-    g.fillRect(cx + 0 + rxO, cy + 18 + ryO, 9, 4);
-
-    // Körper (blaue Jacke mit Revers)
-    g.fillStyle(0x2a4a8c, 1);
-    g.fillRect(cx - 9, cy - 2, 19, 12);
-    g.fillStyle(0x3a5aa0, 0.6);  // Jackenfalte
-    g.fillRect(cx - 4, cy - 1, 3, 10);
-    // Hemdkragen
-    g.fillStyle(0xf0f0e8, 1);
-    g.fillTriangle(cx - 3, cy - 2, cx + 4, cy - 2, cx, cy + 3);
-    // Krawatte
-    g.fillStyle(0xcc2020, 1);
-    g.fillTriangle(cx - 1, cy - 1, cx + 2, cy - 1, cx, cy + 8);
-
-    // Linker Arm
-    const aSwing = laufen ? (this.walkFrame % 2 === 0 ? 5 : -5) : 0;
-    g.fillStyle(0x1e3a7c, 1);
-    g.fillRect(cx - 13, cy - 1 + aSwing, 5, 10);
-    g.fillStyle(0xf0c0a0, 1);
-    g.fillCircle(cx - 11, cy + 9 + aSwing, 3.5);
-
-    // Rechter Arm
-    g.fillStyle(0x1e3a7c, 1);
-    g.fillRect(cx + 9, cy - 1 - aSwing, 5, 10);
-    // Aktentasche
-    g.fillStyle(0x7a5030, 1);
-    g.fillRect(cx + 10, cy + 4 - Math.abs(aSwing)*0.3, 10, 8);
-    g.lineStyle(1.5, 0xa07050, 0.8);
-    g.strokeRect(cx + 10, cy + 4 - Math.abs(aSwing)*0.3, 10, 8);
-    g.fillStyle(0xf0c0a0, 1);
-    g.fillCircle(cx + 13, cy + 9 - aSwing, 3.5);
-
-    // Hals
-    g.fillStyle(0xf0c0a0, 1);
-    g.fillRect(cx - 2, cy - 9, 5, 8);
-
-    // Gesicht
-    g.fillStyle(0xf5c8a8, 1);
-    g.fillEllipse(cx + 1, cy - 16, 18, 20);
-
-    // Haare
-    g.fillStyle(0x2a1a10, 1);
-    g.fillEllipse(cx + 1, cy - 23, 18, 11);
-    g.fillRect(cx - 8, cy - 25, 18, 8);
-    // Seitenhaar
-    g.fillRect(cx - 9, cy - 20, 4, 7);
-
-    // Augen mit Pupillen
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(cx - 2, cy - 15, 3);
-    g.fillCircle(cx + 4, cy - 15, 3);
-    g.fillStyle(0x202530, 1);
-    g.fillCircle(cx - 1, cy - 15, 1.8);
-    g.fillCircle(cx + 5, cy - 15, 1.8);
-    g.fillStyle(0xffffff, 0.7);
-    g.fillCircle(cx - 0.5, cy - 16, 0.8);
-    g.fillCircle(cx + 5.5, cy - 16, 0.8);
-
-    // Nase + Mund
-    g.fillStyle(0xd8a880, 1);
-    g.fillTriangle(cx + 1, cy - 12, cx, cy - 9, cx + 3, cy - 9);
-    g.fillStyle(0xc07050, 1);
-    g.fillRect(cx - 1, cy - 8, 5, 2);
-
-    // Richtungs-Pfeil über Spieler (beim Bewegen kurz)
-    if (laufen) {
-      g.fillStyle(0xe8b84b, 0.7);
-      g.fillTriangle(cx, cy - 32, cx - 5, cy - 26, cx + 5, cy - 26);
+    // Laufrichtung bestimmt Ansicht: horizontal → Seitenprofil (gespiegelt),
+    // vertikal → Frontansicht.
+    const dx = this._spielerDX || 0, dy = this._spielerDY || 0;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      if (this.anims.exists('spieler_side')) s.play('spieler_side', true);
+      s.setFlipX(dx < 0);                      // Sheet zeigt nach rechts
+    } else {
+      if (this.anims.exists('spieler_front')) s.play('spieler_front', true);
+      s.setFlipX(false);
     }
   }
 
