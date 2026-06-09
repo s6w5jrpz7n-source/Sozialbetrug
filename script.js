@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v25 – Bettler lebt';
+const BUILD_MARKE = 'v26 – Bettler-Grafik';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6359,6 +6359,9 @@ class SpielSzene extends Phaser.Scene {
     // Manuelles Layout (aus dem Editor) – fehlt es, fällt alles auf Standard zurück
     this.load.json('layout', 'layout/layout.json');
     this.load.json('collision', 'layout/collision.json');   // pixelgenaue Standflächen
+    // Bettler-Animationen (4 Frames Stehen/Betteln, 8 Frames Gehen im Profil)
+    this.load.spritesheet('bettler_stand', 'assets/bettler_stand.png', { frameWidth: 152, frameHeight: 176 });
+    this.load.spritesheet('bettler_walk',  'assets/bettler_walk.png',  { frameWidth: 158, frameHeight: 171 });
     this.load.on('loaderror', () => {});   // fehlende Datei still ignorieren
   }  // Audio läuft sonst über natives HTMLAudioElement
 
@@ -6483,21 +6486,31 @@ class SpielSzene extends Phaser.Scene {
 
     // ---- Spenden-Bettler ----
     // Läuft von Anfang an zufällig durch die Stadt (Wander-Modus). Kommt er dem
-    // Spieler nahe, zeigt er eine Sprechblase. Nach 10 Minuten wird er
-    // aufdringlich (Angriff → verfolgt den Spieler, beim Kontakt kommt das
-    // Popup). Doppelklick auf ihn öffnet das Spenden-Menü jederzeit.
-    this.bettlerGfx    = this.add.graphics();
+    // Spieler nahe, bleibt er stehen, bettelt (Front-Pose) und zeigt eine
+    // Sprechblase. Nach 10 Minuten wird er aufdringlich (Angriff → verfolgt den
+    // Spieler, beim Kontakt kommt das Popup). Doppelklick öffnet das Menü.
+    if (this.textures.exists('bettler_walk') && !this.anims.exists('bettler_walk')) {
+      this.anims.create({ key: 'bettler_walk',
+        frames: this.anims.generateFrameNumbers('bettler_walk', { start: 0, end: 7 }),
+        frameRate: 11, repeat: -1 });
+    }
+    if (this.textures.exists('bettler_stand') && !this.anims.exists('bettler_stand')) {
+      this.anims.create({ key: 'bettler_stand',
+        frames: this.anims.generateFrameNumbers('bettler_stand', { start: 0, end: 3 }),
+        frameRate: 4, repeat: -1 });
+    }
+    this.bettlerSprite = this.add.sprite(-9999, -9999, 'bettler_stand')
+      .setOrigin(0.5, 1).setScale(54 / 176).setVisible(false);   // Füße = Position, ~54px hoch
     this.bettlerBubble = this.add.text(0, 0, "Haste mal 'n Euro?", {
       fontFamily: '"Courier New", monospace', fontSize: '11px', fontStyle: 'bold',
       color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 6, y: 4 },
     }).setOrigin(0.5, 1).setDepth(95000).setVisible(false);
-    this.bettlerZone   = this.add.zone(-9999, -9999, 34, 54).setDepth(96000).setInteractive();
+    this.bettlerZone   = this.add.zone(-9999, -9999, 40, 60).setDepth(96000).setInteractive();
     this.bettlerZone.on('pointerdown', () => this.klickBettler());
     this._bettlerExists = false;
     this._bettlerMode   = 'wander';   // 'wander' | 'attack'
     this._bettlerX = 0; this._bettlerY = 0;
     this._bettlerZielX = 0; this._bettlerZielY = 0;
-    this._bettlerFrame = 0; this._bettlerWalkT = 0;
     this._bettlerTapZeit = 0;
     this.initBettler();
     // Alle 10 Minuten Spielzeit wird er aufdringlich (Angriff).
@@ -7008,8 +7021,11 @@ class SpielSzene extends Phaser.Scene {
     this._bettlerX = best.x; this._bettlerY = best.y;
     this._bettlerExists = true;
     this._bettlerMode = 'wander';
-    this._bettlerFrame = 0; this._bettlerWalkT = 0;
     this.neuesWanderZiel();
+    if (this.bettlerSprite) {
+      this.bettlerSprite.setPosition(this._bettlerX, this._bettlerY).setDepth(this._bettlerY).setVisible(true);
+      if (this.anims.exists('bettler_walk')) this.bettlerSprite.play('bettler_walk', true);
+    }
   }
 
   // 10-Min-Timer / Test-Knopf: Bettler wird aufdringlich und greift an.
@@ -7057,7 +7073,7 @@ class SpielSzene extends Phaser.Scene {
   // Bettler entfernen (z. B. nach "Nicht mehr fragen").
   despawnBettler() {
     this._bettlerExists = false;
-    this.bettlerGfx.clear();
+    if (this.bettlerSprite) this.bettlerSprite.setVisible(false).setPosition(-9999, -9999);
     this.bettlerBubble.setVisible(false);
     this.bettlerZone.setPosition(-9999, -9999);
   }
@@ -7067,7 +7083,10 @@ class SpielSzene extends Phaser.Scene {
     if (!this._bettlerExists) return;
     try { if (localStorage.getItem('spende_aus') === '1') { this.despawnBettler(); return; } } catch (e) {}
 
-    const dist = Math.hypot(this.spielerX - this._bettlerX, this.spielerY - this._bettlerY);
+    const dx = this.spielerX - this._bettlerX, dy = this.spielerY - this._bettlerY;
+    const dist = Math.hypot(dx, dy);
+    let geht = true;             // läuft er (walk) oder bettelt er stehend (stand)?
+    let blickRichtung = 0;       // -1 nach links, +1 nach rechts, 0 = Front
 
     if (this._bettlerMode === 'attack') {
       if (dist < 26) {                          // erwischt → Popup, danach wieder wandern
@@ -7078,75 +7097,44 @@ class SpielSzene extends Phaser.Scene {
       } else {
         // gezielt zum Spieler; wenn blockiert, notfalls direkt durch (nie hängenbleiben)
         if (!this._bettlerSchritt(this.spielerX, this.spielerY, 105, dt)) {
-          const dx = this.spielerX - this._bettlerX, dy = this.spielerY - this._bettlerY;
-          const d = Math.hypot(dx, dy) || 1;
+          const d = dist || 1;
           this._bettlerX += (dx / d) * 105 * dt; this._bettlerY += (dy / d) * 105 * dt;
         }
+        blickRichtung = dx < 0 ? -1 : 1;
       }
     } else {                                     // wander
-      const zd = Math.hypot(this._bettlerZielX - this._bettlerX, this._bettlerZielY - this._bettlerY);
-      if (zd < 16 || !this._bettlerSchritt(this._bettlerZielX, this._bettlerZielY, 52, dt)) {
-        this.neuesWanderZiel();                  // Ziel erreicht oder blockiert → neues Ziel
+      if (dist < 135) {
+        // nah am Spieler → stehenbleiben und betteln (Front-Pose + Sprechblase)
+        geht = false;
+      } else {
+        const zdx = this._bettlerZielX - this._bettlerX;
+        const zd = Math.hypot(zdx, this._bettlerZielY - this._bettlerY);
+        if (zd < 16 || !this._bettlerSchritt(this._bettlerZielX, this._bettlerZielY, 52, dt)) {
+          this.neuesWanderZiel();                // Ziel erreicht oder blockiert → neues Ziel
+        }
+        blickRichtung = zdx < 0 ? -1 : 1;
       }
     }
 
     // Sprechblase, wenn er (im Wander-Modus) nah genug ist
-    const nah = dist < 135;
-    this.bettlerBubble.setVisible(this._bettlerMode === 'wander' && nah);
-    if (this._bettlerMode === 'wander' && nah) {
-      this.bettlerBubble.setPosition(this._bettlerX, this._bettlerY - 42);
-    }
+    const bubbleAn = this._bettlerMode === 'wander' && dist < 135;
+    this.bettlerBubble.setVisible(bubbleAn);
+    if (bubbleAn) this.bettlerBubble.setPosition(this._bettlerX, this._bettlerY - 56);
     // Klickzone mitführen (über dem Bettler-Körper)
-    this.bettlerZone.setPosition(this._bettlerX, this._bettlerY - 16);
+    this.bettlerZone.setPosition(this._bettlerX, this._bettlerY - 26);
 
-    // Lauf-Animation + zeichnen
-    this._bettlerWalkT += dt;
-    if (this._bettlerWalkT > 0.12) { this._bettlerWalkT = 0; this._bettlerFrame = (this._bettlerFrame + 1) % 4; }
-    this.drawBettler(this._bettlerX, this._bettlerY);
-  }
-
-  // Zerlumpter, gebückter Bettler mit Becher (gezeichnet im Spielstil).
-  drawBettler(px, py) {
-    const g = this.bettlerGfx;
-    g.clear();
-    g.setDepth(py);                        // sortiert wie der Spieler nach Boden-Y
-    const cx = px, cy = py - 6;
-    const frames = [[-3, 4, 3, -4], [-1, 1, 1, -1], [3, -4, -3, 4], [1, -1, -1, 1]];
-    const [lxO, lyO, rxO, ryO] = frames[this._bettlerFrame % 4];
-
-    // Schatten
-    g.fillStyle(0x000000, 0.26); g.fillEllipse(cx + 1, cy + 19, 26, 9);
-    // Beine (zerschlissene Hose)
-    g.fillStyle(0x4a4036, 1); g.fillRect(cx - 5 + lxO, cy + 8 + lyO, 5, 11);
-    g.fillRect(cx + 1 + rxO, cy + 8 + ryO, 5, 11);
-    g.fillStyle(0x2a2620, 1);                          // löchrige Schuhe
-    g.fillRect(cx - 6 + lxO, cy + 17 + lyO, 8, 4);
-    g.fillRect(cx + 0 + rxO, cy + 17 + ryO, 8, 4);
-    // Mantel (dreckiges Braun mit Flicken), leicht gebückt
-    g.fillStyle(0x5a4632, 1); g.fillRect(cx - 9, cy - 3, 18, 14);
-    g.fillStyle(0x6b5a44, 0.8); g.fillRect(cx - 6, cy + 2, 5, 5);   // Flicken
-    g.fillStyle(0x3e3325, 0.8); g.fillRect(cx + 2, cy - 1, 4, 6);   // Flicken
-    // Hinterer Arm
-    g.fillStyle(0x4a3a28, 1); g.fillRect(cx - 12, cy - 1, 5, 9);
-    g.fillStyle(0xcaa688, 1); g.fillCircle(cx - 10, cy + 8, 3);
-    // Vorderer, bittend ausgestreckter Arm mit Becher
-    g.fillStyle(0x4a3a28, 1); g.fillRect(cx + 7, cy + 1, 9, 4);
-    g.fillStyle(0xcaa688, 1); g.fillCircle(cx + 16, cy + 3, 3);
-    g.fillStyle(0xb8b8b8, 1); g.fillRect(cx + 14, cy + 3, 7, 7);    // Blechbecher
-    g.fillStyle(0x808080, 1); g.fillRect(cx + 14, cy + 3, 7, 2);
-    g.fillStyle(0xffd24a, 1); g.fillCircle(cx + 17, cy + 4, 1.4);   // Münze im Becher
-    // Hals/Kopf
-    g.fillStyle(0xcaa688, 1); g.fillRect(cx - 2, cy - 8, 4, 6);
-    g.fillStyle(0xd2b090, 1); g.fillEllipse(cx, cy - 14, 16, 17);
-    // Strubbeliges Haar + Bart
-    g.fillStyle(0x4a4036, 1);
-    g.fillEllipse(cx, cy - 20, 17, 10);
-    g.fillRect(cx - 9, cy - 21, 18, 7);
-    g.fillStyle(0x5a5046, 1); g.fillEllipse(cx, cy - 8, 13, 7);     // Bart
-    // müde Augen
-    g.fillStyle(0x202530, 1);
-    g.fillCircle(cx - 3, cy - 14, 1.4);
-    g.fillCircle(cx + 3, cy - 14, 1.4);
+    // Sprite positionieren + passende Animation/Blickrichtung
+    const s = this.bettlerSprite;
+    if (s) {
+      s.setPosition(this._bettlerX, this._bettlerY).setDepth(this._bettlerY).setVisible(true);
+      if (geht) {
+        if (this.anims.exists('bettler_walk')) s.play('bettler_walk', true);
+        s.setFlipX(blickRichtung < 0);          // Sheet zeigt nach rechts → spiegeln für links
+      } else {
+        if (this.anims.exists('bettler_stand')) s.play('bettler_stand', true);
+        s.setFlipX(false);                       // bettelnd nach vorn
+      }
+    }
   }
 
   // Popup zeigen – aber nur, wenn der Spieler nicht gerade in einem Menü/Popup
