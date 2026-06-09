@@ -6,7 +6,12 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v28 – Frames sauber';
+const BUILD_MARKE = 'v29 – Größe';
+
+// Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
+// damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
+const SPIELER_H = 88;   // Spieler ~65% größer als zuvor
+const BETTLER_H = 82;   // Bettler entsprechend größer
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6461,7 +6466,7 @@ class SpielSzene extends Phaser.Scene {
     }
     this.spielerSprite = this.add.sprite(this.spielerX, this.spielerY,
       this.textures.exists('spieler_front') ? 'spieler_front' : undefined)
-      .setOrigin(0.5, 1).setScale(0.31);   // Füße = Position, ~50px hoch
+      .setOrigin(0.5, 1);   // Füße = Position; Höhe wird in zeichneSpieler einheitlich gesetzt
     this._spielerDX = 0; this._spielerDY = 1;   // letzte Laufrichtung (default: nach unten)
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
@@ -6517,7 +6522,7 @@ class SpielSzene extends Phaser.Scene {
         frameRate: 4, repeat: -1 });
     }
     this.bettlerSprite = this.add.sprite(-9999, -9999, 'bettler_stand')
-      .setOrigin(0.5, 1).setScale(54 / 176).setVisible(false);   // Füße = Position, ~54px hoch
+      .setOrigin(0.5, 1).setScale(BETTLER_H / 176).setVisible(false);   // Höhe wird je Pose einheitlich gesetzt
     this.bettlerBubble = this.add.text(0, 0, "Haste mal 'n Euro?", {
       fontFamily: '"Courier New", monospace', fontSize: '11px', fontStyle: 'bold',
       color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 6, y: 4 },
@@ -6705,19 +6710,21 @@ class SpielSzene extends Phaser.Scene {
       s.anims.stop();
       if (this.textures.exists('spieler_front')) s.setTexture('spieler_front', 0);
       s.setFlipX(false);
-      return;
-    }
-
-    // Laufrichtung bestimmt Ansicht: horizontal → Seitenprofil (gespiegelt),
-    // vertikal → Frontansicht.
-    const dx = this._spielerDX || 0, dy = this._spielerDY || 0;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-      if (this.anims.exists('spieler_side')) s.play('spieler_side', true);
-      s.setFlipX(dx < 0);                      // Sheet zeigt nach rechts
     } else {
-      if (this.anims.exists('spieler_front')) s.play('spieler_front', true);
-      s.setFlipX(false);
+      // Laufrichtung bestimmt Ansicht: horizontal → Seitenprofil (gespiegelt),
+      // vertikal → Frontansicht.
+      const dx = this._spielerDX || 0, dy = this._spielerDY || 0;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        if (this.anims.exists('spieler_side')) s.play('spieler_side', true);
+        s.setFlipX(dx < 0);                    // Sheet zeigt nach rechts
+      } else {
+        if (this.anims.exists('spieler_front')) s.play('spieler_front', true);
+        s.setFlipX(false);
+      }
     }
+    // Einheitliche Anzeigehöhe – die Front- und Seiten-Sheets sind unterschiedlich
+    // hoch; fixe Skalierung ließ den Spieler beim Vorwärtslaufen schrumpfen.
+    if (s.height) s.setScale(SPIELER_H / s.height);
   }
 
   // ----------------------------------------------------------------
@@ -7074,6 +7081,7 @@ class SpielSzene extends Phaser.Scene {
         if (this.anims.exists('bettler_stand')) s.play('bettler_stand', true);
         s.setFlipX(false);                       // bettelnd nach vorn
       }
+      if (s.height) s.setScale(BETTLER_H / s.height);   // einheitliche Höhe (Stehen/Gehen)
     }
   }
 
