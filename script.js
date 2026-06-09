@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v22 – Kollision-Fix';
+const BUILD_MARKE = 'v23 – Spenden-Bettler';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -2541,6 +2541,44 @@ function _renderStdModal(item) {
 function schliesseModal() {
   modalOffen = false;
   _modalNaechstes();   // ggf. nächstes wartendes Popup zeigen
+}
+
+// ================================================================
+// SPENDEN-BETTLER  (freiwillige Unterstützung, KEINE Werbung)
+// ----------------------------------------------------------------
+// WICHTIG (Google-Play-Konformität): Die Spende schaltet NICHTS im Spiel
+// frei und verschafft keinen Vorteil. Das Popup ist immer kostenlos
+// wegklickbar und kann dauerhaft abgeschaltet werden ("Nicht mehr fragen").
+// Dadurch ist KEIN Google Play Billing nötig – ein externer Spendenlink
+// (PayPal.me / Ko-fi …) im Browser genügt.
+// ================================================================
+// TODO: Hier den ECHTEN Spendenlink eintragen (z. B. 'https://paypal.me/DEINNAME'
+//       oder 'https://ko-fi.com/DEINNAME'). Bis dahin Platzhalter:
+const SPENDEN_URL = 'https://example.com/spenden';
+
+function oeffneSpende(betrag) {
+  // betrag (z. B. '0.50') ist für später gedacht: paypal.me erlaubt
+  // 'paypal.me/NAME/0.50'. Solange der Link ein Platzhalter ist, öffnen wir
+  // einfach die Basis-URL. window.open(_blank) öffnet in Capacitor den
+  // System-Browser.
+  try { window.open(SPENDEN_URL, '_blank'); } catch (e) {}
+}
+
+function oeffneSpendenModal() {
+  const html =
+    `<img src="assets/bettler.png" alt="Bettler" ` +
+    `style="width:130px;max-width:48%;display:block;margin:2px auto 12px;image-rendering:pixelated;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));" ` +
+    `onerror="this.style.display='none';var f=document.getElementById('bettler-fallback');if(f)f.style.display='block';">` +
+    `<span id="bettler-fallback" style="display:none;font-size:72px;text-align:center;">🧎</span>` +
+    `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#d6ceb4;">` +
+    `Dieses Spiel ist <b>komplett kostenlos</b> und kommt ganz ohne Werbung aus.<br>` +
+    `Es lebt nur von freiwilligen Spenden. Schon <b>50 Cent</b> helfen – das tut keinem weh ` +
+    `und hält das Projekt am Leben. Danke! ❤️</span>`;
+  oeffneModal("Haste ma 'n Euro?", html, [
+    { label: '💶  50 Cent spenden', primary: true, callback: () => oeffneSpende('0.50') },
+    { label: '❤️  1 Euro spenden',  primary: true, callback: () => oeffneSpende('1.00') },
+    { label: 'Nicht mehr fragen', callback: () => { try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
+  ]);
 }
 
 document.addEventListener('keydown', e => {
@@ -6443,6 +6481,13 @@ class SpielSzene extends Phaser.Scene {
     this.regenGfx = this.add.graphics().setDepth(99999).setScrollFactor(0);
     this.initRegen(W, H);
 
+    // ---- Spenden-Bettler: alle 10 Minuten Spielzeit nachfragen ----
+    // (pausiert automatisch, wenn die App minimiert ist, da Phaser dann anhält)
+    this._spendeTimer = this.time.addEvent({
+      delay: 10 * 60 * 1000, loop: true,
+      callback: () => this.zeigeBettler(),
+    });
+
     // Steuerung
     this.cursors       = this.input.keyboard.createCursorKeys();
     this.interactKey   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -6922,6 +6967,18 @@ class SpielSzene extends Phaser.Scene {
   weltBegehbar(x, y) {
     const t = this.screenZuTile(x, y);
     return !!t && this.begehbar(t.col, t.row);
+  }
+
+  // Spenden-Bettler zeigen – aber nur, wenn der Spieler nicht gerade in einem
+  // Menü/Popup steckt und es nicht dauerhaft abgeschaltet wurde.
+  zeigeBettler() {
+    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (modalOffen || this._menuAktiv || gameState.gameOver) {
+      // Gerade beschäftigt → in 30 s erneut versuchen (nicht den 10-Min-Takt verlieren)
+      this.time.delayedCall(30000, () => this.zeigeBettler());
+      return;
+    }
+    oeffneSpendenModal();
   }
 
   // spielerCol/Row aus der kontinuierlichen Position ableiten (für Interaktion)
