@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v16 – HUD aus (Portrait)';
+const BUILD_MARKE = 'v17 – Mobile-HUD';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -2246,10 +2246,16 @@ function updateHUD() {
   const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
   _set('tb-energie', Math.round(gs.energie));
   _set('tb-gesund',  Math.round(gs.gesundheit));
+  _set('tb-laune',   Math.round(gs.happinessSpieler));
+  _set('tb-partner', Math.round(gs.happinessPartner));
+  _set('tb-risiko',  Math.round(gs.risikoRaster));
   _set('tb-konto',   formatEuro(gs.kontostand));
   _set('tb-schwarz', formatEuro(gs.schwarzeKasse));
   _set('tb-bargeld', formatEuro(gs.losesBargeld));
   _set('tb-staat',   formatEuro(gs.vomStaatGesamt || 0));
+  _set('tb-zeit',    `M${gs.monat} W${gs.woche} T${gs.tag}`);
+  _set('tb-status',  gs.status === 'ALG1' ? 'ALG I' : 'ALG II');
+  _set('tb-amt',     Math.max(0, Math.round(gs.naechsterAmtsBesuch * 7 - (gs.tag - 1))) + 'T');
 
   // ---- Zeit (Monat / Woche / Tag) ----
   const zeitEl = document.getElementById('hud-zeit');
@@ -6390,7 +6396,7 @@ class SpielSzene extends Phaser.Scene {
     this.pfad = [];               // Lauf-Wegpunkte (Welt {x,y})
     this.pfadZielOrt = null;      // bei Ankunft zu öffnendes Gebäude (nur bei Doppelklick)
     this._walkAcc = 0;
-    this.SPEED = 185;             // Lauftempo in px/Sekunde
+    this.SPEED = 139;             // Lauftempo in px/Sekunde
     this.spielerGfx   = this.add.graphics();
     this.highlightGfx = this.add.graphics().setDepth(90000);   // Interaktions-Ring immer sichtbar
     this.zeichneSpieler(false);
