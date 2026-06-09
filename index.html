@@ -980,6 +980,15 @@
       }
     }
 
+    // Test: Bettler sofort spawnen (statt 10 Min warten)
+    function spawnBettlerBtn() {
+      const game = window._phaserGameRef;
+      if (game) {
+        const szene = game.scene.getScene('SpielSzene');
+        if (szene && szene.spawnBettler) szene.spawnBettler();
+      }
+    }
+
     // Zahnrad-Menü (oben rechts): Speichern / Laden / Woche / Musik
     function openGearMenu() {
       if (typeof oeffneModal !== 'function') return;
@@ -987,6 +996,7 @@
         { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
         { label: '⏩ Woche überspringen',   callback: () => skipWocheBtn() },
+        { label: '🧎 Bettler testen',       callback: () => spawnBettlerBtn() },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
       ]);
     }
