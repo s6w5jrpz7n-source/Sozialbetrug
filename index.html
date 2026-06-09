@@ -149,9 +149,10 @@
     /* Auf großen (Desktop-)Bildschirmen reicht das rechte HUD → Topbar dezent */
     @media (min-width: 900px) { #topbar { opacity: 0.96; } }
     /* Hochformat (Handy): rechte Seitenleiste ausblenden → Spiel füllt den Screen.
-       Die wichtigen Werte stehen in der schwebenden Topbar; Save/Load im Header. */
-    @media (orientation: portrait) {
-      #hud { display: none; }
+       Die wichtigen Werte stehen in der schwebenden Topbar; Save/Load im Header.
+       !important, da die #hud-Standardregel weiter unten sonst gewinnt. */
+    @media (orientation: portrait), (max-width: 820px) {
+      #hud { display: none !important; }
     }
 
     /* =================================================================
