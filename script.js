@@ -6,14 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v21 – HiDPI';
-
-// Geräte-Pixeldichte: hochauflösende Handy-Displays (Retina/HD+) haben mehr
-// physische Pixel als CSS-Pixel. Ohne Berücksichtigung rendert Phaser nur in
-// halber Auflösung und der Browser zieht das Bild unscharf hoch. Wir rendern
-// daher in echter Geräteauflösung (gedeckelt auf 2×, damit schwache GPUs nicht
-// zu viele Pixel zeichnen müssen).
-const HD = Math.min(window.devicePixelRatio || 1, 2);
+const BUILD_MARKE = 'v20 – Flimmern';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6430,9 +6423,7 @@ class SpielSzene extends Phaser.Scene {
     // Ziel: ca. SICHT_BREITE Welt-Pixel breit zeigen. Kleine Handys zoomen dadurch
     // automatisch raus (mehr Lauffläche zum Tippen), Desktop bleibt bei Zoom 1.
     this._setzeZoom = () => {
-      // scale.width ist jetzt in echten Geräte-Pixeln (× HD). Damit gleich viel
-      // Welt sichtbar bleibt wie zuvor, wird Divisor und Zoom um HD korrigiert.
-      const z = HD * Phaser.Math.Clamp(this.scale.width / (500 * HD), 0.55, 1.0);
+      const z = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);
       this.cameras.main.setZoom(z);
     };
     this.cameras.main.setRoundPixels(false);  // glatte Sub-Pixel-Bewegung (kein Kanten-Springen)
@@ -7065,43 +7056,27 @@ const container    = document.getElementById('game-container');
 const phaserConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  // Größe wird manuell (HiDPI-bewusst) über fitGame() gesetzt – feste Startwerte.
-  width:  Math.max(1, (container ? container.clientWidth  : window.innerWidth)  * HD),
-  height: Math.max(1, (container ? container.clientHeight : window.innerHeight) * HD),
+  // Breite/Höhe werden von RESIZE-Mode übernommen – keine feste Größe nötig
+  width:  window.innerWidth  - (document.getElementById('hud') ? document.getElementById('hud').offsetWidth || 260 : 260),
+  height: window.innerHeight - (document.getElementById('game-header') ? document.getElementById('game-header').offsetHeight || 36 : 36),
   backgroundColor: '#020510',
   scene: [StartSzene, SpielSzene],  // StartSzene zuerst
   physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
   scale: {
-    // NONE + manuelles Resizing: Backing-Store in echten Geräte-Pixeln (× HD),
-    // CSS-Größe auf logische Pixel zurückgesetzt → gestochen scharf auf HD-Handys.
-    mode:       Phaser.Scale.NONE,
+    mode:       Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
     parent:     'game-container'
   }
 };
 
 let game;  // Wird in window.onload initialisiert
 
-// Canvas in echter Geräteauflösung rendern, aber auf logische Größe stylen.
-function fitGame() {
-  if (!game) return;
-  const cont = document.getElementById('game-container');
-  const cw = (cont && cont.clientWidth)  || window.innerWidth;
-  const ch = (cont && cont.clientHeight) || window.innerHeight;
-  game.scale.resize(cw * HD, ch * HD);   // Backing-Store (Phaser-Koordinaten)
-  const cv = game.canvas;
-  if (cv) { cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; }  // Anzeige
-}
-
 window.addEventListener('load', () => {
   // Erst NACH vollständigem Layout-Rendering starten
   // → game-container hat jetzt korrekte clientWidth/Height
   game = new Phaser.Game(phaserConfig);
   window._phaserGameRef = game;
-  fitGame();
-  // Mobile: Adressleiste/Orientierung ändern die Größe verzögert → mehrfach nachziehen
-  window.addEventListener('resize', () => { fitGame(); setTimeout(fitGame, 120); });
-  window.addEventListener('orientationchange', () => setTimeout(fitGame, 200));
-  console.log('🎮 Phaser gestartet, HD=' + HD + ', Canvas:', game.canvas.width + 'x' + game.canvas.height);
+  console.log('🎮 Phaser gestartet, Canvas:', document.getElementById('game-container').clientWidth + 'x' + document.getElementById('game-container').clientHeight);
 });
 
 // HUD (Header + rechtes Panel) ein-/ausblenden.
@@ -7111,13 +7086,13 @@ function setHudSichtbar(sichtbar) {
   const hud    = document.getElementById('hud');
   if (header) header.style.display = sichtbar ? '' : 'none';
   if (hud)    hud.style.display    = sichtbar ? '' : 'none';
-  // Container-Größe hat sich geändert → Canvas neu (HiDPI) anpassen
-  setTimeout(fitGame, 0);
 }
 
-// Vollbild: Canvas-Größe immer an Container anpassen (HiDPI-bewusst)
+// Vollbild: Canvas-Größe immer an Container anpassen
 function resizeGame() {
-  fitGame();
+  if (!game) return;
+  const c = document.getElementById('game-container');
+  game.scale.resize(c.clientWidth, c.clientHeight);
 }
 window.addEventListener('resize', () => {
   resizeGame();
