@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v17 – Mobile-HUD';
+const BUILD_MARKE = 'v18 – Adaptiver Zoom';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -5479,7 +5479,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const cx = offsetX, cy = offsetY + feldH / 2;
     const Ax = feldW / 2, Ay = feldH / 2;
     const Bx = -feldW / 2, By = feldH / 2;
-    const R = 2;   // Ring-Radius (deckt den Viewport; kleiner = bessere Performance)
+    const R = 3;   // Ring-Radius (deckt den Viewport auch bei rausgezoomter Kamera)
     // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
     // Straßen passen exakt). Später kommen hier echte Gebäude drauf.
     // Leichte Überlappung (OS) lässt die Kacheln einander überdecken → keine
@@ -6411,6 +6411,17 @@ class SpielSzene extends Phaser.Scene {
     );
     this.cameras.main.startFollow(this.camTarget, true, 0.16, 0.16);
     this.cameras.main.centerOn(this.spielerX, this.spielerY);
+
+    // ---- Adaptiver Zoom: auf jedem Gerät etwa gleich viel Fläche sichtbar ----
+    // Ziel: ca. SICHT_BREITE Welt-Pixel breit zeigen. Kleine Handys zoomen dadurch
+    // automatisch raus (mehr Lauffläche zum Tippen), Desktop bleibt bei Zoom 1.
+    this._setzeZoom = () => {
+      const z = Phaser.Math.Clamp(this.scale.width / 680, 0.45, 1.0);
+      this.cameras.main.setZoom(z);
+    };
+    this._setzeZoom();
+    this.scale.on('resize', this._setzeZoom, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this._setzeZoom, this));
 
     // ---- Nebel: zeigt die Grenze des bespielbaren Bereichs ----
     // Über dem zentralen Diamanten transparent, nach außen zunehmend neblig
