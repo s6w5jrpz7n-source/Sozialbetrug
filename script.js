@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v18 – Adaptiver Zoom';
+const BUILD_MARKE = 'v19 – Feinschliff';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -45,6 +45,7 @@ const gameState = {
   // Man muss explizit zur Bank oder zum Pfandleiher laufen,
   // um es zu sichern – Transport erhöht das Risiko.
   losesBargeld: 0,          // Noch nicht gesichertes Bargeld (sichtbar für Razzien)
+  hatSchwarzgearbeitet: false,  // true, sobald einmal schwarzgearbeitet wurde (Zoll-Brief-Bedingung)
 
   // ---- NEU v3: Ehe-Krise Quest-State ----
   eheKriseAktiv:  false,    // Wird true wenn happinessPartner < 30
@@ -253,7 +254,7 @@ const ORTE_CONFIG = [
       { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
       { label: '⚖️  Anwalt anrufen (Strafe anfechten)',         id: 'anwalt' },
       { label: '✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)',    id: 'auswandern' },
-      { label: '🎭  Cheats öffnen...',                          id: 'cheats_menu' }
+      { label: '🎭  Sozialbetrug...',                          id: 'cheats_menu' }
     ]
   },
   {
@@ -676,7 +677,7 @@ function oeffneCheatMenu() {
     label: `${def.label}  [E: -${def.kosten.energie}]  ${def.beschreibung}`,
     callback: () => runCheat(name)
   }));
-  oeffneModal('🎭 Cheat-Menü',
+  oeffneModal('🎭 Sozialbetrug',
     'Illegale Aktionen. Jede kostet Energie und beeinflusst Risiko.', aktionen);
 }
 
@@ -1505,6 +1506,7 @@ const eventDatabase = [
   },
   {
     id: 'behoerde_05', kategorie: 'behoerde',
+    bedingung: gs => gs.hatSchwarzgearbeitet,   // nur nach erster Schwarzarbeit
     titel: '📮 Zoll-Brief',
     text: 'Verdächtige Transaktion mit deinem Namen.',
     optionA: { label: '📄 Erklärung (-200 € Konto)',
@@ -2149,16 +2151,16 @@ function randomEventIntervall() { return 30 + Math.random() * 30; }
 
 function waehleEvent() {
   const gs = gameState;
-  const behoerden  = eventDatabase.filter(e => e.kategorie === 'behoerde');
-  const beziehung  = eventDatabase.filter(e => e.kategorie === 'beziehung');
+  const erlaubt = e => !e.bedingung || e.bedingung(gs);   // optionale Bedingung je Event
+  const behoerden  = eventDatabase.filter(e => e.kategorie === 'behoerde' && erlaubt(e));
 
-  // Loan-Shark-Events NUR wenn Schulden vorhanden
-  const verfuegbar = gs.loanSharkSchuld > 0
+  // Loan-Shark-Events NUR wenn Schulden vorhanden; Events mit Bedingung filtern
+  let verfuegbar = (gs.loanSharkSchuld > 0
     ? eventDatabase
-    : eventDatabase.filter(e => e.kategorie !== 'loan_shark');
+    : eventDatabase.filter(e => e.kategorie !== 'loan_shark')).filter(erlaubt);
 
   // Bei hohem Risiko → Behörden-Events bevorzugt
-  if (gs.risikoRaster >= 90 && Math.random() < 0.70)
+  if (gs.risikoRaster >= 90 && Math.random() < 0.70 && behoerden.length)
     return behoerden[Math.floor(Math.random() * behoerden.length)];
 
   return verfuegbar[Math.floor(Math.random() * verfuegbar.length)];
@@ -2622,7 +2624,7 @@ function interact(ortId) {
   if (ortId === 'wohnung' && villaBewohnt) {
     oeffneModal('🏠 Hier wohnst du nicht mehr',
       'Du bist in deine <strong>Villa</strong> gezogen (unten Mitte).<br><br>'
-      + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Cheats – ist jetzt dort.', []);
+      + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Sozialbetrug – ist jetzt dort.', []);
     return;
   }
 
@@ -3006,7 +3008,7 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'mb_alleinerziehend') {
       if (gs.mehrbedarf.alleinerziehend) { logEvent('ℹ️ Mehrbedarf Alleinerziehend läuft bereits.', ''); return; }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('👨‍👧 Kein Kind gemeldet', 'Den Mehrbedarf für Alleinerziehende gibt es nur mit mindestens einem Kind. Hol dir erst über den Kindergeld-Trick (Wohnung → Cheats) ein Kind.', []);
+        oeffneModal('👨‍👧 Kein Kind gemeldet', 'Den Mehrbedarf für Alleinerziehende gibt es nur mit mindestens einem Kind. Hol dir erst über den Kindergeld-Trick (Wohnung → Sozialbetrug) ein Kind.', []);
         return;
       }
       gs.mehrbedarf.alleinerziehend = true;
@@ -3119,6 +3121,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.losesBargeld += 300;
       gs.risikoRaster  = clamp(gs.risikoRaster + 12, 0, 100);
       gs.energie       = clamp(gs.energie - 20, 0, 100);
+      gs.hatSchwarzgearbeitet = true;
       verbraucheTag(1);
       logEvent('⛏️ +300 € loses Bargeld. Risiko +12, E -20. 1 Tag vergangen.', 'warn');
     }
@@ -3126,6 +3129,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.losesBargeld += 120;
       gs.risikoRaster  = clamp(gs.risikoRaster + 5, 0, 100);
       gs.energie       = clamp(gs.energie - 8, 0, 100);
+      gs.hatSchwarzgearbeitet = true;
       // Halber Tag = kein ganzer Tagesverbrauch
       logEvent('🔧 +120 € loses Bargeld. Risiko +5, E -8.', 'warn');
     }
@@ -3326,7 +3330,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         return;
       }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('🌍 Keine Auslandskinder', 'Die Unterhalts-Tarnung lohnt sich nur mit Kindergeld für Kinder im Ausland (Wohnung → Cheats → Kindergeld-Trick).', []);
+        oeffneModal('🌍 Keine Auslandskinder', 'Die Unterhalts-Tarnung lohnt sich nur mit Kindergeld für Kinder im Ausland (Wohnung → Sozialbetrug → Kindergeld-Trick).', []);
         return;
       }
       gs.unterhaltsTarnung = true;
@@ -4256,7 +4260,7 @@ function monatsAbschluss() {
   // Immobilien-Fake und andere Cheat-Extras → schwarze Kasse
   if (gs.monatlicheExtras > 0) {
     gs.schwarzeKasse += gs.monatlicheExtras;
-    meldungen.push(`🎭 Cheat-Extras: +${formatEuro(gs.monatlicheExtras)} (Schwarzkasse)`);
+    meldungen.push(`🎭 Sozialbetrug: +${formatEuro(gs.monatlicheExtras)} (Schwarzkasse)`);
     logEvent(`🎭 Cheat +${formatEuro(gs.monatlicheExtras)}.`, 'warn');
   }
 
@@ -5866,6 +5870,7 @@ class StartSzene extends Phaser.Scene {
   create() {
     // HUD ausblenden -> Startbildschirm = reines Vollbild-Titelbild
     setHudSichtbar(false);
+    document.body.classList.remove('im-spiel');   // Topbar/Zahnrad im Startscreen aus
     const _c = document.getElementById('game-container');
     if (_c) this.scale.resize(_c.clientWidth, _c.clientHeight);
     const W = this.scale.width;
@@ -6087,7 +6092,7 @@ class StartSzene extends Phaser.Scene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       Object.assign(gameState, {
-        kontostand: 50000, schwarzeKasse: 0, losesBargeld: 0,
+        kontostand: 50000, schwarzeKasse: 0, losesBargeld: 0, hatSchwarzgearbeitet: false,
         energie: 80, happinessSpieler: 70, happinessPartner: 70,
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
@@ -6339,6 +6344,8 @@ class SpielSzene extends Phaser.Scene {
     this.offsetX = W / 2 - (COLS - ROWS) * this.tileW / 4;
     this.offsetY = Math.max(40, (H - karteHoehe) / 2 + 20);
 
+    document.body.classList.add('im-spiel');   // Topbar/Zahnrad nur im Spiel zeigen
+
     // Stadtgrafik (einmalig)
     zeichneAlleGebaeude(this, this.tileW, this.tileH, this.offsetX, this.offsetY);
 
@@ -6416,9 +6423,10 @@ class SpielSzene extends Phaser.Scene {
     // Ziel: ca. SICHT_BREITE Welt-Pixel breit zeigen. Kleine Handys zoomen dadurch
     // automatisch raus (mehr Lauffläche zum Tippen), Desktop bleibt bei Zoom 1.
     this._setzeZoom = () => {
-      const z = Phaser.Math.Clamp(this.scale.width / 680, 0.45, 1.0);
+      const z = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);
       this.cameras.main.setZoom(z);
     };
+    this.cameras.main.setRoundPixels(true);   // reduziert Flimmern bei Bewegung
     this._setzeZoom();
     this.scale.on('resize', this._setzeZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this._setzeZoom, this));

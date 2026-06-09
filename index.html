@@ -177,6 +177,10 @@
     }
     /* Kein horizontales Verschieben des Bildschirms (z. B. bei offenem Popup) */
     html, body { overflow: hidden; overscroll-behavior: none; max-width: 100vw; }
+    /* Topbar + Zahnrad nur IM SPIEL anzeigen (nicht im Startbildschirm) */
+    #topbar, #gear-btn { display: none; }
+    body.im-spiel #topbar  { display: flex; }
+    body.im-spiel #gear-btn { display: block; }
 
     /* =================================================================
        HUD-PANEL – das polished rechte Panel
@@ -986,6 +990,18 @@
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
       ]);
     }
+
+    // Musik/Sound stoppen, wenn die App in den Hintergrund geht (minimiert)
+    document.addEventListener('visibilitychange', () => {
+      const hidden = document.hidden;
+      ['_startMusik', '_spielMusik'].forEach(k => {
+        const a = window[k]; if (!a) return;
+        if (hidden) a.pause(); else if (_musikAn) a.play().catch(() => {});
+      });
+      try {
+        if (typeof audioCtx !== 'undefined' && audioCtx) hidden ? audioCtx.suspend() : audioCtx.resume();
+      } catch (e) {}
+    });
 
     // Keyboard: F5 Quick-Save, F9 Load
     document.addEventListener('keydown', e => {
