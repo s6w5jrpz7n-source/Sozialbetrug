@@ -1,0 +1,8 @@
+# Capacitor / Node / Android – generierte Dateien, nicht versionieren
+node_modules/
+www/
+android/
+ios/
+*.keystore
+*.jks
+.DS_Store
