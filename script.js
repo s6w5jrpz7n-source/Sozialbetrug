@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v23 – Spenden-Bettler';
+const BUILD_MARKE = 'v24 – Bettler-Jagd';
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -2572,11 +2572,11 @@ function oeffneSpendenModal() {
     `<span id="bettler-fallback" style="display:none;font-size:72px;text-align:center;">🧎</span>` +
     `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#d6ceb4;">` +
     `Dieses Spiel ist <b>komplett kostenlos</b> und kommt ganz ohne Werbung aus.<br>` +
-    `Es lebt nur von freiwilligen Spenden. Schon <b>50 Cent</b> helfen – das tut keinem weh ` +
-    `und hält das Projekt am Leben. Danke! ❤️</span>`;
+    `Es lebt nur von freiwilligen Spenden. Schon <b>50 Cent</b> helfen – ` +
+    `aber natürlich freut sich der Bettler über jeden Betrag. ` +
+    `Das tut keinem weh und hält das Projekt am Leben. Danke! ❤️</span>`;
   oeffneModal("Haste ma 'n Euro?", html, [
-    { label: '💶  50 Cent spenden', primary: true, callback: () => oeffneSpende('0.50') },
-    { label: '❤️  1 Euro spenden',  primary: true, callback: () => oeffneSpende('1.00') },
+    { label: '❤️  Spenden', primary: true, callback: () => oeffneSpende() },
     { label: 'Nicht mehr fragen', callback: () => { try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
   ]);
 }
@@ -6481,11 +6481,16 @@ class SpielSzene extends Phaser.Scene {
     this.regenGfx = this.add.graphics().setDepth(99999).setScrollFactor(0);
     this.initRegen(W, H);
 
-    // ---- Spenden-Bettler: alle 10 Minuten Spielzeit nachfragen ----
+    // ---- Spenden-Bettler: alle 10 Minuten Spielzeit erscheint ein Bettler,
+    // der den Spieler verfolgt. Erst wenn er ihn erwischt, kommt das Popup.
     // (pausiert automatisch, wenn die App minimiert ist, da Phaser dann anhält)
+    this.bettlerGfx    = this.add.graphics();
+    this._bettlerAktiv = false;
+    this._bettlerX = 0; this._bettlerY = 0;
+    this._bettlerFrame = 0; this._bettlerWalkT = 0;
     this._spendeTimer = this.time.addEvent({
       delay: 10 * 60 * 1000, loop: true,
-      callback: () => this.zeigeBettler(),
+      callback: () => this.spawnBettler(),
     });
 
     // Steuerung
@@ -6534,6 +6539,9 @@ class SpielSzene extends Phaser.Scene {
     if (this.npcTick >= 0.09) { this.npcTick = 0; this.animiereNPCs(); }
     this.dealerAnimT += dt;
     this.animiereDealer();
+
+    // Verfolgender Bettler (läuft auch, während andere Spiellogik gerade pausiert)
+    if (this._bettlerAktiv && !modalOffen && !this._menuAktiv) this.updateBettler(dtMove);
 
     if (modalOffen) return;
 
@@ -6969,13 +6977,100 @@ class SpielSzene extends Phaser.Scene {
     return !!t && this.begehbar(t.col, t.row);
   }
 
-  // Spenden-Bettler zeigen – aber nur, wenn der Spieler nicht gerade in einem
-  // Menü/Popup steckt und es nicht dauerhaft abgeschaltet wurde.
+  // ---- Spenden-Bettler: spawnen, verfolgen, erwischen ----
+  // Lässt einen Bettler weit weg vom Spieler erscheinen, der ihn dann verfolgt.
+  spawnBettler() {
+    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (this._bettlerAktiv || gameState.gameOver) return;
+    // weit entfernten, begehbaren Startpunkt suchen
+    let best = null, bestD = -1;
+    for (let i = 0; i < 40; i++) {
+      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+      if (!this.begehbar(c, r)) continue;
+      const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      const d = Phaser.Math.Distance.Between(p.x, p.y, this.spielerX, this.spielerY);
+      if (d > bestD) { bestD = d; best = p; }
+    }
+    if (!best) return;
+    this._bettlerX = best.x; this._bettlerY = best.y;
+    this._bettlerAktiv = true;
+    this._bettlerFrame = 0; this._bettlerWalkT = 0;
+    logEvent('🧎 Ein zerlumpter Bettler hat dich entdeckt und schlurft auf dich zu …', 'warn');
+  }
+
+  // Pro Frame: Bettler Richtung Spieler bewegen; bei Kontakt → Popup.
+  updateBettler(dt) {
+    const dx = this.spielerX - this._bettlerX;
+    const dy = this.spielerY - this._bettlerY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 26) {                       // erwischt!
+      this._bettlerAktiv = false;
+      this.bettlerGfx.clear();
+      this.zeigeBettler();
+      return;
+    }
+    const bs = 105 * dt;                   // etwas langsamer als der Spieler (139)
+    const sx = (dx / dist) * bs, sy = (dy / dist) * bs;
+    // wie der Spieler gleiten; wenn völlig blockiert, notfalls direkt durch
+    if      (this.weltBegehbar(this._bettlerX + sx, this._bettlerY + sy)) { this._bettlerX += sx; this._bettlerY += sy; }
+    else if (this.weltBegehbar(this._bettlerX + sx, this._bettlerY))      { this._bettlerX += sx; }
+    else if (this.weltBegehbar(this._bettlerX, this._bettlerY + sy))      { this._bettlerY += sy; }
+    else { this._bettlerX += sx; this._bettlerY += sy; }
+    this._bettlerWalkT += dt;
+    if (this._bettlerWalkT > 0.12) { this._bettlerWalkT = 0; this._bettlerFrame = (this._bettlerFrame + 1) % 4; }
+    this.drawBettler(this._bettlerX, this._bettlerY);
+  }
+
+  // Zerlumpter, gebückter Bettler mit Becher (gezeichnet im Spielstil).
+  drawBettler(px, py) {
+    const g = this.bettlerGfx;
+    g.clear();
+    g.setDepth(py);                        // sortiert wie der Spieler nach Boden-Y
+    const cx = px, cy = py - 6;
+    const frames = [[-3, 4, 3, -4], [-1, 1, 1, -1], [3, -4, -3, 4], [1, -1, -1, 1]];
+    const [lxO, lyO, rxO, ryO] = frames[this._bettlerFrame % 4];
+
+    // Schatten
+    g.fillStyle(0x000000, 0.26); g.fillEllipse(cx + 1, cy + 19, 26, 9);
+    // Beine (zerschlissene Hose)
+    g.fillStyle(0x4a4036, 1); g.fillRect(cx - 5 + lxO, cy + 8 + lyO, 5, 11);
+    g.fillRect(cx + 1 + rxO, cy + 8 + ryO, 5, 11);
+    g.fillStyle(0x2a2620, 1);                          // löchrige Schuhe
+    g.fillRect(cx - 6 + lxO, cy + 17 + lyO, 8, 4);
+    g.fillRect(cx + 0 + rxO, cy + 17 + ryO, 8, 4);
+    // Mantel (dreckiges Braun mit Flicken), leicht gebückt
+    g.fillStyle(0x5a4632, 1); g.fillRect(cx - 9, cy - 3, 18, 14);
+    g.fillStyle(0x6b5a44, 0.8); g.fillRect(cx - 6, cy + 2, 5, 5);   // Flicken
+    g.fillStyle(0x3e3325, 0.8); g.fillRect(cx + 2, cy - 1, 4, 6);   // Flicken
+    // Hinterer Arm
+    g.fillStyle(0x4a3a28, 1); g.fillRect(cx - 12, cy - 1, 5, 9);
+    g.fillStyle(0xcaa688, 1); g.fillCircle(cx - 10, cy + 8, 3);
+    // Vorderer, bittend ausgestreckter Arm mit Becher
+    g.fillStyle(0x4a3a28, 1); g.fillRect(cx + 7, cy + 1, 9, 4);
+    g.fillStyle(0xcaa688, 1); g.fillCircle(cx + 16, cy + 3, 3);
+    g.fillStyle(0xb8b8b8, 1); g.fillRect(cx + 14, cy + 3, 7, 7);    // Blechbecher
+    g.fillStyle(0x808080, 1); g.fillRect(cx + 14, cy + 3, 7, 2);
+    g.fillStyle(0xffd24a, 1); g.fillCircle(cx + 17, cy + 4, 1.4);   // Münze im Becher
+    // Hals/Kopf
+    g.fillStyle(0xcaa688, 1); g.fillRect(cx - 2, cy - 8, 4, 6);
+    g.fillStyle(0xd2b090, 1); g.fillEllipse(cx, cy - 14, 16, 17);
+    // Strubbeliges Haar + Bart
+    g.fillStyle(0x4a4036, 1);
+    g.fillEllipse(cx, cy - 20, 17, 10);
+    g.fillRect(cx - 9, cy - 21, 18, 7);
+    g.fillStyle(0x5a5046, 1); g.fillEllipse(cx, cy - 8, 13, 7);     // Bart
+    // müde Augen
+    g.fillStyle(0x202530, 1);
+    g.fillCircle(cx - 3, cy - 14, 1.4);
+    g.fillCircle(cx + 3, cy - 14, 1.4);
+  }
+
+  // Popup zeigen – aber nur, wenn der Spieler nicht gerade in einem Menü/Popup
+  // steckt und es nicht dauerhaft abgeschaltet wurde.
   zeigeBettler() {
     try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
     if (modalOffen || this._menuAktiv || gameState.gameOver) {
-      // Gerade beschäftigt → in 30 s erneut versuchen (nicht den 10-Min-Takt verlieren)
-      this.time.delayedCall(30000, () => this.zeigeBettler());
+      this.time.delayedCall(2000, () => this.zeigeBettler());   // gleich erneut versuchen
       return;
     }
     oeffneSpendenModal();
