@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v35 – Wartenummer';
+const BUILD_MARKE = 'v36 – Schwierigkeit+Hunger';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -105,6 +105,7 @@ const gameState = {
   lebensmittelDiesenMonat: null, // 'gut'|'normal'|'billig'|null
   billigKaeufeInFolge: 0,   // Für "Frau beschwert sich"-Event
   supermarktFaellig: false, // true ab Tag 3 des Monats
+  kuehlschrankWarnung: false, // "Kühlschrank leer"-Popup schon gezeigt (pro Monat)
 
   // ---- Arbeitsamt-Fehltermine ----
   amtsTermineVerpasst: 0,   // Zurückgesetzt bei erstem Besuch
@@ -4406,6 +4407,7 @@ function monatsAbschluss() {
     meldungen.push('⚠️ Kein Lebensmittel-Einkauf diesen Monat!');
   }
   gs.lebensmittelDiesenMonat = null; // Reset für neuen Monat
+  gs.kuehlschrankWarnung = false;    // Kühlschrank-leer-Hinweis neu erlauben
 
   // ---- Frau ausgezogen – Prüfung ----
   if (!gs.frauAusgezogen && gs.happinessPartner < 20) {
@@ -6135,13 +6137,29 @@ class StartSzene extends Phaser.Scene {
   // ---- Menü-Aktionen (unverändert) ----
 
   _neuesSpiel() {
+    if (this._menuAktiv) return;
     this._menuAktiv = true;
+    initAudio();
+    // Schwierigkeit = Startkontostand
+    oeffneModal('🎮 Schwierigkeit wählen',
+      'Wie hart soll dein Start ins Sozialbetrüger-Leben werden?<br>' +
+      '(bestimmt deinen <strong>Startkontostand</strong>)',
+      [
+        { label: '😊 Einfach – 40.000 € Start', primary: true, callback: () => this._starteSpiel(40000) },
+        { label: '😐 Mittel – 10.000 € Start',                callback: () => this._starteSpiel(10000) },
+        { label: '😈 Hart – 1.000 € Start',     danger: true, callback: () => this._starteSpiel(1000)  },
+      ],
+      () => { this._menuAktiv = false; }   // abgebrochen → Startmenü wieder bedienbar
+    );
+  }
+
+  _starteSpiel(startKonto) {
     this._musikStoppen();
     initAudio();
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       Object.assign(gameState, {
-        kontostand: 50000, schwarzeKasse: 0, losesBargeld: 0, hatSchwarzgearbeitet: false,
+        kontostand: startKonto, schwarzeKasse: 0, losesBargeld: 0, hatSchwarzgearbeitet: false,
         energie: 80, happinessSpieler: 70, happinessPartner: 70,
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
@@ -6153,7 +6171,7 @@ class StartSzene extends Phaser.Scene {
         kindergeldKinder: [], kindergeldAktiv: false,
         monatlicheExtras: 0, risikoProMonat: 0,
         lebensmittelDiesenMonat: null, billigKaeufeInFolge: 0,
-        supermarktFaellig: false, schattenbankAktiv: false,
+        supermarktFaellig: false, kuehlschrankWarnung: false, schattenbankAktiv: false,
         bankEinzahlungDieseWoche: 0, gameOver: false,
         // ---- neue Bürokratie-/Immobilien-Features zurücksetzen ----
         verpfaendet: {},
@@ -6651,6 +6669,7 @@ class SpielSzene extends Phaser.Scene {
     const neuTag = Math.floor(this.zeitAkku / tagSek) + 1;
     if (neuTag !== gameState.tag && neuTag <= 7) {
       gameState.tag = neuTag;
+      this.tagGewechselt(neuTag);
     }
     if (this.zeitAkku >= ECHTZEIT_PRO_WOCHE) {
       this.zeitAkku -= ECHTZEIT_PRO_WOCHE;
@@ -6895,27 +6914,39 @@ class SpielSzene extends Phaser.Scene {
   // ----------------------------------------------------------------
   // HILFSMETHODEN
   // ----------------------------------------------------------------
+  // Wird bei jedem Tageswechsel aufgerufen – u.a. Lebensmittel-Konsequenzen.
+  tagGewechselt(tag) {
+    const gs = gameState;
+    if (gs.gameOver) return;
+    if (!gs.lebensmittelDiesenMonat) {     // diesen Monat (noch) nicht eingekauft
+      // Ab Tag 3 ist der Kühlschrank leer → einmal pro Monat deutlich warnen
+      if (tag >= 3 && !gs.kuehlschrankWarnung) {
+        gs.kuehlschrankWarnung = true;
+        gs.supermarktFaellig = true;
+        oeffneModal('🧊 Kühlschrank ist leer!',
+          'Du hast diesen Monat noch <strong>nichts eingekauft</strong> – der Kühlschrank ist leer.<br><br>' +
+          'Ohne Essen verlierst du jetzt <strong>jeden Tag −5 Gesundheit, −3 Energie</strong> und Laune. ' +
+          'Geh zum <strong>Supermarkt</strong> und kauf ein!', []);
+        logEvent('🧊 Kühlschrank leer! Ab zum Supermarkt.', 'warn');
+      }
+      // Täglicher Hunger-Malus ab Tag 3
+      if (tag >= 3) {
+        gs.gesundheit       = clamp(gs.gesundheit - 5, 0, 100);
+        gs.energie          = clamp(gs.energie - 3, 0, 100);
+        gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100);
+        logEvent('🍽️ Leerer Kühlschrank: −5 Gesundheit, −3 Energie.', 'danger');
+        updateHUD();
+        if (gs.gesundheit <= 0) { triggerGameOver('gesundheit'); return; }
+      }
+    }
+  }
+
   spielwocheVorbei() {
     gameState.woche++; this.wochenSeitMonat++;
     gameState.tag = 1;  // Woche beginnt immer mit Tag 1
     gameState.energie = clamp(gameState.energie - 3, 0, 100);
     gameState.bankEinzahlungDieseWoche = 0;  // Wochenlimit Bank reset
-
-    // ---- Supermarkt-Popup ab Tag 3 ----
-    if (gameState.tag >= 3 && !gameState.lebensmittelDiesenMonat && !gameState.supermarktFaellig) {
-      gameState.supermarktFaellig = true;
-      setTimeout(() => oeffneModal('🛒 Lebensmittel kaufen!',
-        'Es ist Tag ' + gameState.tag + ' und du hast noch keine Lebensmittel für diesen Monat gekauft!<br><br>'
-        + 'Gehe zum <strong>Supermarkt</strong> und kaufe ein – sonst verlierst du täglich 5 Punkte Gesundheit!',
-        []), 500);
-      logEvent('🛒 Kein Einkauf! Gesundheit leidet!', 'warn');
-    }
-    // ---- Kein Einkauf: täglich -5 Gesundheit ----
-    if (!gameState.lebensmittelDiesenMonat && gameState.tag > 3) {
-      gameState.gesundheit = clamp(gameState.gesundheit - 5, 0, 100);
-      logEvent('🍽️ Kein Einkauf: Gesundheit -5!', 'danger');
-      if (gameState.gesundheit <= 0) triggerGameOver('gesundheit');
-    }
+    // (Lebensmittel-Konsequenzen laufen tagesweise in tagGewechselt())
     gameState.naechsterAmtsBesuch--;
     if (gameState.naechsterAmtsBesuch <= 0) {
       gameState.risikoRaster = clamp(gameState.risikoRaster + 15, 0, 100);
