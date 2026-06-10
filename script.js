@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v38 – Räuber-Ergebnis';
+const BUILD_MARKE = 'v39 – Amt+Arzt+Schwarzarbeit';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -111,6 +111,10 @@ const gameState = {
   // ---- Arbeitsamt-Fehltermine ----
   amtsTermineVerpasst: 0,   // Zurückgesetzt bei erstem Besuch
   algGesperrt: false,       // true nach 3 verpassten Terminen, bis Besuch
+
+  // ---- Krankmeldung (beim Arzt erkauft) ----
+  krankmeldungWochenRest:     0,  // Wochen Krankschreibung übrig (kein Amt-Termin, keine Razzia)
+  krankmeldungCooldownWochen: 0,  // Sperre bis zur nächsten Krankmeldung (max. alle 6 Wochen)
 
   // ---- Legale Mehrbedarfe / Anträge (Arbeitsamt) ----
   mehrbedarf: {             // aktive monatliche Zuschläge
@@ -360,9 +364,10 @@ const ORTE_CONFIG = [
     farbe: 0xcfd8e0, dachFarbe: 0x9aa6b4,
     beschreibung: 'Behandlung, Krankschreibung und Entzug. Hält dich auf den Beinen.',
     aktionen: [
-      { label: '🩺  Behandlung (Gesundheit +30, 500€)',           id: 'arzt_behandlung' },
-      { label: '🤒  Krankschreibung (Risiko -8, Energie +10)',     id: 'arzt_krank' },
-      { label: '💉  Entzug / Therapie (Sucht heilen, 800€)',       id: 'arzt_entzug' }
+      { label: '🩺  Behandlung (Gesundheit +30, 500€)',                  id: 'arzt_behandlung' },
+      { label: '🤒  Krankmeldung 1 Woche (50€ Bestechung)',              id: 'arzt_krank1' },
+      { label: '🤒  Krankmeldung 2 Wochen (100€ Bestechung)',            id: 'arzt_krank2' },
+      { label: '💉  Entzug / Therapie (Sucht heilen, 800€)',             id: 'arzt_entzug' }
     ]
   },
   {
@@ -458,17 +463,11 @@ const cheatDefinitions = {
     sofortEffekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.scheinbewerbungen++; },
     logText: '📝 Scheinbewerbung. Risiko -5.'
   },
-  'Krankmeldung': {
-    label: '🤒 Krankmeldung fälschen', kosten: { energie: 40 },
-    beschreibung: '+100 € Konto, Risiko +15.',
-    sofortEffekt(gs) { gs.kontostand += 100; gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); },
-    logText: '🤒 Krankmeldung: +100 € Konto, Risiko +15.'
-  },
   'Schwarzarbeit': {
-    label: '⛏️ Schwarzarbeit (Cheat)', kosten: { energie: 60 },
-    beschreibung: '+200 € Loses Bargeld, Risiko +20.',
-    sofortEffekt(gs) { gs.losesBargeld += 200; gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); },
-    logText: '⛏️ Schwarzarbeit (Cheat): +200 € Loses Bargeld, Risiko +20.'
+    label: '⛏️ Schwarzarbeit', kosten: { energie: 0 },
+    beschreibung: 'Geh zur Baustelle und arbeite schwarz – kostet einen Tag.',
+    gehZu: 'baustelle',
+    logText: '⛏️ Du machst dich auf den Weg zur Baustelle …'
   },
   'Kindergeld-Trick': {
     label: '👶 Kindergeld-Trick', kosten: { energie: 50 },
@@ -478,12 +477,6 @@ const cheatDefinitions = {
       oeffneAfrikaReiseModal();
     },
     logText: '✈️ Afrika-Reise gebucht...'
-  },
-  'Immobilien-Fake': {
-    label: '🏢 Immobilien-Fake', kosten: { energie: 100 },
-    beschreibung: '+500 €/Monat (Schwarzkasse), Risiko +40/Monat.',
-    sofortEffekt(gs) { gs.monatlicheExtras += 500; gs.risikoProMonat += 40; },
-    logText: '🏢 Immobilien-Fake: +500 €/Monat, Risiko +40/Monat.'
   },
 
   // ---- Spende: Risiko sofort halbieren, kostet Geld vom Konto ----
@@ -630,6 +623,16 @@ function runCheat(cheatName) {
   if (!cheat) return;
   const gs = gameState;
 
+  // Aktionen, die zu einem Gebäude führen (z. B. Schwarzarbeit → Baustelle)
+  if (cheat.gehZu) {
+    const sz = window._phaserGameRef && window._phaserGameRef.scene.getScene('SpielSzene');
+    if (sz && typeof sz.geheZuGebaeude === 'function') {
+      sz.geheZuGebaeude(cheat.gehZu);
+      logEvent(cheat.logText, '');
+    }
+    return;
+  }
+
   // Spende: Geldprüfung statt Energieprüfung
   if (cheatName === 'Spende') {
     const spende = Math.max(1000, Math.floor(gs.kontostand * 0.10));
@@ -681,7 +684,7 @@ function runCheat(cheatName) {
 
 function oeffneCheatMenu() {
   const aktionen = Object.entries(cheatDefinitions).map(([name, def]) => ({
-    label: `${def.label}  [E: -${def.kosten.energie}]  ${def.beschreibung}`,
+    label: `${def.label}${def.kosten.energie ? `  [E: -${def.kosten.energie}]` : ''}  ${def.beschreibung}`,
     callback: () => runCheat(name)
   }));
   oeffneModal('🎭 Sozialbetrug',
@@ -1051,7 +1054,8 @@ let razziaTimerSek    = RAZZIA_INTERVALL;
  */
 function tickRazziaTimer(dt) {
   const gs = gameState;
-  if (gs.gameOver || gs.risikoRaster <= RAZZIA_SCHWELLE) {
+  // Während einer Krankmeldung findet keine Razzia/Prüfung statt
+  if (gs.gameOver || gs.risikoRaster <= RAZZIA_SCHWELLE || (gs.krankmeldungWochenRest || 0) > 0) {
     razziaTimerSek = RAZZIA_INTERVALL; // Reset wenn Risiko sinkt
     return;
   }
@@ -3606,11 +3610,30 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.gesundheit  = clamp(gs.gesundheit + 30, 0, 100);
       logEvent('🩺 Behandlung: Gesundheit +30 (-500€).', 'good');
     }
-    if (aktionsId === 'arzt_krank') {
-      gs.risikoRaster = clamp(gs.risikoRaster - 8, 0, 100);
-      gs.energie      = clamp(gs.energie + 10, 0, 100);
-      gs.naechsterAmtsBesuch = Math.max(gs.naechsterAmtsBesuch, 2);
-      logEvent('🤒 Krankschreibung: Risiko -8, Energie +10.', 'good');
+    if (aktionsId === 'arzt_krank1' || aktionsId === 'arzt_krank2') {
+      const wochen = aktionsId === 'arzt_krank2' ? 2 : 1;
+      const preis  = wochen === 2 ? 100 : 50;
+      if ((gs.krankmeldungCooldownWochen || 0) > 0) {
+        oeffneModal('🤒 Geht gerade nicht',
+          `Der Arzt schöpft Verdacht – eine neue Krankmeldung gibt es erst in ` +
+          `<strong>${gs.krankmeldungCooldownWochen} Woche(n)</strong> wieder (max. alle 6 Wochen).`, []);
+        return;
+      }
+      if (gs.kontostand + gs.losesBargeld < preis) {
+        logEvent(`⚠️ Nicht genug Geld fürs Bestechen (${preis}€).`, 'warn'); return;
+      }
+      let rest = preis;
+      const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l;
+      gs.kontostand -= rest;
+      gs.krankmeldungWochenRest    = wochen;
+      gs.krankmeldungCooldownWochen = 6;
+      logEvent(`🤒 Krankmeldung für ${wochen} Woche(n) erkauft (${preis}€).`, 'good');
+      oeffneModal('🤒 Krankgeschrieben',
+        `Der Arzt lässt sich für <strong>${preis} €</strong> überzeugen.<br><br>` +
+        `Du bist <strong>${wochen} Woche(n)</strong> krankgeschrieben:<br>` +
+        `• <strong>keine Pflichttermine</strong> beim Arbeitsamt<br>` +
+        `• <strong>keine Razzia/Prüfung</strong> in dieser Zeit<br><br>` +
+        `Nächste Krankmeldung erst in <strong>6 Wochen</strong> möglich.`, []);
     }
     if (aktionsId === 'arzt_entzug') {
       if ((gs.suchtStufe || 0) === 0) { oeffneModal('💉 Entzug', 'Du hast (noch) keine Sucht. Bleib so!', []); return; }
@@ -6161,6 +6184,7 @@ class StartSzene extends Phaser.Scene {
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
         naechsterAmtsBesuch: 2, amtsTermineVerpasst: 0, algGesperrt: false,
+        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0,
         eheKriseAktiv: false, eheKriseSchritt: 0, frauAusgezogen: false,
         unterhaltProMonat: 0, geschenkeSumme: 0,
         loanSharkSchuld: 0, loanSharkMahnungStufe: 0,
@@ -6946,6 +6970,11 @@ class SpielSzene extends Phaser.Scene {
     gameState.energie = clamp(gameState.energie - 3, 0, 100);
     gameState.bankEinzahlungDieseWoche = 0;  // Wochenlimit Bank reset
     // (Lebensmittel-Konsequenzen laufen tagesweise in tagGewechselt())
+
+    // Pflichttermin nur prüfen, wenn man NICHT krankgeschrieben ist
+    if ((gameState.krankmeldungWochenRest || 0) > 0) {
+      logEvent('🤒 Krankgeschrieben – kein Pflichttermin nötig.', 'good');
+    } else {
     gameState.naechsterAmtsBesuch--;
     if (gameState.naechsterAmtsBesuch <= 0) {
       gameState.risikoRaster = clamp(gameState.risikoRaster + 15, 0, 100);
@@ -6966,6 +6995,12 @@ class SpielSzene extends Phaser.Scene {
           `Kein Amt-Besuch! (${gameState.amtsTermineVerpasst}/3)<br><br><strong>Risiko +15</strong><br>Bei 3 Fehlterminen wird das ALG gesperrt!`, []);
       }
     }
+    }   // Ende: Pflichttermin nur ohne Krankmeldung
+
+    // Krankmeldung/Cooldown am Wochenende runterzählen (nach der Termin-Prüfung)
+    if ((gameState.krankmeldungWochenRest || 0) > 0) gameState.krankmeldungWochenRest--;
+    if ((gameState.krankmeldungCooldownWochen || 0) > 0) gameState.krankmeldungCooldownWochen--;
+
     if (this.wochenSeitMonat >= WOCHEN_PRO_MONAT) {
       this.wochenSeitMonat = 0; monatsAbschluss();
     }
@@ -7590,6 +7625,25 @@ class SpielSzene extends Phaser.Scene {
     }
   }
 
+  // Spieler zu einem Gebäude schicken und bei Ankunft das Menü öffnen
+  // (z. B. Schwarzarbeit aus dem Sozialbetrug-Menü → läuft zur Baustelle).
+  geheZuGebaeude(id) {
+    const ort = ORTE_CONFIG.find(o => o.id === id);
+    if (!ort) return;
+    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
+    const cheb = Math.max(Math.abs(ort.col - start.col), Math.abs(ort.row - start.row));
+    if (cheb <= 2) { this.pfad = []; interact(id); return; }
+    const tp = this.bfs(start.col, start.row,
+      (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
+    if (tp && tp.length) {
+      const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
+      this.pfad = this.vereinfachePfad(pts);
+      this.pfadZielOrt = id;     // bei Ankunft Menü öffnen
+    } else {
+      interact(id);
+    }
+  }
+
   // Nächstgelegenes Gebäude in Reichweite (Chebyshev ≤ 2) – Gebäude liegen
   // bis zu 2 Felder neben der Straße, daher größere Reichweite + "nächstes".
   nahesGebaeude() {
@@ -7808,6 +7862,8 @@ function ladeSpiel(slot) {
     if (gameState.lebensmittelDiesenMonat === undefined) gameState.lebensmittelDiesenMonat = null;
     if (gameState.lebensmittelTageRest === undefined) gameState.lebensmittelTageRest = 0;
     if (gameState.kuehlschrankWarnung  === undefined) gameState.kuehlschrankWarnung  = false;
+    if (gameState.krankmeldungWochenRest === undefined) gameState.krankmeldungWochenRest = 0;
+    if (gameState.krankmeldungCooldownWochen === undefined) gameState.krankmeldungCooldownWochen = 0;
     if (gameState.billigKaeufeInFolge === undefined) gameState.billigKaeufeInFolge = 0;
     if (gameState.amtsTermineVerpasst === undefined) gameState.amtsTermineVerpasst = 0;
     if (gameState.algGesperrt         === undefined) gameState.algGesperrt         = false;
