@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v41 – Park links';
+const BUILD_MARKE = 'v42 – Park fix';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -430,7 +430,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'dealer', name: '🌳  Park', col: 14, row: 14,
+    id: 'dealer', name: '🌳  Park', col: 1, row: 11,
     farbe: 0x3a6a2a, dachFarbe: 0x2a4a1a,
     beschreibung: 'Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.',
     aktionen: [
@@ -5729,15 +5729,9 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     }
   });
 
-  // 3) Park/Dealer (nicht im Layout) – auf die freie Fläche OBERHALB des
-  //    Sportplatzes setzen (relativ zur Sportverein-Kachel, passt sich an).
+  // 3) Park/Dealer (nicht im Layout) an seiner festen ORTE-Position zeichnen
   const dealer = orte['dealer'];
   if (dealer) {
-    const sport = orte['sportverein'];
-    if (sport) {
-      dealer.col = clamp(sport.col - 1, 0, 15);
-      dealer.row = clamp(sport.row - 4, 0, 15);   // 4 Reihen höher = über dem Platz
-    }
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
     bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
     // anklickbare Zone über dem Park
