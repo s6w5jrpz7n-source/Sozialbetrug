@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v46 – Park ohne Baum';
+const BUILD_MARKE = 'v47 – Park leer';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5823,17 +5823,9 @@ function baueKirche(g, cx, cy, tw, th) {
 
 // ---- Park mit zwielichtigem Dealer ----
 function bauePark(g, cx, cy, tw, th) {
-  // Rasenfläche (Iso-Raute)
+  // Nur die Rasenfläche (Iso-Raute) – alle Props (Baum, Bank, Weg) entfernt,
+  // wird später neu gestaltet.
   isoFill(g, cx, cy, tw * 0.95, th * 0.95, 0x3a6a2a, 1);
-  // angedeuteter Weg
-  g.fillStyle(0x8a7a5a, 0.45);
-  g.fillRect(cx - tw * 0.05, cy - th * 0.10, tw * 0.10, th * 0.42);
-  // (Baum entfernt – stand störend über dem Dealer)
-  // Parkbank links
-  g.fillStyle(0x6a4a2a, 1); g.fillRect(cx - tw * 0.34, cy + th * 0.02, tw * 0.18, 3);
-  g.fillStyle(0x5a3a1a, 1);
-  g.fillRect(cx - tw * 0.34, cy + th * 0.02, 3, 7);
-  g.fillRect(cx - tw * 0.34 + tw * 0.18 - 3, cy + th * 0.02, 3, 7);
   // Hinweis: Die Dealer-Figur wird NICHT hier statisch gezeichnet, sondern
   // pro Frame animiert in animiereDealer() (dealerGfx).
 }
