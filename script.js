@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v33 – NPC Wege';
+const BUILD_MARKE = 'v34 – NPC Pathfinding';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -7080,12 +7080,22 @@ class SpielSzene extends Phaser.Scene {
         this.bettlerBubble.setVisible(false);
         this.zeigeBettler();
       } else {
-        // gezielt zum Spieler; wenn blockiert, seitlich am Gebäude vorbei (NICHT durch)
-        if (!this._bettlerSchritt(this.spielerX, this.spielerY, 105, dt)) {
+        // Pathfinding zum Spieler (läuft um Gebäude herum, nicht hindurch)
+        const vx = this._bettlerX;
+        this._bettlerRepath = (this._bettlerRepath || 0) - dt;
+        if (this._bettlerRepath <= 0 || !this._bettlerPfad || !this._bettlerPfad.length) {
+          this._bettlerPfad = this.npcPfad(this._bettlerX, this._bettlerY, this.spielerX, this.spielerY) || [];
+          this._bettlerRepath = 0.35;
+        }
+        if (this._bettlerPfad.length) {
+          const np = this.folgePfad(this._bettlerX, this._bettlerY, this._bettlerPfad, 105, dt);
+          this._bettlerX = np.x; this._bettlerY = np.y;
+        } else if (!this._bettlerSchritt(this.spielerX, this.spielerY, 105, dt)) {
           const a = this._ausweichen(this._bettlerX, this._bettlerY, dx, dy, 105 * dt);
           if (a) { this._bettlerX = a.x; this._bettlerY = a.y; }
         }
-        blickRichtung = dx < 0 ? -1 : 1;
+        const mvx = this._bettlerX - vx;
+        blickRichtung = mvx < -0.01 ? -1 : (mvx > 0.01 ? 1 : (dx < 0 ? -1 : 1));
       }
     } else {                                     // wander
       if (dist < 135) {
@@ -7221,18 +7231,20 @@ class SpielSzene extends Phaser.Scene {
       if (gameState.losesBargeld >= 20) { this.ueberfall(); return; }
     }
 
-    // Spieler verfolgen – aber das Revier nicht verlassen (so kann man entkommen)
-    const d = dist || 1;
-    const sx = (dx / d) * 80 * dt, sy = (dy / d) * 80 * dt;
-    const nx = this._raeuberX + sx, ny = this._raeuberY + sy;
-    if (this._raeuberFreilauf || this.imRevier(nx, ny)) {
-      if      (this.weltBegehbar(nx, ny)) { this._raeuberX = nx; this._raeuberY = ny; }
-      else if (this.weltBegehbar(nx, this._raeuberY)) { this._raeuberX = nx; }
-      else if (this.weltBegehbar(this._raeuberX, ny)) { this._raeuberY = ny; }
-      else {   // blockiert → seitlich am Gebäude vorbei (nicht hindurch)
-        const a = this._ausweichen(this._raeuberX, this._raeuberY, dx, dy, 80 * dt);
-        if (a && (this._raeuberFreilauf || this.imRevier(a.x, a.y))) { this._raeuberX = a.x; this._raeuberY = a.y; }
+    // Spieler per Pathfinding verfolgen – aber nur, solange er im Revier ist
+    // (verlässt der Spieler das Viertel, gibt der Räuber die Jagd auf → entkommen).
+    if (this._raeuberFreilauf || this.imRevier(this.spielerX, this.spielerY)) {
+      this._raeuberRepath = (this._raeuberRepath || 0) - dt;
+      if (this._raeuberRepath <= 0 || !this._raeuberPfad || !this._raeuberPfad.length) {
+        this._raeuberPfad = this.npcPfad(this._raeuberX, this._raeuberY, this.spielerX, this.spielerY) || [];
+        this._raeuberRepath = 0.4;
       }
+      if (this._raeuberPfad.length) {
+        const np = this.folgePfad(this._raeuberX, this._raeuberY, this._raeuberPfad, 80, dt);
+        if (this._raeuberFreilauf || this.imRevier(np.x, np.y)) { this._raeuberX = np.x; this._raeuberY = np.y; }
+      }
+    } else {
+      this._raeuberPfad = [];   // außer Revier → nicht verfolgen
     }
     this._raeuberWalkT += dt;
     if (this._raeuberWalkT > 0.12) { this._raeuberWalkT = 0; this._raeuberFrame = (this._raeuberFrame + 1) % 4; }
@@ -7338,6 +7350,42 @@ class SpielSzene extends Phaser.Scene {
       out.push(alle[j]); i = j;
     }
     return out;
+  }
+
+  // ---- NPC-Pathfinding (BFS über begehbare Felder, wie der Spieler-Klickweg) ----
+  // Geglätteter Welt-Wegpfad von (fromX,fromY) zu (toX,toY) – oder null.
+  npcPfad(fromX, fromY, toX, toY) {
+    const start = this.screenZuTile(fromX, fromY);
+    const ziel  = this.screenZuTile(toX, toY);
+    if (!start || !ziel) return null;
+    const tp = this.bfs(start.col, start.row, (c, r) => c === ziel.col && r === ziel.row);
+    if (!tp) return null;
+    let pts = tp.map(t => {
+      const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      return { x: p.x, y: p.y };
+    });
+    if (pts.length) pts[pts.length - 1] = { x: toX, y: toY };
+    // String-Pulling relativ zur NPC-Startposition (vereinfachePfad nimmt den Spieler)
+    const alle = [{ x: fromX, y: fromY }, ...pts];
+    const out = []; let i = 0;
+    while (i < alle.length - 1) {
+      let j = alle.length - 1;
+      while (j > i + 1 && !this.hatSicht(alle[i].x, alle[i].y, alle[j].x, alle[j].y)) j--;
+      out.push(alle[j]); i = j;
+    }
+    return out;
+  }
+
+  // Eine Figur ein Stück entlang ihres Pfades bewegen (verbrauchte Wegpunkte raus).
+  folgePfad(x, y, pfad, speed, dt) {
+    let rest = speed * dt;
+    while (rest > 0 && pfad.length) {
+      const z = pfad[0];
+      const dx = z.x - x, dy = z.y - y, d = Math.hypot(dx, dy);
+      if (d <= rest) { x = z.x; y = z.y; pfad.shift(); rest -= d; }
+      else { x += (dx / d) * rest; y += (dy / d) * rest; rest = 0; }
+    }
+    return { x, y };
   }
 
   // Klick auf Boden → exakt dorthin laufen (flüssiger, geglätteter Pfad)
