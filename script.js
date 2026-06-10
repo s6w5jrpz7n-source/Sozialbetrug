@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v39 – Amt+Arzt+Schwarzarbeit';
+const BUILD_MARKE = 'v40 – Amt-Menue+Räuber';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -124,6 +124,7 @@ const gameState = {
     but:             false, // +40  braucht ≥1 Kind
   },
   ernaehrungFake: false,    // true wenn Attest gefälscht → Jobcenter-Prüfrisiko
+  ernaehrungAttest: false,  // echtes Attest vom Arzt vorhanden (Voraussetzung fürs Amt)
   einstiegsgeldMonate: 0,   // verbleibende Monate mit +338 (Gründerbonus)
 
   // ---- Minijob (Supermarkt) – legales Einkommen mit Freibetrag ----
@@ -367,6 +368,7 @@ const ORTE_CONFIG = [
       { label: '🩺  Behandlung (Gesundheit +30, 500€)',                  id: 'arzt_behandlung' },
       { label: '🤒  Krankmeldung 1 Woche (50€ Bestechung)',              id: 'arzt_krank1' },
       { label: '🤒  Krankmeldung 2 Wochen (100€ Bestechung)',            id: 'arzt_krank2' },
+      { label: '🥗  Ernährungs-Attest ausstellen (50€, fürs Amt)',       id: 'arzt_attest' },
       { label: '💉  Entzug / Therapie (Sucht heilen, 800€)',             id: 'arzt_entzug' }
     ]
   },
@@ -2808,7 +2810,7 @@ function interact(ortId) {
     if (ortId === 'arbeitsamt' && a.id === 'pausch_moebel' && gs.pauschalen.moebel) {
       label = '🪑  Möbel/Schreibtisch fürs Kind  ✅ bezogen';
     }
-    return { label, callback: () => aktionAusfuehren(ortId, a.id) };
+    return { id: a.id, label, callback: () => aktionAusfuehren(ortId, a.id) };
   });
 
   // Gebäude-Beschreibung dynamisch anreichern
@@ -2826,6 +2828,22 @@ function interact(ortId) {
     beschreibung += tage > 0
       ? `<br><br>✅ Vorrat: noch <strong>${tage} Tage</strong>${qual ? ` (${qual})` : ''}. Jeder Einkauf reicht ~2 Wochen.`
       : `<br><br>⚠️ <strong>Kühlschrank leer!</strong> Ein Einkauf reicht ~2 Wochen.`;
+  }
+
+  // Arbeitsamt: gegliedertes Menü (Pflichttermin · Scheinbewerbung · Anträge · Bestechung)
+  if (ortId === 'arbeitsamt') {
+    const byId = {}; aktionen.forEach(x => byId[x.id] = x);
+    const pick = ids => ids.map(i => byId[i]).filter(Boolean);
+    const top = pick(['pflichttermin', 'scheinbewerbung']);
+    top.push({ label: '📂  Anträge & Förderungen …', callback: () => {
+      oeffneModal('📂 Anträge & Förderungen',
+        'Wähle einen Antrag. <br><span style="color:#9aa6b4;font-size:0.62rem;">Ernährungs-Mehrbedarf braucht ein Attest vom Arzt.</span>',
+        pick(['mb_warmwasser', 'mb_alleinerziehend', 'mb_ernaehrung', 'mb_but',
+              'pausch_erstausstattung', 'pausch_moebel', 'pausch_bekleidung', 'einstiegsgeld']));
+    }});
+    top.push(...pick(['sachbearbeiter']));
+    oeffneModal(ort.name, beschreibung, top);
+    return;
   }
 
   oeffneModal(ort.name, beschreibung, aktionen);
@@ -3082,24 +3100,27 @@ function aktionAusfuehren(ortId, aktionsId) {
     // ---- Ernährungs-Mehrbedarf: echtes oder gefälschtes Attest ----
     if (aktionsId === 'mb_ernaehrung') {
       if (gs.mehrbedarf.ernaehrung) { logEvent('ℹ️ Ernährungs-Mehrbedarf läuft bereits.', ''); return; }
+      const aktionen = [];
+      if (gs.ernaehrungAttest) {
+        aktionen.push({ label: '🩺 Attest einreichen (legal)', primary: true, callback: () => {
+          gs.mehrbedarf.ernaehrung = true;
+          gs.ernaehrungFake = false;
+          gs.ernaehrungAttest = false;   // Attest verbraucht
+          logEvent(`🥗 Ernährungs-Mehrbedarf (echtes Attest): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat.`, 'good');
+          updateHUD();
+        } });
+      }
+      aktionen.push({ label: '🖊️ Attest fälschen (gratis, Prüf-Risiko!)', danger: true, callback: () => {
+        gs.mehrbedarf.ernaehrung = true;
+        gs.ernaehrungFake = true;
+        logEvent(`🥗 Ernährungs-Mehrbedarf (gefälscht): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat – riskant!`, 'warn');
+        updateHUD();
+      } });
+      const hinweis = gs.ernaehrungAttest
+        ? 'Du hast ein gültiges <strong>Attest</strong> dabei – jetzt einreichen.'
+        : '⚠️ Du brauchst zuerst ein <strong>ärztliches Attest</strong>! Hol es bei der <strong>Arztpraxis</strong> – oder fälsche es (riskant).';
       oeffneModal('🥗 Ernährungs-Mehrbedarf',
-        `Für +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat brauchst du ein ärztliches Attest (z. B. Zöliakie).`,
-        [
-          { label: '🩺 Echtes Attest besorgen (50 €, legal)', callback: () => {
-              if (gs.kontostand < 50) { logEvent('⚠️ Nicht genug Geld für das Attest (50 €).', 'warn'); return; }
-              gs.kontostand -= 50;
-              gs.mehrbedarf.ernaehrung = true;
-              gs.ernaehrungFake = false;
-              logEvent(`🥗 Ernährungs-Mehrbedarf (echtes Attest): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat.`, 'good');
-              updateHUD();
-            } },
-          { label: '🖊️ Attest fälschen (gratis, Prüf-Risiko!)', danger: true, callback: () => {
-              gs.mehrbedarf.ernaehrung = true;
-              gs.ernaehrungFake = true;
-              logEvent(`🥗 Ernährungs-Mehrbedarf (gefälscht): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat – riskant!`, 'warn');
-              updateHUD();
-            } },
-        ]);
+        `Für +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat (z. B. Zöliakie).<br><br>${hinweis}`, aktionen);
       return;
     }
     // ---- Einstiegsgeld / Gründerbonus ----
@@ -3634,6 +3655,17 @@ function aktionAusfuehren(ortId, aktionsId) {
         `• <strong>keine Pflichttermine</strong> beim Arbeitsamt<br>` +
         `• <strong>keine Razzia/Prüfung</strong> in dieser Zeit<br><br>` +
         `Nächste Krankmeldung erst in <strong>6 Wochen</strong> möglich.`, []);
+    }
+    if (aktionsId === 'arzt_attest') {
+      if (gs.ernaehrungAttest) { oeffneModal('🥗 Attest', 'Du hast bereits ein gültiges Ernährungs-Attest. Bring es beim <strong>Arbeitsamt</strong> ein (Anträge → Ernährung).', []); return; }
+      if (gs.kontostand + gs.losesBargeld < 50) { logEvent('⚠️ Nicht genug Geld fürs Attest (50€).', 'warn'); return; }
+      let rest = 50; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
+      gs.ernaehrungAttest = true;
+      logEvent('🥗 Ernährungs-Attest erhalten (50€). Jetzt beim Amt einreichen.', 'good');
+      oeffneModal('🥗 Attest ausgestellt',
+        'Der Arzt stellt dir ein <strong>Ernährungs-Attest</strong> aus (z. B. Zöliakie).<br><br>' +
+        'Bring es zum <strong>Arbeitsamt → Anträge → Ernährung</strong>, um den Mehrbedarf zu beantragen.', []);
+      return;
     }
     if (aktionsId === 'arzt_entzug') {
       if ((gs.suchtStufe || 0) === 0) { oeffneModal('💉 Entzug', 'Du hast (noch) keine Sucht. Bleib so!', []); return; }
@@ -6176,6 +6208,7 @@ class StartSzene extends Phaser.Scene {
   _starteSpiel(startKonto) {
     this._musikStoppen();
     initAudio();
+    try { localStorage.removeItem('spende_aus'); } catch (e) {}   // Bettler bei neuem Spiel zurückholen
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       Object.assign(gameState, {
@@ -6197,7 +6230,7 @@ class StartSzene extends Phaser.Scene {
         // ---- neue Bürokratie-/Immobilien-Features zurücksetzen ----
         verpfaendet: {},
         mehrbedarf: { warmwasser: false, alleinerziehend: false, ernaehrung: false, but: false },
-        ernaehrungFake: false, einstiegsgeldMonate: 0, minijobLohn: 0,
+        ernaehrungFake: false, ernaehrungAttest: false, einstiegsgeldMonate: 0, minijobLohn: 0,
         unterhaltsTarnung: false, kurCooldownMonat: 0, scheinWG: false,
         kautionRest: 0, umzugGemacht: false,
         pauschalen: { erstausstattung: false, moebel: false },
@@ -6613,7 +6646,7 @@ class SpielSzene extends Phaser.Scene {
     this._amtAktuell = Phaser.Math.Between(20, 60);   // aktuell aufgerufene Nummer
     this._amtNummer  = null;                          // gezogene Nummer des Spielers
     this._amtFenster = 0;                             // Rest des Zugangsfensters (s)
-    this._amtTimer   = 30 + Math.random() * 60;       // bis zum nächsten Aufruf (0,5–1,5 min)
+    this._amtTimer   = 25 + Math.random() * 10;       // bis zum nächsten Aufruf (~0,5 min)
     const amtOrt = ORTE_CONFIG.find(o => o.id === 'arbeitsamt');
     if (amtOrt) {
       const p = isoToScreen(amtOrt.col + 0.5, amtOrt.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
@@ -7244,15 +7277,26 @@ class SpielSzene extends Phaser.Scene {
     if (!a || !b) { this._revier = null; return; }
     const pa = isoToScreen(a.col + 0.5, a.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
     const pb = isoToScreen(b.col + 0.5, b.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+    // Nordgrenze = Straße unterhalb von Kirche & Bank → Räuber darf nie weiter hoch
+    const k = find('kirche'), bk = find('bank');
+    let minY = -Infinity;
+    [k, bk].forEach(o => {
+      if (!o) return;
+      const p = isoToScreen(o.col + 0.5, o.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      minY = Math.max(minY, p.y + this.tileH * 1.0);   // eine Reihe unter dem Gebäude
+    });
     this._revier = {
       cx: (pa.x + pb.x) / 2, cy: (pa.y + pb.y) / 2,
       r: Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 170,   // beide + Puffer
+      minY: isFinite(minY) ? minY : -Infinity,
     };
   }
 
   imRevier(x, y) {
     const z = this._revier;
-    return !!z && Phaser.Math.Distance.Between(x, y, z.cx, z.cy) <= z.r;
+    if (!z) return false;
+    if (y < z.minY) return false;   // nördlich der Straße unter Kirche/Bank: tabu
+    return Phaser.Math.Distance.Between(x, y, z.cx, z.cy) <= z.r;
   }
 
   // Statistische Chance, dass der Räuber auftaucht – nur wenn der Spieler im
@@ -7454,7 +7498,7 @@ class SpielSzene extends Phaser.Scene {
     this._amtTimer -= dt;
     if (this._amtTimer <= 0) {
       this._amtAktuell++;
-      this._amtTimer = 30 + Math.random() * 60;     // 0,5–1,5 min pro Termin
+      this._amtTimer = 25 + Math.random() * 10;     // ~0,5 min pro Termin
       // Spieler an der Reihe?
       if (this._amtNummer != null && this._amtFenster <= 0 && this._amtAktuell >= this._amtNummer) {
         this._amtFenster = 90;                       // 1,5 min Zugangsfenster
@@ -7864,6 +7908,7 @@ function ladeSpiel(slot) {
     if (gameState.kuehlschrankWarnung  === undefined) gameState.kuehlschrankWarnung  = false;
     if (gameState.krankmeldungWochenRest === undefined) gameState.krankmeldungWochenRest = 0;
     if (gameState.krankmeldungCooldownWochen === undefined) gameState.krankmeldungCooldownWochen = 0;
+    if (gameState.ernaehrungAttest === undefined) gameState.ernaehrungAttest = false;
     if (gameState.billigKaeufeInFolge === undefined) gameState.billigKaeufeInFolge = 0;
     if (gameState.amtsTermineVerpasst === undefined) gameState.amtsTermineVerpasst = 0;
     if (gameState.algGesperrt         === undefined) gameState.algGesperrt         = false;
