@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v40 – Amt-Menue+Räuber';
+const BUILD_MARKE = 'v41 – Park links';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5729,9 +5729,15 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     }
   });
 
-  // 3) Park/Dealer (nicht im Layout) an seiner ORTE-Position zeichnen
+  // 3) Park/Dealer (nicht im Layout) – auf die freie Fläche OBERHALB des
+  //    Sportplatzes setzen (relativ zur Sportverein-Kachel, passt sich an).
   const dealer = orte['dealer'];
   if (dealer) {
+    const sport = orte['sportverein'];
+    if (sport) {
+      dealer.col = clamp(sport.col - 1, 0, 15);
+      dealer.row = clamp(sport.row - 4, 0, 15);   // 4 Reihen höher = über dem Platz
+    }
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
     bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
     // anklickbare Zone über dem Park
