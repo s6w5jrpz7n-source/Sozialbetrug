@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v34 – NPC Pathfinding';
+const BUILD_MARKE = 'v35 – Wartenummer';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -2653,6 +2653,12 @@ function interact(ortId) {
   const ort = ORTE_CONFIG.find(o => o.id === ortId);
   if (!ort) return;
   const gs = gameState;
+
+  // Arbeitsamt: erst Wartenummer ziehen / dran sein, bevor das Menü aufgeht.
+  if (ortId === 'arbeitsamt') {
+    const sz = window._phaserGameRef && window._phaserGameRef.scene.getScene('SpielSzene');
+    if (sz && typeof sz.amtInteraktion === 'function' && !sz.amtInteraktion()) return;
+  }
 
   const villaBewohnt = !!(gs.immobilie && gs.immobilie.modus === 'eigen');
 
@@ -6564,6 +6570,23 @@ class SpielSzene extends Phaser.Scene {
       callback: () => this.vielleichtRaeuber(),
     });
 
+    // ---- Arbeitsamt: Wartenummer-System + grünes LED-Schild ----
+    this._amtAktuell = Phaser.Math.Between(20, 60);   // aktuell aufgerufene Nummer
+    this._amtNummer  = null;                          // gezogene Nummer des Spielers
+    this._amtFenster = 0;                             // Rest des Zugangsfensters (s)
+    this._amtTimer   = 30 + Math.random() * 60;       // bis zum nächsten Aufruf (0,5–1,5 min)
+    const amtOrt = ORTE_CONFIG.find(o => o.id === 'arbeitsamt');
+    if (amtOrt) {
+      const p = isoToScreen(amtOrt.col + 0.5, amtOrt.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      const sx = p.x, sy = p.y - this.tileH * 2.2;    // über dem Eingang
+      this.amtLedBg = this.add.rectangle(sx, sy, 74, 30, 0x0a0f08).setStrokeStyle(2, 0x214a21).setDepth(80000);
+      this.amtLedText = this.add.text(sx, sy, 'Nr ' + this._amtNr(this._amtAktuell), {
+        fontFamily: '"Share Tech Mono", monospace', fontSize: '18px', fontStyle: 'bold', color: '#39ff14',
+        resolution: Math.max(2, Math.min(window.devicePixelRatio || 2, 3)),
+      }).setOrigin(0.5).setDepth(80001);
+      this.amtLedText.setShadow(0, 0, '#1aff00', 8, false, true);
+    }
+
     // Steuerung
     this.cursors       = this.input.keyboard.createCursorKeys();
     this.interactKey   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -6616,6 +6639,8 @@ class SpielSzene extends Phaser.Scene {
     // Räuber
     if (this._raeuberCooldown > 0) this._raeuberCooldown -= dt;
     if (!modalOffen && !this._menuAktiv) this.updateRaeuber(dtMove, dt);
+    // Arbeitsamt-Warteschlange läuft in Echtzeit weiter (auch bei offenem Popup)
+    this.tickAmt(dt);
 
     if (modalOffen) return;
 
@@ -7323,6 +7348,96 @@ class SpielSzene extends Phaser.Scene {
     // Augen-Schlitz (Maske)
     g.fillStyle(0x101216, 1); g.fillRect(cx - 6, cy - 14, 12, 4);
     g.fillStyle(0xff5050, 0.9); g.fillCircle(cx - 2, cy - 12, 1); g.fillCircle(cx + 3, cy - 12, 1);
+  }
+
+  // ============================================================
+  //  ARBEITSAMT-WARTENUMMER  (Nummer ziehen, LED-Schild, Schlange)
+  // ============================================================
+  _amtNr(n) { return String(Math.max(0, Math.floor(n))).padStart(3, '0'); }
+
+  amtLedUpdate() {
+    if (!this.amtLedText) return;
+    // Wird die Nummer des Spielers gerade aufgerufen → in Rot blinken lassen.
+    if (this._amtFenster > 0 && this._amtNummer != null) {
+      this.amtLedText.setText('Nr ' + this._amtNr(this._amtNummer)).setColor('#ff5050');
+      this.amtLedText.setShadow(0, 0, '#ff2020', 8, false, true);
+    } else {
+      this.amtLedText.setText('Nr ' + this._amtNr(this._amtAktuell)).setColor('#39ff14');
+      this.amtLedText.setShadow(0, 0, '#1aff00', 8, false, true);
+    }
+  }
+
+  // Läuft in Echtzeit (auch wenn der Spieler woanders ist): Büro ruft Nummern auf.
+  tickAmt(dt) {
+    if (this._amtAktuell == null) return;
+    this._amtTimer -= dt;
+    if (this._amtTimer <= 0) {
+      this._amtAktuell++;
+      this._amtTimer = 30 + Math.random() * 60;     // 0,5–1,5 min pro Termin
+      // Spieler an der Reihe?
+      if (this._amtNummer != null && this._amtFenster <= 0 && this._amtAktuell >= this._amtNummer) {
+        this._amtFenster = 90;                       // 1,5 min Zugangsfenster
+        logEvent('🔔 Deine Nummer ' + this._amtNr(this._amtNummer) + ' wird aufgerufen! Schnell zum Amt (1,5 Min).', 'warn');
+      }
+      this.amtLedUpdate();
+    }
+    if (this._amtFenster > 0) {
+      this._amtFenster -= dt;
+      if (this._amtFenster <= 0) {                    // nicht rechtzeitig da gewesen
+        if (this._amtNummer != null) logEvent('⌛ Wartenummer verfallen – du warst nicht rechtzeitig am Amt.', 'bad');
+        this._amtNummer = null;
+        this.amtLedUpdate();
+      }
+    }
+  }
+
+  // Wird aus interact('arbeitsamt') aufgerufen. true = Menü darf öffnen.
+  amtInteraktion() {
+    if (this._amtFenster > 0) {            // dein Termin läuft → Zugang (Nummer verbraucht)
+      this._amtFenster = 0; this._amtNummer = null; this.amtLedUpdate();
+      return true;
+    }
+    if (this._amtNummer != null) { this.amtWartePopup(); return false; }
+    this.amtZiehPopup(); return false;
+  }
+
+  amtZiehPopup() {
+    oeffneModal('🎫 Wartenummer ziehen',
+      'Beim Amt zieht man erst eine Nummer.<br>Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b>.<br>' +
+      'Erst wenn deine Nummer dran ist, kommst du zu den Anträgen & Terminen.',
+      [
+        { label: '🎫 Nummer ziehen', primary: true, callback: () => this.amtZiehen() },
+        { label: '💶 Vordrängeln (100 €)', callback: () => this.amtBestechen() },
+      ]);
+  }
+
+  amtZiehen() {
+    const vor = Phaser.Math.Between(0, 3);            // 0–3 Leute vor dir
+    this._amtNummer = this._amtAktuell + vor + 1;
+    this._amtFenster = 0;
+    this.amtLedUpdate();
+    logEvent('🎫 Nummer ' + this._amtNr(this._amtNummer) + ' gezogen – ' + vor + ' vor dir. Warte auf den Aufruf am LED-Schild.', '');
+  }
+
+  amtWartePopup() {
+    const vor = Math.max(0, this._amtNummer - this._amtAktuell);
+    oeffneModal('⏳ Du wartest auf deinen Aufruf',
+      'Deine Nummer: <b>Nr. ' + this._amtNr(this._amtNummer) + '</b><br>' +
+      'Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b><br>' +
+      'Noch <b>' + vor + '</b> vor dir. Behalte das grüne LED-Schild im Auge.',
+      [ { label: '💶 Vordrängeln (100 €)', callback: () => this.amtBestechen() } ]);
+  }
+
+  amtBestechen() {
+    const gs = gameState;
+    if (gs.losesBargeld + gs.kontostand < 100) { logEvent('💶 Keine 100 € fürs Vordrängeln.', 'bad'); return; }
+    let rest = 100;
+    const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l;
+    gs.kontostand -= rest;
+    this._amtFenster = 90;                            // sofort Zugang
+    updateHUD();
+    logEvent('💶 100 € gesteckt – du gehst an der Schlange vorbei.', 'warn');
+    interact('arbeitsamt');                           // öffnet jetzt das Amt-Menü
   }
 
   // spielerCol/Row aus der kontinuierlichen Position ableiten (für Interaktion)
