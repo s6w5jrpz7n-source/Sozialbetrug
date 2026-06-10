@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v42 – Park fix';
+const BUILD_MARKE = 'v43 – Tag 1 Min';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -216,7 +216,7 @@ const NEBENKOSTEN            = 200;      // €/Monat Strom, Internet, Handy (se
 const ALG1_ZAHLUNG           = 1200;
 const ALG2_ZAHLUNG           = 563;
 const ALG2_VERMOEGENS_GRENZE = 50000;
-const ECHTZEIT_PRO_WOCHE     = 60;       // Sekunden pro Spielwoche
+const ECHTZEIT_PRO_WOCHE     = 420;      // Sekunden pro Spielwoche (7 Tage × 60 s = 1 Tag/Minute)
 const WOCHEN_PRO_MONAT       = 4;
 const RAZZIA_INTERVALL       = 60;       // Sekunden zwischen Razzia-Prüfungen
 const RAZZIA_SCHWELLE        = 70;       // Ab diesem Risiko aktiv
@@ -7143,11 +7143,13 @@ class SpielSzene extends Phaser.Scene {
     if (!this._bettlerExists) this.initBettler();
     if (!this._bettlerExists) return;
     this._bettlerMode = 'attack';
+    this._bettlerPfad = null; this._bettlerRepath = 0;   // frischen Pfad zum Spieler erzwingen
     logEvent('🧎 Der Bettler wird aufdringlich und stürzt sich auf dich!', 'warn');
   }
 
   // Neues, zufälliges Wanderziel (begehbare Kachel) wählen.
   neuesWanderZiel() {
+    this._bettlerPfad = null; this._bettlerRepath = 0;   // Pfad zum neuen Ziel neu berechnen
     for (let i = 0; i < 40; i++) {
       const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
       if (!this.begehbar(c, r)) continue;
@@ -7225,12 +7227,22 @@ class SpielSzene extends Phaser.Scene {
         // nah am Spieler → stehenbleiben und betteln (Front-Pose + Sprechblase)
         geht = false;
       } else {
-        const zdx = this._bettlerZielX - this._bettlerX;
-        const zd = Math.hypot(zdx, this._bettlerZielY - this._bettlerY);
-        if (zd < 16 || !this._bettlerSchritt(this._bettlerZielX, this._bettlerZielY, 52, dt)) {
-          this.neuesWanderZiel();                // Ziel erreicht oder blockiert → neues Ziel
+        const vx = this._bettlerX;
+        const zd = Math.hypot(this._bettlerZielX - this._bettlerX, this._bettlerZielY - this._bettlerY);
+        if (zd < 18) { this.neuesWanderZiel(); }   // Ziel erreicht → neues
+        // Pathfinding zum Wanderziel (läuft um Gebäude herum statt hängenzubleiben)
+        this._bettlerRepath = (this._bettlerRepath || 0) - dt;
+        if (this._bettlerRepath <= 0 || !this._bettlerPfad || !this._bettlerPfad.length) {
+          this._bettlerPfad = this.npcPfad(this._bettlerX, this._bettlerY, this._bettlerZielX, this._bettlerZielY) || [];
+          this._bettlerRepath = 0.5;
+          if (!this._bettlerPfad.length) this.neuesWanderZiel();   // unerreichbar → neues Ziel
         }
-        blickRichtung = zdx < 0 ? -1 : 1;
+        if (this._bettlerPfad.length) {
+          const np = this.folgePfad(this._bettlerX, this._bettlerY, this._bettlerPfad, 52, dt);
+          this._bettlerX = np.x; this._bettlerY = np.y;
+        }
+        const mvx = this._bettlerX - vx;
+        blickRichtung = mvx < -0.01 ? -1 : 1;
       }
     }
 
@@ -7361,7 +7373,7 @@ class SpielSzene extends Phaser.Scene {
     const dist = Math.hypot(dx, dy);
 
     // Überfall, sobald er nah genug ist (und etwas zu holen ist)
-    if (dist < 60 && this._raeuberCooldown <= 0) {
+    if (dist < 28 && this._raeuberCooldown <= 0) {   // muss dicht dran sein (Körperkontakt)
       if (gameState.losesBargeld >= 20) { this.ueberfall(); return; }
     }
 
