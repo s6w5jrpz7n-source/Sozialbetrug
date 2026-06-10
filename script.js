@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v36 – Schwierigkeit+Hunger';
+const BUILD_MARKE = 'v37 – Vorrat 2 Wochen';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -102,7 +102,8 @@ const gameState = {
   geschenkeSumme: 0,        // Zählt Geschenke bis 5000€ für Rückkehr
 
   // ---- Supermarkt ----
-  lebensmittelDiesenMonat: null, // 'gut'|'normal'|'billig'|null
+  lebensmittelDiesenMonat: null, // zuletzt gekaufte Qualität 'gut'|'normal'|'billig'|null (für Anzeige)
+  lebensmittelTageRest: 0,       // verbleibende Vorrats-Tage (Einkauf = +14, stapelbar bis 28)
   billigKaeufeInFolge: 0,   // Für "Frau beschwert sich"-Event
   supermarktFaellig: false, // true ab Tag 3 des Monats
   kuehlschrankWarnung: false, // "Kühlschrank leer"-Popup schon gezeigt (pro Monat)
@@ -2363,20 +2364,18 @@ function updateHUD() {
   const lmBar = document.getElementById('bar-lebensmittel');
   const lmVal = document.getElementById('val-lebensmittel');
   if (lmBar && lmVal) {
+    const tage = gs.lebensmittelTageRest || 0;
     const lm = gs.lebensmittelDiesenMonat;
-    if (lm === 'gut') {
-      lmBar.style.width = '100%'; lmBar.style.background = '#4be87a';
-      lmVal.textContent = '🥗 Bio'; lmVal.style.color = '#4be87a';
-    } else if (lm === 'normal') {
-      lmBar.style.width = '65%';  lmBar.style.background = '#e8b84b';
-      lmVal.textContent = '🥙 Normal'; lmVal.style.color = '#e8b84b';
-    } else if (lm === 'billig') {
-      lmBar.style.width = '30%';  lmBar.style.background = '#e87a4b';
-      lmVal.textContent = '🍟 Billig'; lmVal.style.color = '#e87a4b';
+    if (tage > 0) {
+      lmBar.style.width = Math.min(100, tage / 14 * 100) + '%';
+      const farbe = lm === 'gut' ? '#4be87a' : lm === 'billig' ? '#e87a4b' : '#e8b84b';
+      const ico   = lm === 'gut' ? '🥗' : lm === 'billig' ? '🍟' : '🥙';
+      lmBar.style.background = farbe;
+      lmVal.textContent = `${ico} ${tage} Tg`;
+      lmVal.style.color = tage <= 3 ? '#e8924b' : farbe;
     } else {
-      lmBar.style.width = '0%';   lmBar.style.background = '#e84b4b';
-      lmVal.textContent = gs.supermarktFaellig ? '⚠️ Fällig!' : '–';
-      lmVal.style.color = gs.supermarktFaellig ? '#e84b4b' : 'var(--text-dim)';
+      lmBar.style.width = '0%'; lmBar.style.background = '#e84b4b';
+      lmVal.textContent = '⚠️ Leer!'; lmVal.style.color = '#e84b4b';
     }
   }
 
@@ -2817,10 +2816,12 @@ function interact(ortId) {
     beschreibung += `<br><br>🥇 Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * 500)})`;
   }
   if (ortId === 'supermarkt') {
+    const tage = gs.lebensmittelTageRest || 0;
     const einkauf = gs.lebensmittelDiesenMonat;
-    beschreibung += einkauf
-      ? `<br><br>✅ Diesen Monat eingekauft: <strong>${einkauf === 'gut' ? 'Bio 🥗' : einkauf === 'normal' ? 'Normal 🥙' : 'Billig 🍟'}</strong>`
-      : `<br><br>⚠️ <strong>Noch kein Einkauf</strong> diesen Monat!`;
+    const qual = einkauf === 'gut' ? 'Bio 🥗' : einkauf === 'normal' ? 'Normal 🥙' : einkauf === 'billig' ? 'Billig 🍟' : '';
+    beschreibung += tage > 0
+      ? `<br><br>✅ Vorrat: noch <strong>${tage} Tage</strong>${qual ? ` (${qual})` : ''}. Jeder Einkauf reicht ~2 Wochen.`
+      : `<br><br>⚠️ <strong>Kühlschrank leer!</strong> Ein Einkauf reicht ~2 Wochen.`;
   }
 
   oeffneModal(ort.name, beschreibung, aktionen);
@@ -3474,19 +3475,23 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.supermarktFaellig = false;
       const typ = aktionsId.replace('einkauf_', '');
       gs.lebensmittelDiesenMonat = typ;
+      // Rollender Vorrat: jeder Einkauf reicht 2 Wochen, verlängert (max. 4 Wochen)
+      gs.lebensmittelTageRest = Math.min(28, (gs.lebensmittelTageRest || 0) + 14);
+      gs.kuehlschrankWarnung = false;   // bei nächstem Leerstand wieder warnen
 
       if (typ === 'gut') {
         gs.gesundheit       = clamp(gs.gesundheit + 10, 0, 100);
         gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
         gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥗 Bio-Einkauf: -${formatEuro(kosten)}. Gesundheit +10, Laune +10.`, 'good');
+        logEvent(`🥗 Bio-Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat). Gesundheit +10, Laune +10.`, 'good');
       } else if (typ === 'normal') {
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥙 Normaler Einkauf: -${formatEuro(kosten)}.`, 'good');
+        logEvent(`🥙 Normaler Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat).`, 'good');
       } else if (typ === 'billig') {
+        gs.gesundheit = clamp(gs.gesundheit - 5, 0, 100);
         gs.billigKaeufeInFolge++;
-        logEvent(`🍟 Billiger Einkauf: -${formatEuro(kosten)}. Gesundheit -5/M, Laune -10/M.`, 'warn');
+        logEvent(`🍟 Billiger Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat). Gesundheit -5.`, 'warn');
         if (gs.billigKaeufeInFolge >= 2) {
           setTimeout(() => oeffneModal('😤 Deine Frau beschwert sich!',
             'Zwei Monate hintereinander Billig-Essen! Deine Partnerin ist sauer.<br><br>'
@@ -4395,19 +4400,11 @@ function monatsAbschluss() {
     gs.happinessPartner = clamp(gs.happinessPartner - 2, 0, 100);
   }
 
-  // ---- Lebensmittel-Effekte ----
-  gs.supermarktFaellig = false; // Tag 3 wird in spielwocheVorbei gesetzt
-  if (gs.lebensmittelDiesenMonat === 'billig') {
-    gs.gesundheit       = clamp(gs.gesundheit - 5, 0, 100);
-    gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100);
-    if (!gs.frauAusgezogen) gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100);
-    meldungen.push('🍟 Billiges Essen: Gesundheit -5, Laune -10.');
-  } else if (gs.lebensmittelDiesenMonat === null) {
-    // Kein Einkauf – Malus wird täglich in tickAutoSave abgerechnet
-    meldungen.push('⚠️ Kein Lebensmittel-Einkauf diesen Monat!');
+  // ---- Lebensmittel: rollender Vorrat (kein Monats-Stichtag mehr) ----
+  // Verbrauch/Hunger laufen tagesweise in tagGewechselt(); hier nur Hinweis.
+  if ((gs.lebensmittelTageRest || 0) <= 0) {
+    meldungen.push('⚠️ Kühlschrank ist leer – einkaufen gehen!');
   }
-  gs.lebensmittelDiesenMonat = null; // Reset für neuen Monat
-  gs.kuehlschrankWarnung = false;    // Kühlschrank-leer-Hinweis neu erlauben
 
   // ---- Frau ausgezogen – Prüfung ----
   if (!gs.frauAusgezogen && gs.happinessPartner < 20) {
@@ -6170,7 +6167,7 @@ class StartSzene extends Phaser.Scene {
         depot: [], goldBarren: 0,
         kindergeldKinder: [], kindergeldAktiv: false,
         monatlicheExtras: 0, risikoProMonat: 0,
-        lebensmittelDiesenMonat: null, billigKaeufeInFolge: 0,
+        lebensmittelDiesenMonat: null, lebensmittelTageRest: 0, billigKaeufeInFolge: 0,
         supermarktFaellig: false, kuehlschrankWarnung: false, schattenbankAktiv: false,
         bankEinzahlungDieseWoche: 0, gameOver: false,
         // ---- neue Bürokratie-/Immobilien-Features zurücksetzen ----
@@ -6914,31 +6911,33 @@ class SpielSzene extends Phaser.Scene {
   // ----------------------------------------------------------------
   // HILFSMETHODEN
   // ----------------------------------------------------------------
-  // Wird bei jedem Tageswechsel aufgerufen – u.a. Lebensmittel-Konsequenzen.
+  // Wird bei jedem Tageswechsel aufgerufen – Lebensmittel-Vorrat & Hunger.
   tagGewechselt(tag) {
     const gs = gameState;
     if (gs.gameOver) return;
-    if (!gs.lebensmittelDiesenMonat) {     // diesen Monat (noch) nicht eingekauft
-      // Ab Tag 3 ist der Kühlschrank leer → einmal pro Monat deutlich warnen
-      if (tag >= 3 && !gs.kuehlschrankWarnung) {
+    // Vorrat verbraucht sich täglich
+    if (gs.lebensmittelTageRest > 0) {
+      gs.lebensmittelTageRest--;
+      if (gs.lebensmittelTageRest === 0) gs.lebensmittelDiesenMonat = null;   // Vorrat aufgebraucht
+    }
+    // Kühlschrank leer → Hunger
+    if (gs.lebensmittelTageRest <= 0) {
+      if (!gs.kuehlschrankWarnung) {
         gs.kuehlschrankWarnung = true;
         gs.supermarktFaellig = true;
         oeffneModal('🧊 Kühlschrank ist leer!',
-          'Du hast diesen Monat noch <strong>nichts eingekauft</strong> – der Kühlschrank ist leer.<br><br>' +
+          'Dein Lebensmittel-Vorrat ist <strong>aufgebraucht</strong>.<br><br>' +
           'Ohne Essen verlierst du jetzt <strong>jeden Tag −5 Gesundheit, −3 Energie</strong> und Laune. ' +
-          'Geh zum <strong>Supermarkt</strong> und kauf ein!', []);
+          'Geh zum <strong>Supermarkt</strong> – ein Einkauf reicht ca. <strong>2 Wochen</strong>!', []);
         logEvent('🧊 Kühlschrank leer! Ab zum Supermarkt.', 'warn');
       }
-      // Täglicher Hunger-Malus ab Tag 3
-      if (tag >= 3) {
-        gs.gesundheit       = clamp(gs.gesundheit - 5, 0, 100);
-        gs.energie          = clamp(gs.energie - 3, 0, 100);
-        gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100);
-        logEvent('🍽️ Leerer Kühlschrank: −5 Gesundheit, −3 Energie.', 'danger');
-        updateHUD();
-        if (gs.gesundheit <= 0) { triggerGameOver('gesundheit'); return; }
-      }
+      gs.gesundheit       = clamp(gs.gesundheit - 5, 0, 100);
+      gs.energie          = clamp(gs.energie - 3, 0, 100);
+      gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100);
+      logEvent('🍽️ Leerer Kühlschrank: −5 Gesundheit, −3 Energie.', 'danger');
+      if (gs.gesundheit <= 0) { updateHUD(); triggerGameOver('gesundheit'); return; }
     }
+    updateHUD();
   }
 
   spielwocheVorbei() {
@@ -7791,6 +7790,8 @@ function ladeSpiel(slot) {
     if (gameState.geschenkeSumme      === undefined) gameState.geschenkeSumme      = 0;
     if (gameState.supermarktFaellig   === undefined) gameState.supermarktFaellig   = false;
     if (gameState.lebensmittelDiesenMonat === undefined) gameState.lebensmittelDiesenMonat = null;
+    if (gameState.lebensmittelTageRest === undefined) gameState.lebensmittelTageRest = 0;
+    if (gameState.kuehlschrankWarnung  === undefined) gameState.kuehlschrankWarnung  = false;
     if (gameState.billigKaeufeInFolge === undefined) gameState.billigKaeufeInFolge = 0;
     if (gameState.amtsTermineVerpasst === undefined) gameState.amtsTermineVerpasst = 0;
     if (gameState.algGesperrt         === undefined) gameState.algGesperrt         = false;
