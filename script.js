@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v45 – kein SPACE';
+const BUILD_MARKE = 'v46 – Park ohne Baum';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5828,12 +5828,7 @@ function bauePark(g, cx, cy, tw, th) {
   // angedeuteter Weg
   g.fillStyle(0x8a7a5a, 0.45);
   g.fillRect(cx - tw * 0.05, cy - th * 0.10, tw * 0.10, th * 0.42);
-  // Baum rechts
-  const txx = cx + tw * 0.22, tyy = cy + th * 0.02;
-  g.fillStyle(0x4a3018, 1); g.fillRect(txx - 2.5, tyy - th * 0.45, 5, th * 0.45);
-  g.fillStyle(0x2e7a34, 1); g.fillCircle(txx, tyy - th * 0.55, tw * 0.15);
-  g.fillStyle(0x3a8c40, 1); g.fillCircle(txx - tw * 0.06, tyy - th * 0.48, tw * 0.09);
-  g.fillStyle(0x256a2c, 1); g.fillCircle(txx + tw * 0.05, tyy - th * 0.50, tw * 0.08);
+  // (Baum entfernt – stand störend über dem Dealer)
   // Parkbank links
   g.fillStyle(0x6a4a2a, 1); g.fillRect(cx - tw * 0.34, cy + th * 0.02, tw * 0.18, 3);
   g.fillStyle(0x5a3a1a, 1);
