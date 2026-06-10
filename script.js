@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v31 – Outline';
+const BUILD_MARKE = 'v32 – Räuber';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6546,6 +6546,24 @@ class SpielSzene extends Phaser.Scene {
       callback: () => this.spawnBettler(),
     });
 
+    // ---- Räuber-NPC ----
+    // Treibt sich NUR im Viertel rund um Schattenbank & Arztpraxis herum.
+    // Taucht statistisch auf, verfolgt den Spieler in seinem Revier und überfällt
+    // ihn bei Kontakt (Kooperieren = Bargeld weg; Kämpfen = 50/50). Man kann ihm
+    // entkommen, indem man das Viertel verlässt.
+    this.raeuberGfx = this.add.graphics();
+    this._raeuberExists = false;
+    this._raeuberX = 0; this._raeuberY = 0;
+    this._raeuberFrame = 0; this._raeuberWalkT = 0;
+    this._raeuberLebt = 0;          // verbleibende Lebensdauer (s), dann zieht er ab
+    this._raeuberCooldown = 0;      // Sperre nach einem Überfall (s)
+    this._raeuberFreilauf = false;  // Test: ohne Revier-Beschränkung überall
+    this.initRaeuberRevier();
+    this._raeuberTimer = this.time.addEvent({
+      delay: 12000, loop: true,     // alle 12 s eine Chance, dass er auftaucht
+      callback: () => this.vielleichtRaeuber(),
+    });
+
     // Steuerung
     this.cursors       = this.input.keyboard.createCursorKeys();
     this.interactKey   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -6595,6 +6613,9 @@ class SpielSzene extends Phaser.Scene {
 
     // Bettler (läuft auch, während andere Spiellogik gerade pausiert)
     if (!modalOffen && !this._menuAktiv) this.updateBettler(dtMove);
+    // Räuber
+    if (this._raeuberCooldown > 0) this._raeuberCooldown -= dt;
+    if (!modalOffen && !this._menuAktiv) this.updateRaeuber(dtMove, dt);
 
     if (modalOffen) return;
 
@@ -7099,6 +7120,182 @@ class SpielSzene extends Phaser.Scene {
       return;
     }
     oeffneSpendenModal();
+  }
+
+  // ============================================================
+  //  RÄUBER  (nur im Viertel um Schattenbank & Arztpraxis)
+  // ============================================================
+  // Revier aus den beiden Gebäudepositionen berechnen (Mittelpunkt + Radius).
+  initRaeuberRevier() {
+    const find = id => ORTE_CONFIG.find(o => o.id === id);
+    const a = find('schattenbank'), b = find('arztpraxis');
+    if (!a || !b) { this._revier = null; return; }
+    const pa = isoToScreen(a.col + 0.5, a.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+    const pb = isoToScreen(b.col + 0.5, b.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+    this._revier = {
+      cx: (pa.x + pb.x) / 2, cy: (pa.y + pb.y) / 2,
+      r: Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 170,   // beide + Puffer
+    };
+  }
+
+  imRevier(x, y) {
+    const z = this._revier;
+    return !!z && Phaser.Math.Distance.Between(x, y, z.cx, z.cy) <= z.r;
+  }
+
+  // Statistische Chance, dass der Räuber auftaucht – nur wenn der Spieler im
+  // Revier ist, er nicht schon da ist und keine Sperre läuft.
+  vielleichtRaeuber() {
+    if (this._raeuberExists || gameState.gameOver) return;
+    if (this._raeuberCooldown > 0 || !this._revier) return;
+    if (!this.imRevier(this.spielerX, this.spielerY)) return;
+    if (Math.random() > 0.45) return;            // ~45 % pro Prüfung
+    this.spawnRaeuber();
+  }
+
+  // Räuber im Revier (etwas entfernt vom Spieler) erscheinen lassen.
+  spawnRaeuber() {
+    if (this._raeuberExists || !this._revier) return;
+    let best = null, bestD = 1e9;
+    for (let i = 0; i < 50; i++) {
+      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+      if (!this.begehbar(c, r)) continue;
+      const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      if (!this.imRevier(p.x, p.y)) continue;
+      const d = Phaser.Math.Distance.Between(p.x, p.y, this.spielerX, this.spielerY);
+      if (d > 140 && d < bestD) { bestD = d; best = p; }   // nicht direkt auf dem Spieler
+    }
+    if (!best) return;
+    this._raeuberX = best.x; this._raeuberY = best.y;
+    this._raeuberExists = true;
+    this._raeuberLebt = 55;            // bleibt ~55 s, dann zieht er ab
+    this._raeuberFrame = 0; this._raeuberWalkT = 0;
+    logEvent('🔫 Im Schatten-Viertel lungert ein Räuber herum …', 'warn');
+  }
+
+  despawnRaeuber() {
+    this._raeuberExists = false;
+    this._raeuberFreilauf = false;
+    this.raeuberGfx.clear();
+  }
+
+  // Test (Zahnrad): Räuber sofort neben dem Spieler erscheinen lassen – überall.
+  spawnRaeuberTest() {
+    if (this._raeuberExists) return;
+    this._raeuberCooldown = 0;
+    const ang = Math.random() * Math.PI * 2;
+    this._raeuberX = this.spielerX + Math.cos(ang) * 120;
+    this._raeuberY = this.spielerY + Math.sin(ang) * 120;
+    this._raeuberExists = true;
+    this._raeuberFreilauf = true;
+    this._raeuberLebt = 55;
+    this._raeuberFrame = 0; this._raeuberWalkT = 0;
+    logEvent('🔫 (Test) Ein Räuber taucht auf …', 'warn');
+  }
+
+  updateRaeuber(dt, dtReal) {
+    if (!this._raeuberExists) return;
+    this._raeuberLebt -= dtReal;
+    if (this._raeuberLebt <= 0) {                // gibt auf und verschwindet
+      this.despawnRaeuber();
+      logEvent('Der Räuber ist abgezogen.', '');
+      return;
+    }
+    const dx = this.spielerX - this._raeuberX, dy = this.spielerY - this._raeuberY;
+    const dist = Math.hypot(dx, dy);
+
+    // Überfall, sobald er nah genug ist (und etwas zu holen ist)
+    if (dist < 60 && this._raeuberCooldown <= 0) {
+      if (gameState.losesBargeld >= 20) { this.ueberfall(); return; }
+    }
+
+    // Spieler verfolgen – aber das Revier nicht verlassen (so kann man entkommen)
+    const d = dist || 1;
+    const sx = (dx / d) * 80 * dt, sy = (dy / d) * 80 * dt;
+    const nx = this._raeuberX + sx, ny = this._raeuberY + sy;
+    if (this._raeuberFreilauf || this.imRevier(nx, ny)) {
+      if      (this.weltBegehbar(nx, ny)) { this._raeuberX = nx; this._raeuberY = ny; }
+      else if (this.weltBegehbar(nx, this._raeuberY)) { this._raeuberX = nx; }
+      else if (this.weltBegehbar(this._raeuberX, ny)) { this._raeuberY = ny; }
+      else { this._raeuberX = nx; this._raeuberY = ny; }
+    }
+    this._raeuberWalkT += dt;
+    if (this._raeuberWalkT > 0.12) { this._raeuberWalkT = 0; this._raeuberFrame = (this._raeuberFrame + 1) % 4; }
+    this.drawRaeuber(this._raeuberX, this._raeuberY);
+  }
+
+  // Der Überfall: Popup mit Kooperieren / Kämpfen.
+  ueberfall() {
+    this._raeuberCooldown = 999;        // während des Popups keine Mehrfach-Auslösung
+    const bar = gameState.losesBargeld;
+    const html =
+      `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
+      `„<b>Geld oder Leben!</b>" Ein maskierter Räuber stellt dich im Schatten-Viertel.<br>` +
+      `Du hast <b>${formatEuro(bar)}</b> loses Bargeld dabei.</span>`;
+    oeffneModal('🔫 Überfall!', html, [
+      { label: '🙌 Kooperieren – Bargeld abgeben', danger: true, callback: () => {
+        gameState.losesBargeld = 0;
+        logEvent(`🔫 Ausgeraubt! ${formatEuro(bar)} Bargeld weg.`, 'bad');
+        this._raeuberNachspiel();
+      } },
+      { label: '🥊 Kämpfen (50/50)', primary: true, callback: () => {
+        if (Math.random() < 0.5) {
+          logEvent('🥊 Du hast den Räuber verjagt – Bargeld gerettet!', 'good');
+        } else {
+          gameState.losesBargeld = 0;
+          gameState.gesundheit = clamp(gameState.gesundheit - 10, 0, 100);
+          logEvent(`🥊 Verloren! ${formatEuro(bar)} Bargeld weg, −10 Gesundheit.`, 'bad');
+          if (gameState.gesundheit <= 0) { updateHUD(); triggerGameOver('gesundheit'); return; }
+        }
+        this._raeuberNachspiel();
+      } },
+    ]);
+  }
+
+  // Nach dem Überfall: Räuber verschwindet, Sperre + HUD aktualisieren.
+  _raeuberNachspiel() {
+    this.despawnRaeuber();
+    this._raeuberCooldown = 120;        // ~2 Min Ruhe bis zum nächsten Überfall
+    updateHUD();
+  }
+
+  // Maskierter Räuber (dunkle Kapuze, Messer) – im Spielstil gezeichnet.
+  drawRaeuber(px, py) {
+    const g = this.raeuberGfx;
+    g.clear();
+    g.setDepth(py);
+    const cx = px, cy = py - 7;
+    const fr = [[-3, 4, 3, -4], [-1, 1, 1, -1], [3, -4, -3, 4], [1, -1, -1, 1]];
+    const [lxO, lyO, rxO, ryO] = fr[this._raeuberFrame % 4];
+    // Schatten
+    g.fillStyle(0x000000, 0.28); g.fillEllipse(cx + 1, cy + 22, 28, 10);
+    // Beine (dunkle Hose)
+    g.fillStyle(0x202430, 1);
+    g.fillRect(cx - 5 + lxO, cy + 9 + lyO, 6, 13);
+    g.fillRect(cx + 1 + rxO, cy + 9 + ryO, 6, 13);
+    g.fillStyle(0x111318, 1);
+    g.fillRect(cx - 6 + lxO, cy + 20 + lyO, 8, 4);
+    g.fillRect(cx + 0 + rxO, cy + 20 + ryO, 8, 4);
+    // Kapuzenpulli (dunkelgrau)
+    g.fillStyle(0x2c3038, 1); g.fillRect(cx - 10, cy - 4, 20, 16);
+    g.fillStyle(0x23262d, 1); g.fillRect(cx - 4, cy - 3, 4, 14);   // Reißverschluss-Schatten
+    // Arme
+    g.fillStyle(0x262a32, 1); g.fillRect(cx - 13, cy - 2, 5, 12);
+    g.fillStyle(0x262a32, 1); g.fillRect(cx + 9, cy - 2, 5, 12);
+    // Messer in der rechten Hand
+    g.fillStyle(0x3a2a1a, 1); g.fillRect(cx + 13, cy + 7, 3, 5);   // Griff
+    g.fillStyle(0xd8dce0, 1); g.fillTriangle(cx + 14, cy + 7, cx + 15, cy - 4, cx + 17, cy + 7);  // Klinge
+    // Hände
+    g.fillStyle(0xcaa688, 1); g.fillCircle(cx - 11, cy + 10, 2.6); g.fillCircle(cx + 12, cy + 9, 2.6);
+    // Kopf mit Kapuze
+    g.fillStyle(0xcaa688, 1); g.fillEllipse(cx, cy - 13, 14, 15); // Gesicht
+    g.fillStyle(0x2c3038, 1);                                     // Kapuze
+    g.fillEllipse(cx, cy - 18, 17, 12);
+    g.fillRect(cx - 9, cy - 19, 18, 7);
+    g.fillRect(cx - 9, cy - 14, 3, 9); g.fillRect(cx + 6, cy - 14, 3, 9);
+    // Augen-Schlitz (Maske)
+    g.fillStyle(0x101216, 1); g.fillRect(cx - 6, cy - 14, 12, 4);
+    g.fillStyle(0xff5050, 0.9); g.fillCircle(cx - 2, cy - 12, 1); g.fillCircle(cx + 3, cy - 12, 1);
   }
 
   // spielerCol/Row aus der kontinuierlichen Position ableiten (für Interaktion)

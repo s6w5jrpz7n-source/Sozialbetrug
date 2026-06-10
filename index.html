@@ -988,6 +988,14 @@
         if (szene && szene.spawnBettler) szene.spawnBettler();
       }
     }
+    // Test: Räuber sofort spawnen
+    function spawnRaeuberBtn() {
+      const game = window._phaserGameRef;
+      if (game) {
+        const szene = game.scene.getScene('SpielSzene');
+        if (szene && szene.spawnRaeuberTest) szene.spawnRaeuberTest();
+      }
+    }
 
     // Zahnrad-Menü (oben rechts): Speichern / Laden / Woche / Musik
     function openGearMenu() {
@@ -997,6 +1005,7 @@
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
         { label: '⏩ Woche überspringen',   callback: () => skipWocheBtn() },
         { label: '🧎 Bettler testen',       callback: () => spawnBettlerBtn() },
+        { label: '🔫 Räuber testen',        callback: () => spawnRaeuberBtn() },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
       ]);
     }
