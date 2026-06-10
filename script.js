@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v37 – Vorrat 2 Wochen';
+const BUILD_MARKE = 'v38 – Räuber-Ergebnis';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -7319,17 +7319,33 @@ class SpielSzene extends Phaser.Scene {
         gameState.losesBargeld = 0;
         logEvent(`🔫 Ausgeraubt! ${formatEuro(bar)} Bargeld weg.`, 'bad');
         this._raeuberNachspiel();
+        oeffneModal('💸 Ausgeraubt',
+          `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
+          `Du hast brav <b>${formatEuro(bar)}</b> Bargeld herausgerückt.<br>` +
+          `Der Räuber zählt grinsend deine Scheine und verschwindet in der Gasse.</span>`, []);
       } },
       { label: '🥊 Kämpfen (50/50)', primary: true, callback: () => {
         if (Math.random() < 0.5) {
           logEvent('🥊 Du hast den Räuber verjagt – Bargeld gerettet!', 'good');
+          this._raeuberNachspiel();
+          oeffneModal('🥊 Gewonnen!',
+            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#bfe8a0;">` +
+            `Du hast gewonnen und dem Räuber mal gezeigt, dass er sich nicht mit jedem ` +
+            `dahergelaufenen Arbeitslosen anlegen sollte!<br>Dein Bargeld bleibt bei dir. 💪</span>`, []);
         } else {
-          gameState.losesBargeld = 0;
           gameState.gesundheit = clamp(gameState.gesundheit - 10, 0, 100);
           logEvent(`🥊 Verloren! ${formatEuro(bar)} Bargeld weg, −10 Gesundheit.`, 'bad');
-          if (gameState.gesundheit <= 0) { updateHUD(); triggerGameOver('gesundheit'); return; }
+          if (gameState.gesundheit <= 0) {
+            gameState.losesBargeld = 0;
+            updateHUD(); this.despawnRaeuber(); triggerGameOver('gesundheit'); return;
+          }
+          gameState.losesBargeld = 0;
+          this._raeuberNachspiel();
+          oeffneModal('🤕 Verloren',
+            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8a0a0;">` +
+            `Du hast verloren, wurdest zusammengeschlagen und hast all dein Bargeld ` +
+            `(<b>${formatEuro(bar)}</b>) verloren.<br>−10 Gesundheit.</span>`, []);
         }
-        this._raeuberNachspiel();
       } },
     ]);
   }
