@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v43 – Tag 1 Min';
+const BUILD_MARKE = 'v44 – Zeitraffer';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6409,6 +6409,7 @@ class SpielSzene extends Phaser.Scene {
     this.inputCooldown    = 0;
     this.ortRects         = [];
     this.zeitAkku         = 0;
+    this.zeitTempo        = 1;   // Zeitraffer 1× / 2× / 4×
     this.wochenSeitMonat  = 0;
     this.eventTimer       = randomEventIntervall();
     this.hudTickTimer     = 0;
@@ -6472,6 +6473,8 @@ class SpielSzene extends Phaser.Scene {
     this.offsetY = Math.max(40, (H - karteHoehe) / 2 + 20);
 
     document.body.classList.add('im-spiel');   // Topbar/Zahnrad nur im Spiel zeigen
+    this.zeitTempo = 1;
+    try { if (typeof setTempo === 'function') setTempo(1); } catch (e) {}   // Tempo-Anzeige zurücksetzen
 
     // Stadtgrafik (einmalig)
     zeichneAlleGebaeude(this, this.tileW, this.tileH, this.offsetX, this.offsetY);
@@ -6695,6 +6698,9 @@ class SpielSzene extends Phaser.Scene {
   update(time, delta) {
     if (gameState.gameOver) return;
     const dt = delta / 1000;
+    // Zeitraffer: 1× / 2× / 4× beschleunigt nur den Spiel-Kalender & periodische
+    // Ereignisse (nicht Steuerung/Animation).
+    const dtZeit = dt * (this.zeitTempo || 1);
     // Geklemmter dt für die Bewegung: verhindert „Sprints" nach Frame-Aussetzern
     // (Performance-Spikes) → konstantes Lauftempo statt erst schnell, dann langsam.
     const dtMove = Math.min(delta, 40) / 1000;
@@ -6712,12 +6718,12 @@ class SpielSzene extends Phaser.Scene {
     if (this._raeuberCooldown > 0) this._raeuberCooldown -= dt;
     if (!modalOffen && !this._menuAktiv) this.updateRaeuber(dtMove, dt);
     // Arbeitsamt-Warteschlange läuft in Echtzeit weiter (auch bei offenem Popup)
-    this.tickAmt(dt);
+    this.tickAmt(dtZeit);
 
     if (modalOffen) return;
 
     // Spielzeit
-    this.zeitAkku += dt;
+    this.zeitAkku += dtZeit;
     // Tag-Fortschritt: 7 Tage pro Woche = alle ECHTZEIT_PRO_WOCHE/7 Sekunden 1 Tag
     const tagSek = ECHTZEIT_PRO_WOCHE / 7;
     const neuTag = Math.floor(this.zeitAkku / tagSek) + 1;
@@ -6731,18 +6737,18 @@ class SpielSzene extends Phaser.Scene {
     }
 
     // Events
-    this.eventTimer -= dt;
+    this.eventTimer -= dtZeit;
     if (this.eventTimer <= 0) {
       this.eventTimer = randomEventIntervall();
       triggerEvent(waehleEvent());
       return;
     }
 
-    tickRazziaTimer(dt);
-    tickAutoSave(dt);  // Auto-Save alle 2 Minuten
+    tickRazziaTimer(dtZeit);
+    tickAutoSave(dtZeit);  // Auto-Save alle 2 Minuten
 
     // Regen-Toggle
-    this.regenTimer -= dt;
+    this.regenTimer -= dtZeit;
     if (this.regenTimer <= 0) {
       this.regenTimer = 30 + Math.random() * 40;
       this.regenAktiv = !this.regenAktiv;

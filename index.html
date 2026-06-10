@@ -177,10 +177,29 @@
     }
     /* Kein horizontales Verschieben des Bildschirms (z. B. bei offenem Popup) */
     html, body { overflow: hidden; overscroll-behavior: none; max-width: 100vw; }
-    /* Topbar + Zahnrad nur IM SPIEL anzeigen (nicht im Startbildschirm) */
-    #topbar, #gear-btn { display: none; }
+    /* Zeitraffer-Steuerung (unten links) */
+    #speed-ctrl {
+      position: absolute; left: 8px; bottom: 8px; z-index: 60;
+      display: flex; align-items: center; gap: 4px;
+      background: rgba(14,18,32,0.88); border: 1px solid var(--border-hi);
+      border-radius: 16px; padding: 3px 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    #speed-ctrl .spd-ico { font-size: 0.85rem; margin: 0 1px 0 2px; opacity: 0.85; }
+    .spd-btn {
+      font-family: var(--mono); font-size: 0.72rem; font-weight: bold;
+      color: #9fb0d8; background: transparent; border: 1px solid transparent;
+      border-radius: 12px; padding: 2px 8px; cursor: pointer; line-height: 1;
+    }
+    .spd-btn.active {
+      color: #0a0e1a; background: var(--accent); border-color: var(--accent);
+      box-shadow: 0 0 8px rgba(232,184,75,0.4);
+    }
+    /* Topbar + Zahnrad + Tempo nur IM SPIEL anzeigen (nicht im Startbildschirm) */
+    #topbar, #gear-btn, #speed-ctrl { display: none; }
     body.im-spiel #topbar  { display: flex; }
     body.im-spiel #gear-btn { display: block; }
+    body.im-spiel #speed-ctrl { display: flex; }
 
     /* =================================================================
        HUD-PANEL – das polished rechte Panel
@@ -755,8 +774,15 @@
           <span id="tb-staat">0 €</span>
         </div>
       </div>
-      <!-- Menü-Zahnrad (Save/Load/Woche/Musik) – ersetzt den Header auf dem Handy -->
+      <!-- Menü-Zahnrad (Save/Load/Musik) – ersetzt den Header auf dem Handy -->
       <button id="gear-btn" onclick="openGearMenu()" title="Menü">⚙️</button>
+      <!-- Zeitraffer 1× / 2× / 4× (unten links, wo man selten hinklickt) -->
+      <div id="speed-ctrl">
+        <span class="spd-ico">⏱️</span>
+        <button class="spd-btn active" data-x="1" onclick="setTempo(1)">1×</button>
+        <button class="spd-btn"        data-x="2" onclick="setTempo(2)">2×</button>
+        <button class="spd-btn"        data-x="4" onclick="setTempo(4)">4×</button>
+      </div>
     </div>
 
     <!-- ===== HUD ===== -->
@@ -996,14 +1022,23 @@
         if (szene && szene.spawnRaeuberTest) szene.spawnRaeuberTest();
       }
     }
+    // Zeitraffer setzen (1× / 2× / 4×)
+    function setTempo(x) {
+      const game = window._phaserGameRef;
+      if (game) {
+        const szene = game.scene.getScene('SpielSzene');
+        if (szene) szene.zeitTempo = x;
+      }
+      document.querySelectorAll('#speed-ctrl .spd-btn').forEach(b =>
+        b.classList.toggle('active', Number(b.dataset.x) === x));
+    }
 
-    // Zahnrad-Menü (oben rechts): Speichern / Laden / Woche / Musik
+    // Zahnrad-Menü (oben rechts): Speichern / Laden / Musik / Tests
     function openGearMenu() {
       if (typeof oeffneModal !== 'function') return;
-      oeffneModal('⚙️ Menü', 'Spielstand verwalten oder Zeit vorspulen.', [
+      oeffneModal('⚙️ Menü', 'Spielstand verwalten. (Zeit-Tempo: unten links 1×/2×/4×)', [
         { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
-        { label: '⏩ Woche überspringen',   callback: () => skipWocheBtn() },
         { label: '🧎 Bettler testen',       callback: () => spawnBettlerBtn() },
         { label: '🔫 Räuber testen',        callback: () => spawnRaeuberBtn() },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
