@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v44 – Zeitraffer';
+const BUILD_MARKE = 'v45 – kein SPACE';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6666,7 +6666,6 @@ class SpielSzene extends Phaser.Scene {
     this.cursors       = this.input.keyboard.createCursorKeys();
     this.interactKey   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.interactEnter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.skipKey       = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Spiel-Musik: immer frisch starten, alte Instanz vorher stoppen
     try {
@@ -6815,10 +6814,6 @@ class SpielSzene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.interactKey) ||
         Phaser.Input.Keyboard.JustDown(this.interactEnter)) {
       this.versucheInteraktion();
-    }
-    // SPACE = Woche überspringen (sofort)
-    if (Phaser.Input.Keyboard.JustDown(this.skipKey)) {
-      this.skipWoche();
     }
   }
 
