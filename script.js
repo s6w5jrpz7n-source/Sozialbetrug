@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v32 – Räuber';
+const BUILD_MARKE = 'v33 – NPC Wege';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6976,6 +6976,18 @@ class SpielSzene extends Phaser.Scene {
     return !!t && this.begehbar(t.col, t.row);
   }
 
+  // Um ein Hindernis herum: senkrecht zur Zielrichtung ausweichen (NPC läuft
+  // nicht durch Gebäude). Liefert neue Position oder null (rundum blockiert).
+  _ausweichen(x, y, dx, dy, step) {
+    const d = Math.hypot(dx, dy) || 1;
+    const px = -dy / d, py = dx / d;
+    for (const s of [1, -1]) {
+      const nx = x + px * s * step, ny = y + py * s * step;
+      if (this.weltBegehbar(nx, ny)) return { x: nx, y: ny };
+    }
+    return null;
+  }
+
   // ---- Spenden-Bettler: spawnen, verfolgen, erwischen ----
   // Lässt einen Bettler weit weg vom Spieler erscheinen, der ihn dann verfolgt.
   // Bettler an einem zufälligen, begehbaren Punkt ins Leben rufen (Wander-Modus).
@@ -7068,10 +7080,10 @@ class SpielSzene extends Phaser.Scene {
         this.bettlerBubble.setVisible(false);
         this.zeigeBettler();
       } else {
-        // gezielt zum Spieler; wenn blockiert, notfalls direkt durch (nie hängenbleiben)
+        // gezielt zum Spieler; wenn blockiert, seitlich am Gebäude vorbei (NICHT durch)
         if (!this._bettlerSchritt(this.spielerX, this.spielerY, 105, dt)) {
-          const d = dist || 1;
-          this._bettlerX += (dx / d) * 105 * dt; this._bettlerY += (dy / d) * 105 * dt;
+          const a = this._ausweichen(this._bettlerX, this._bettlerY, dx, dy, 105 * dt);
+          if (a) { this._bettlerX = a.x; this._bettlerY = a.y; }
         }
         blickRichtung = dx < 0 ? -1 : 1;
       }
@@ -7217,7 +7229,10 @@ class SpielSzene extends Phaser.Scene {
       if      (this.weltBegehbar(nx, ny)) { this._raeuberX = nx; this._raeuberY = ny; }
       else if (this.weltBegehbar(nx, this._raeuberY)) { this._raeuberX = nx; }
       else if (this.weltBegehbar(this._raeuberX, ny)) { this._raeuberY = ny; }
-      else { this._raeuberX = nx; this._raeuberY = ny; }
+      else {   // blockiert → seitlich am Gebäude vorbei (nicht hindurch)
+        const a = this._ausweichen(this._raeuberX, this._raeuberY, dx, dy, 80 * dt);
+        if (a && (this._raeuberFreilauf || this.imRevier(a.x, a.y))) { this._raeuberX = a.x; this._raeuberY = a.y; }
+      }
     }
     this._raeuberWalkT += dt;
     if (this._raeuberWalkT > 0.12) { this._raeuberWalkT = 0; this._raeuberFrame = (this._raeuberFrame + 1) % 4; }
