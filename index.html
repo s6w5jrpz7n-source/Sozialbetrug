@@ -758,7 +758,7 @@
         <div class="tb-line"><span id="tb-zeit">M1 W1 T1</span> · <span id="tb-status">ALG I</span></div>
         <div class="tb-pills">
           <div class="tb-pill tb-konto"><span class="tb-ico">🏦</span><span id="tb-konto">50.000 €</span></div>
-          <div class="tb-pill tb-schwarz"><span class="tb-ico">🖤</span><span id="tb-schwarz">0 €</span></div>
+          <div class="tb-pill tb-schwarz"><span class="tb-ico">💰</span><span id="tb-schwarz">0 €</span></div>
           <div class="tb-pill tb-bargeld"><span class="tb-ico">💵</span><span id="tb-bargeld">0 €</span></div>
         </div>
         <div class="tb-pills">
@@ -1030,12 +1030,27 @@
         b.classList.toggle('active', Number(b.dataset.x) === x));
     }
 
-    // Zahnrad-Menü (oben rechts): Speichern / Laden / Musik / Tests
+    // Zurück zum Startbildschirm (Hauptmenü)
+    function hauptmenueBtn() {
+      if (typeof oeffneModal !== 'function') return;
+      oeffneModal('🏠 Zum Hauptmenü?',
+        'Zurück zum Startbildschirm? <strong>Nicht gespeicherter Fortschritt geht verloren.</strong><br>(Tipp: vorher 💾 Speichern.)',
+        [{ label: '🏠 Ja, zum Hauptmenü', danger: true, callback: () => {
+            const game = window._phaserGameRef;
+            if (game) {
+              const sz = game.scene.getScene('SpielSzene');
+              if (sz) sz.scene.start('StartSzene');   // StartSzene.create stoppt Spielmusik & startet Startmusik
+            }
+          } }]);
+    }
+
+    // Zahnrad-Menü (oben rechts): Speichern / Laden / Hauptmenü / Musik / Tests
     function openGearMenu() {
       if (typeof oeffneModal !== 'function') return;
       oeffneModal('⚙️ Menü', 'Spielstand verwalten. (Zeit-Tempo: unten links 1×/2×/4×)', [
         { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
+        { label: '🏠 Hauptmenü / Neues Spiel', callback: () => hauptmenueBtn() },
         { label: '🧎 Bettler testen',       callback: () => spawnBettlerBtn() },
         { label: '🔫 Räuber testen',        callback: () => spawnRaeuberBtn() },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
@@ -1045,10 +1060,18 @@
     // Musik/Sound stoppen, wenn die App in den Hintergrund geht (minimiert)
     document.addEventListener('visibilitychange', () => {
       const hidden = document.hidden;
-      ['_startMusik', '_spielMusik'].forEach(k => {
-        const a = window[k]; if (!a) return;
-        if (hidden) a.pause(); else if (_musikAn) a.play().catch(() => {});
-      });
+      if (hidden) {
+        // Beim Minimieren ALLE Tracks anhalten
+        ['_startMusik', '_spielMusik'].forEach(k => { if (window[k]) window[k].pause(); });
+      } else if (_musikAn) {
+        // Beim Zurückkehren NUR den aktiven Track der aktuellen Szene fortsetzen
+        const aktiv = window._aktiveMusik === 'spiel' ? '_spielMusik' : '_startMusik';
+        ['_startMusik', '_spielMusik'].forEach(k => {
+          if (!window[k]) return;
+          if (k === aktiv) window[k].play().catch(() => {});
+          else { window[k].pause(); window[k].currentTime = 0; }   // anderen Track sicher stoppen
+        });
+      }
       try {
         if (typeof audioCtx !== 'undefined' && audioCtx) hidden ? audioCtx.suspend() : audioCtx.resume();
       } catch (e) {}

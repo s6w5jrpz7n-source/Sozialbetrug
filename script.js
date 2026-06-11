@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v47 – Park leer';
+const BUILD_MARKE = 'v48 – Fix Freeze+Musik+Menü';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -1021,7 +1021,7 @@ function triggerGameOver(grund) {
   }
 
   logEvent(`💀 GAME OVER: ${info.titel}`, 'danger');
-  soundGameOver();  // Finaler Sound
+  try { soundGameOver(); } catch (e) {}   // Sound darf das Game-Over-Popup nicht verhindern
 
   setTimeout(() => {
     modalOffen = true;
@@ -5967,6 +5967,12 @@ class StartSzene extends Phaser.Scene {
     const H = this.scale.height;
 
     // ---- Startmusik ----
+    // Erst JEDE laufende Musik stoppen (Spielmusik + evtl. alte Startmusik-Instanz),
+    // sonst spielen zwei Tracks gleichzeitig.
+    ['_startMusik', '_spielMusik'].forEach(k => {
+      if (window[k]) { try { window[k].pause(); window[k].currentTime = 0; } catch (e) {} }
+    });
+    window._aktiveMusik = 'start';
     window._startMusik = new Audio('Pixel_Parade_1.mp3');
     window._startMusik.loop   = true;
     window._startMusik.volume = 0.45;
@@ -6667,6 +6673,7 @@ class SpielSzene extends Phaser.Scene {
         window._spielMusik.currentTime = 0;
       }
       // Neue Instanz erstellen
+      window._aktiveMusik = 'spiel';
       window._spielMusik = new Audio('Pixel_Parade.mp3');
       window._spielMusik.loop   = true;
       window._spielMusik.volume = 0.40;
@@ -6683,6 +6690,7 @@ class SpielSzene extends Phaser.Scene {
 
   update(time, delta) {
     if (gameState.gameOver) return;
+    try {
     const dt = delta / 1000;
     // Zeitraffer: 1× / 2× / 4× beschleunigt nur den Spiel-Kalender & periodische
     // Ereignisse (nicht Steuerung/Animation).
@@ -6801,6 +6809,10 @@ class SpielSzene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.interactKey) ||
         Phaser.Input.Keyboard.JustDown(this.interactEnter)) {
       this.versucheInteraktion();
+    }
+    } catch (e) {
+      // Eine einzelne fehlerhafte Frame darf das Spiel NICHT dauerhaft einfrieren.
+      if (!this._updateFehlerGemeldet) { this._updateFehlerGemeldet = true; console.error('[update]', e); }
     }
   }
 
