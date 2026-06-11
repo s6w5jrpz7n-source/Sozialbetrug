@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v52 – Warnungen+Zeit';
+const BUILD_MARKE = 'v53 – Kiosk+Kühlschrank+GameOver';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -104,6 +104,7 @@ const gameState = {
   // ---- Supermarkt ----
   lebensmittelDiesenMonat: null, // zuletzt gekaufte Qualität 'gut'|'normal'|'billig'|null (für Anzeige)
   lebensmittelTageRest: 0,       // verbleibende Vorrats-Tage (Einkauf = +14, stapelbar bis 28)
+  grosserKuehlschrank: false,    // gekauft → Einkauf reicht doppelt so lange (+28, bis 56)
   billigKaeufeInFolge: 0,   // Für "Frau beschwert sich"-Event
   supermarktFaellig: false, // true ab Tag 3 des Monats
   kuehlschrankWarnung: false, // "Kühlschrank leer"-Popup schon gezeigt (pro Monat)
@@ -261,6 +262,7 @@ const ORTE_CONFIG = [
       { label: '🛏️  Schlafen (Energie +25)',                    id: 'schlafen' },
       { label: '💵  500 € verstecken (Konto → Schwarze Kasse)', id: 'verstecken' },
       { label: '💵  500 € holen  (Schwarze Kasse → Konto)',     id: 'holen' },
+      { label: '🛒  Kaufen …',                                  id: 'kaufen_menu' },
       { label: '🏖️  Kur beantragen (volle Erholung)',           id: 'kur' },
       { label: '🏠  Schein-WG deklarieren (+200 €/M, riskant)', id: 'scheinwg' },
       { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
@@ -1122,22 +1124,27 @@ function triggerGameOver(grund) {
   }
 
   logEvent(`💀 GAME OVER: ${info.titel}`, 'danger');
-  try { soundGameOver(); } catch (e) {}   // Sound darf das Game-Over-Popup nicht verhindern
+  try { soundGameOver(); } catch (e) {}   // Sound darf den Game-Over-Bildschirm nicht verhindern
 
+  // Vollbild-Game-Over (knallig). Grund-Text klein darunter.
   setTimeout(() => {
-    modalOffen = true;
-    document.getElementById('modal-title').textContent = info.titel;
-    const body = document.getElementById('modal-body');
-    body.innerHTML = `<p>${info.text}</p>`;
-
-    const restartBtn = document.createElement('button');
-    restartBtn.className   = 'action-btn danger-btn';
-    restartBtn.textContent = '🔄 Neustart';
-    restartBtn.onclick     = () => window.location.reload();
-    body.appendChild(restartBtn);
-
-    document.getElementById('modal-overlay').classList.add('active');
-  }, 800);
+    const go = document.getElementById('gameover-screen');
+    const gt = document.getElementById('go-text');
+    if (gt) gt.innerHTML = 'Viel Glück im nächsten Leben als Arbeitsloser.<br><span style="opacity:0.7;font-size:0.85em;">(' + info.titel.replace(/^[^–]*–\s*/, '') + ')</span>';
+    if (go) go.classList.add('show');
+    else {
+      // Fallback: altes Modal, falls das Element fehlt
+      modalOffen = true;
+      document.getElementById('modal-title').textContent = info.titel;
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `<p>${info.text}</p>`;
+      const rb = document.createElement('button');
+      rb.className = 'action-btn danger-btn'; rb.textContent = '🔄 Neustart';
+      rb.onclick = () => window.location.reload();
+      body.appendChild(rb);
+      document.getElementById('modal-overlay').classList.add('active');
+    }
+  }, 700);
 }
 
 // ================================================================
@@ -1249,16 +1256,19 @@ function zeigeBetrugFlash() {
 
 // "NIETE"-Stempel beim Rubbellos (mit Knall). Re-entrant: jeder Aufruf startet
 // die Animation neu, sodass mehrere Nieten schnell hintereinander knallen.
-function zeigeNieteStempel() {
-  const el = document.getElementById('niete-flash');
+function _zeigeStempel(elId, anderId) {
+  const el = document.getElementById(elId), ander = document.getElementById(anderId);
+  if (ander) ander.classList.remove('show');   // immer nur EIN Stempel sichtbar
   if (!el) return;
   el.classList.remove('show');
   void el.offsetWidth;            // Reflow → Animation neu starten
   el.classList.add('show');
   soundStempel && soundStempel();
-  clearTimeout(el._nieteTimer);
-  el._nieteTimer = setTimeout(() => el.classList.remove('show'), 1500);
+  clearTimeout(el._stempelTimer);
+  el._stempelTimer = setTimeout(() => el.classList.remove('show'), 1500);
 }
+function zeigeNieteStempel()  { _zeigeStempel('niete-flash',  'gewinn-flash'); }
+function zeigeGewinnStempel() { _zeigeStempel('gewinn-flash', 'niete-flash'); }
 
 // Ein einzelnes Los ziehen → Gewinnbetrag (0 = Niete).
 function rubbellosZiehung() {
@@ -1292,39 +1302,25 @@ function kaufeRubbellose(anzahl) {
   }
   gs.kontostand += summe;
 
-  // Nieten knallen schnell nacheinander als Stempel
-  let stempelIndex = 0;
-  gewinne.forEach(g => {
-    if (g === 0) { setTimeout(zeigeNieteStempel, stempelIndex * 160); stempelIndex++; }
-  });
-  const stempelDauer = stempelIndex * 160;
+  // Pro Los ein Stempel – GEWINN (grün) oder NIETE (rot) – 0,5 s Abstand
+  gewinne.forEach((g, i) => setTimeout(() => (g > 0 ? zeigeGewinnStempel() : zeigeNieteStempel()), i * 500));
+  const seqDauer = anzahl * 500;
 
   // Jeder Gewinn → Fanfare
   if (summe > 0) { soundFanfare && soundFanfare(); soundGeld && soundGeld(); }
 
+  const netto  = summe - kosten;
+  const detail = gewinne.map(g => g === 0 ? '✖️' : `+${formatEuro(g)}`).join('   ');
   if (anzahl === 1) {
-    if (summe > 0) {
-      oeffneModal('🎟️ Rubbellos', summe >= 2000
-        ? `🎉 <strong>JACKPOT!</strong> Du gewinnst <strong>${formatEuro(summe)}</strong>!`
-        : `Gewonnen: <strong>${formatEuro(summe)}</strong>.`, []);
-      logEvent(`🎟️ Rubbellos: +${formatEuro(summe)}.`, 'good');
-    } else {
-      logEvent('🎟️ Rubbellos: Niete.', 'warn');
-    }
+    logEvent(summe > 0 ? `🎟️ Rubbellos: +${formatEuro(summe)}.` : '🎟️ Rubbellos: Niete.', summe > 0 ? 'good' : 'warn');
+    if (summe >= 2000) setTimeout(() => oeffneModal('🎉 JACKPOT!', `Du gewinnst <strong>${formatEuro(summe)}</strong>!`, []), seqDauer + 250);
   } else {
-    const netto  = summe - kosten;
-    const detail = gewinne.map(g => g === 0 ? '✖️' : `+${formatEuro(g)}`).join('   ');
-    if (summe > 0) {
-      oeffneModal(maxGewinn >= 2000 ? '🎉 JACKPOT!' : '🎟️ 5 Rubbellose',
-        `${detail}<br><br>Gewinn gesamt: <strong>${formatEuro(summe)}</strong> `
-        + `(Einsatz ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`, []);
-      logEvent(`🎟️ 5 Lose: +${formatEuro(summe)} bei ${nieten} Nieten.`, netto >= 0 ? 'good' : 'warn');
-    } else {
-      // alle Nieten → Meldung erst nach den Stempeln
-      setTimeout(() => oeffneModal('🎟️ 5 Rubbellose',
-        `Alles Nieten! ${detail}<br><br>${formatEuro(kosten)} verspielt.`, []), stempelDauer + 200);
-      logEvent(`🎟️ 5 Lose: 5 Nieten, -${formatEuro(kosten)}.`, 'warn');
-    }
+    logEvent(`🎟️ 5 Lose: +${formatEuro(summe)} bei ${nieten} Nieten.`, netto >= 0 ? 'good' : 'warn');
+    // Zusammenfassung erst NACH der Stempel-Sequenz
+    setTimeout(() => oeffneModal(maxGewinn >= 2000 ? '🎉 JACKPOT!' : '🎟️ 5 Rubbellose',
+      summe > 0
+        ? `${detail}<br><br>Gewinn gesamt: <strong>${formatEuro(summe)}</strong> (Einsatz ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`
+        : `Alles Nieten! ${detail}<br><br>${formatEuro(kosten)} verspielt.`, []), seqDauer + 250);
   }
 
   // Sucht-Risiko (steigt leicht mit Einsatz)
@@ -3025,6 +3021,27 @@ function aktionAusfuehren(ortId, aktionsId) {
 
   // --- WOHNUNG (oder bewohnte Villa) ---
   if (ortId === 'wohnung' || ortId === 'villa') {
+    if (aktionsId === 'kaufen_menu') {
+      oeffneModal('🛒 Kaufen', 'Anschaffungen für dein Zuhause.', [
+        { label: gs.grosserKuehlschrank
+            ? '🧊 Großer Kühlschrank ✅ vorhanden'
+            : '🧊 Großer Kühlschrank (1.000 €) – Vorrat hält doppelt so lange',
+          callback: () => aktionAusfuehren(ortId, 'kauf_kuehlschrank') },
+      ]);
+      return;
+    }
+    if (aktionsId === 'kauf_kuehlschrank') {
+      if (gs.grosserKuehlschrank) { oeffneModal('🧊 Schon vorhanden', 'Du hast bereits einen großen Kühlschrank.', []); return; }
+      if (gs.kontostand < 1000) { oeffneModal('💸 Zu wenig Geld', 'Der große Kühlschrank kostet <strong>1.000 €</strong> (vom Konto).', []); return; }
+      gs.kontostand -= 1000;
+      gs.grosserKuehlschrank = true;
+      logEvent('🧊 Großer Kühlschrank gekauft – Einkäufe reichen jetzt doppelt so lange.', 'good');
+      oeffneModal('🧊 Großer Kühlschrank',
+        'Gekauft! Ab jetzt reicht <strong>jeder Einkauf doppelt so lange</strong> (ca. 4 statt 2 Wochen) – ' +
+        'du musst seltener zum Supermarkt.', []);
+      updateHUD();
+      return;
+    }
     if (aktionsId === 'schlafen') {
       // Basis-Energiegewinn
       let energieGewinn = 25;
@@ -3635,7 +3652,10 @@ function aktionAusfuehren(ortId, aktionsId) {
       const typ = aktionsId.replace('einkauf_', '');
       gs.lebensmittelDiesenMonat = typ;
       // Rollender Vorrat: jeder Einkauf reicht 2 Wochen, verlängert (max. 4 Wochen)
-      gs.lebensmittelTageRest = Math.min(28, (gs.lebensmittelTageRest || 0) + 14);
+      // Großer Kühlschrank → doppelte Reichweite (+28 Tage, bis 56) statt +14/56
+      const proEinkauf = gs.grosserKuehlschrank ? 28 : 14;
+      const maxVorrat  = gs.grosserKuehlschrank ? 56 : 28;
+      gs.lebensmittelTageRest = Math.min(maxVorrat, (gs.lebensmittelTageRest || 0) + proEinkauf);
       gs.kuehlschrankWarnung = false;   // bei nächstem Leerstand wieder warnen
 
       if (typ === 'gut') {
@@ -6363,7 +6383,7 @@ class StartSzene extends Phaser.Scene {
         depot: [], goldBarren: 0,
         kindergeldKinder: [], kindergeldAktiv: false,
         monatlicheExtras: 0, risikoProMonat: 0,
-        lebensmittelDiesenMonat: null, lebensmittelTageRest: 0, billigKaeufeInFolge: 0,
+        lebensmittelDiesenMonat: null, lebensmittelTageRest: 0, grosserKuehlschrank: false, billigKaeufeInFolge: 0,
         supermarktFaellig: false, kuehlschrankWarnung: false, schattenbankAktiv: false,
         bankEinzahlungDieseWoche: 0, gameOver: false,
         // ---- neue Bürokratie-/Immobilien-Features zurücksetzen ----
@@ -8065,6 +8085,7 @@ function ladeSpiel(slot) {
     if (gameState.supermarktFaellig   === undefined) gameState.supermarktFaellig   = false;
     if (gameState.lebensmittelDiesenMonat === undefined) gameState.lebensmittelDiesenMonat = null;
     if (gameState.lebensmittelTageRest === undefined) gameState.lebensmittelTageRest = 0;
+    if (gameState.grosserKuehlschrank === undefined) gameState.grosserKuehlschrank = false;
     if (gameState.kuehlschrankWarnung  === undefined) gameState.kuehlschrankWarnung  = false;
     if (gameState.krankmeldungWochenRest === undefined) gameState.krankmeldungWochenRest = 0;
     if (gameState.krankmeldungCooldownWochen === undefined) gameState.krankmeldungCooldownWochen = 0;

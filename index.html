@@ -688,6 +688,41 @@
       transform: rotate(-12deg);
     }
     #niete-flash.show .niete-text { animation: nieteStamp 1.5s cubic-bezier(.2,1.5,.3,1) forwards; }
+    /* GEWINN-Stempel (grün) – analog zur Niete */
+    #gewinn-flash {
+      display: none; position: fixed; inset: 0; z-index: 290; pointer-events: none;
+      align-items: center; justify-content: center;
+    }
+    #gewinn-flash.show { display: flex; }
+    #gewinn-flash .gewinn-text {
+      font-family: var(--mono); font-weight: 900; color: #3de87a;
+      font-size: clamp(2rem, 9vw, 7rem); letter-spacing: 0.12em; text-transform: uppercase;
+      text-shadow: 0 3px 0 #064a1e, 0 0 22px rgba(61,232,122,0.6);
+      border: 6px solid #3de87a; border-radius: 10px; padding: 0.1em 0.32em; transform: rotate(-12deg);
+    }
+    #gewinn-flash.show .gewinn-text { animation: nieteStamp 1.5s cubic-bezier(.2,1.5,.3,1) forwards; }
+    /* Game-Over – Vollbild, knallig */
+    #gameover-screen {
+      display: none; position: fixed; inset: 0; z-index: 99999;
+      background: radial-gradient(circle at 50% 40%, #3a0008 0%, #120006 70%, #000 100%);
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+    }
+    #gameover-screen.show { display: flex; }
+    #gameover-screen .go-title {
+      font-family: var(--mono); font-weight: 900; color: #ff1f3d;
+      font-size: clamp(3rem, 17vw, 9rem); letter-spacing: 0.06em; line-height: 1;
+      text-shadow: 0 0 26px rgba(255,31,61,0.85), 0 5px 0 #5a0000;
+      animation: goPulse 1s ease-in-out infinite;
+    }
+    #gameover-screen .go-sub { color: #fff; font-weight: bold; font-size: clamp(1.1rem, 5.5vw, 2rem); margin-top: 10px; }
+    #gameover-screen .go-text { color: #e8b0b0; font-size: 0.95rem; margin-top: 14px; max-width: 520px; line-height: 1.5; }
+    #gameover-screen .go-btn {
+      margin-top: 28px; font-family: var(--mono); font-weight: bold; font-size: 1.05rem;
+      color: #0a0e1a; background: #ff1f3d; border: none; border-radius: 10px;
+      padding: 14px 28px; cursor: pointer; box-shadow: 0 0 18px rgba(255,31,61,0.6);
+    }
+    @keyframes goPulse { 50% { transform: scale(1.07); opacity: 0.82; } }
     @keyframes nieteStamp {
       0%   { transform: rotate(-12deg) scale(2.2); opacity: 0; }
       10%  { transform: rotate(-12deg) scale(1);   opacity: 0.97; }
@@ -975,6 +1010,13 @@
   <div id="danger-flash"></div>
   <div id="betrug-flash"><div class="betrug-text">Sozialbetrug</div></div>
   <div id="niete-flash"><div class="niete-text">Niete</div></div>
+  <div id="gewinn-flash"><div class="gewinn-text">Gewinn</div></div>
+  <div id="gameover-screen">
+    <div class="go-title">GAME OVER</div>
+    <div class="go-sub">Du bist gestorben.</div>
+    <div class="go-text" id="go-text">Viel Glück im nächsten Leben als Arbeitsloser.</div>
+    <button class="go-btn" onclick="window.location.reload()">🔄 Neues Leben</button>
+  </div>
 
   <!-- ===== STATUSLEISTE ===== -->
   <div id="controls-hint">
