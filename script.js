@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v54 – Batch A';
+const BUILD_MARKE = 'v55 – Batch B';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -116,6 +116,7 @@ const gameState = {
   // ---- Krankmeldung (beim Arzt erkauft) ----
   krankmeldungWochenRest:     0,  // Wochen Krankschreibung übrig (kein Amt-Termin, keine Razzia)
   krankmeldungCooldownWochen: 0,  // Sperre bis zur nächsten Krankmeldung (max. alle 6 Wochen)
+  kampfsportGelernt: false,       // Kampfsport gelernt → 75% statt 50% gegen den Räuber
 
   // ---- Legale Mehrbedarfe / Anträge (Arbeitsamt) ----
   mehrbedarf: {             // aktive monatliche Zuschläge
@@ -335,7 +336,8 @@ const ORTE_CONFIG = [
     beschreibung: 'Ehrenamtliche Tätigkeit. Kostet Energie, gibt kein Geld – senkt aber Risiko.',
     aktionen: [
       { label: '🏃  Soziale Tätigkeit (1 Tag, E -20, Risiko -23, Laune +10)', id: 'sozial' },
-      { label: '⚽  Training leiten  (1 Tag, E -15, Risiko -15, Laune +5)',   id: 'training' }
+      { label: '⚽  Training leiten  (1 Tag, E -15, Risiko -15, Laune +5)',   id: 'training' },
+      { label: '🥊  Kampfsport lernen (300 €, einmalig)',                    id: 'kampfsport' }
     ]
   },
   {
@@ -2862,7 +2864,7 @@ function interact(ortId) {
       }
     }
     if (ortId === 'arbeitsamt' && a.id === 'einstiegsgeld' && gs.einstiegsgeldMonate > 0) {
-      label = `🚀  Einstiegsgeld läuft (noch ${gs.einstiegsgeldMonate} Monate · +${EINSTIEGSGELD_BETRAG} €/M)`;
+      label = `🚀  Einstiegsgeld  ✅ läuft (noch ${gs.einstiegsgeldMonate} Monate · +${EINSTIEGSGELD_BETRAG} €/M)`;
     }
     if (ortId === 'supermarkt' && a.id === 'minijob') {
       label = gs.minijobLohn > 0
@@ -3171,7 +3173,7 @@ function aktionAusfuehren(ortId, aktionsId) {
               oeffneModal('⚖️ Erfolg!', `Dein Anwalt hat ganze Arbeit geleistet.<br><br>Neuer Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.`, []);
             } else {
               logEvent('⚖️ Anwalt gescheitert – Honorar futsch.', 'danger');
-              oeffneModal('⚖️ Abgewiesen', `Der Antrag wurde abgelehnt. Das Honorar (${formatEuro(gebuehr)}) ist weg, der Status bleibt.`, []);
+              oeffneModal('⚖️ Entscheidung zu deinen Ungunsten', `Das Gericht hat <strong>gegen dich</strong> entschieden. Das Honorar (${formatEuro(gebuehr)}) ist weg, der Status bleibt unverändert.`, []);
             }
             updateHUD();
           }}]);
@@ -3498,6 +3500,14 @@ function aktionAusfuehren(ortId, aktionsId) {
       verbraucheTag(1);
       logEvent('🏃 Training geleitet: E -15, Risiko -15, Laune +5. 1 Tag vergangen.', 'good');
     }
+    if (aktionsId === 'kampfsport') {
+      if (gs.kampfsportGelernt) { oeffneModal('🥊 Bereits gelernt', 'Du beherrschst Kampfsport schon – deine Chance gegen den Räuber liegt bei <strong>75 %</strong>.', []); return; }
+      if (gs.kontostand < 300) { oeffneModal('💸 Zu wenig Geld', 'Der Kampfsport-Kurs kostet <strong>300 €</strong> (vom Konto).', []); return; }
+      gs.kontostand -= 300;
+      gs.kampfsportGelernt = true;
+      logEvent('🥊 Kampfsport gelernt – Chance gegen den Räuber jetzt 75 %.', 'good');
+      oeffneModal('🥊 Kampfsport gelernt', 'Du hast Nahkampf trainiert. Bei einem Überfall gewinnst du jetzt mit <strong>75 %</strong> statt 50 %.', []);
+    }
   }
 
   // --- LOAN SHARK ---
@@ -3660,11 +3670,14 @@ function aktionAusfuehren(ortId, aktionsId) {
     const kaufOptionen = { einkauf_gut: 800, einkauf_normal: 500, einkauf_billig: 250 };
     const kosten = kaufOptionen[aktionsId];
     if (kosten !== undefined) {
-      if (gs.kontostand < kosten) {
-        logEvent(`⚠️ Nicht genug Geld. Benötigt: ${formatEuro(kosten)}`, 'warn');
+      // Bezahlung: erst loses Bargeld, Rest vom Konto
+      if (gs.kontostand + gs.losesBargeld < kosten) {
+        oeffneModal('💸 Zu wenig Geld', `Der Einkauf kostet <strong>${formatEuro(kosten)}</strong> (Konto + Bargeld reichen nicht).`, []);
         return;
       }
-      gs.kontostand -= kosten;
+      let rest = kosten;
+      const ausBar = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausBar; rest -= ausBar;
+      gs.kontostand -= rest;
       gs.supermarktFaellig = false;
       const typ = aktionsId.replace('einkauf_', '');
       gs.lebensmittelDiesenMonat = typ;
@@ -6394,7 +6407,7 @@ class StartSzene extends Phaser.Scene {
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
         naechsterAmtsBesuch: 2, amtsTermineVerpasst: 0, algGesperrt: false,
-        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0,
+        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0, kampfsportGelernt: false,
         eheKriseAktiv: false, eheKriseSchritt: 0, frauAusgezogen: false,
         unterhaltProMonat: 0, geschenkeSumme: 0,
         loanSharkSchuld: 0, loanSharkMahnungStufe: 0,
@@ -7601,8 +7614,8 @@ class SpielSzene extends Phaser.Scene {
           `Du hast brav <b>${formatEuro(bar)}</b> Bargeld herausgerückt.<br>` +
           `Der Räuber zählt grinsend deine Scheine und verschwindet in der Gasse.</span>`, []);
       } },
-      { label: '🥊 Kämpfen (50/50)', primary: true, callback: () => {
-        if (Math.random() < 0.5) {
+      { label: gameState.kampfsportGelernt ? '🥊 Kämpfen (75 %)' : '🥊 Kämpfen (50/50)', primary: true, callback: () => {
+        if (Math.random() < (gameState.kampfsportGelernt ? 0.75 : 0.5)) {
           logEvent('🥊 Du hast den Räuber verjagt – Bargeld gerettet!', 'good');
           this._raeuberNachspiel();
           oeffneModal('🥊 Gewonnen!',
