@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v55 – Batch B';
+const BUILD_MARKE = 'v56 – Batch C';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -117,6 +117,7 @@ const gameState = {
   krankmeldungWochenRest:     0,  // Wochen Krankschreibung übrig (kein Amt-Termin, keine Razzia)
   krankmeldungCooldownWochen: 0,  // Sperre bis zur nächsten Krankmeldung (max. alle 6 Wochen)
   kampfsportGelernt: false,       // Kampfsport gelernt → 75% statt 50% gegen den Räuber
+  anzeigeCooldownMonat: 0,        // nach Schweigegeld: keine Anonyme-Anzeige bis zu diesem Monat
 
   // ---- Legale Mehrbedarfe / Anträge (Arbeitsamt) ----
   mehrbedarf: {             // aktive monatliche Zuschläge
@@ -1553,6 +1554,7 @@ const eventDatabase = [
 
   {
     id: 'anzeige_anonym', kategorie: 'behoerde',
+    bedingung: gs => gs.monat >= (gs.anzeigeCooldownMonat || 0),   // nach Schweigegeld 3 Monate Ruhe
     titel: '📣 Anonyme Anzeige',
     text: 'Ein Nachbar (oder dein Ex?) hat dich beim Jobcenter wegen Sozialbetrugs angeschwärzt. Eine Sonderprüfung droht.',
     optionA: { label: '🤐 Schweigegeld zahlen (-1.500 €)',
@@ -1564,7 +1566,8 @@ const eventDatabase = [
         let r = 1500;
         const sk = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= sk; r -= sk;
         gs.kontostand -= r;
-        return 'Der Informant hält den Mund. Vorerst Ruhe.';
+        gs.anzeigeCooldownMonat = gs.monat + 3;   // 3 Monate keine neue Anzeige
+        return 'Der Informant hält den Mund. 3 Monate Ruhe.';
       }},
     optionB: { label: '😶 Aussitzen (Sonderprüfung riskieren)',
       effekt(gs) {
@@ -1617,6 +1620,7 @@ const eventDatabase = [
   },
   {
     id: 'behoerde_06', kategorie: 'behoerde',
+    bedingung: gs => (gs.schwarzeKasse || 0) > 0,   // nur wenn Schwarzkasse genutzt
     titel: '💻 Datenleck – Kontobewegungen prüfbar',
     text: 'Ungewöhnliche Bewegungen im Konto aufgefallen.',
     optionA: { label: '🏦 Geld verschieben (-1000 € → Schwarzkasse)',
@@ -2367,6 +2371,14 @@ function updateHUD() {
   _set('tb-konto',   formatEuro(gs.kontostand));
   _set('tb-schwarz', formatEuro(gs.schwarzeKasse));
   _set('tb-bargeld', formatEuro(gs.losesBargeld));
+  // Depot-Wert (live aus dem Depot) & Schulden – Pillen nur zeigen, wenn relevant
+  const depotWertLive = (gs.depot || []).reduce((s, p) => s + p.anteile * p.aktuellerKurs, 0);
+  const schulden = gs.loanSharkSchuld || 0;
+  _set('tb-depot',    formatEuro(depotWertLive));
+  _set('tb-schulden', formatEuro(schulden));
+  const _pillShow = (id, an) => { const el = document.getElementById(id); if (el) el.style.display = an ? 'inline-flex' : 'none'; };
+  _pillShow('pill-depot',    depotWertLive > 0);
+  _pillShow('pill-schulden', schulden > 0);
   _set('tb-staat',   formatEuro(gs.vomStaatGesamt || 0));
   _set('tb-zeit',    `M${gs.monat} W${gs.woche} T${gs.tag}`);
   _set('tb-status',  gs.status === 'ALG1' ? 'ALG I' : 'ALG II');
@@ -4265,7 +4277,7 @@ function aktuelisiereDepotKurse() {
     }
     const alterKurs = pos.aktuellerKurs;
     pos.aktuellerKurs = Math.max(0.01, pos.aktuellerKurs * (1 + rendite));
-    const pct   = (rendite * 100).toFixed(1);
+    const pct   = (rendite >= 0 ? '+' : '') + (rendite * 100).toFixed(1);   // "+" bei Gewinn
     const pfeil = rendite >= 0 ? '▲' : '▼';
     meldungen.push(`${pfeil} ${pos.name}: ${pct}% → Kurs ${formatEuro(pos.aktuellerKurs)}`);
     logEvent(`📊 ${pos.name} ${pfeil}${pct}%`, rendite < 0 ? 'danger' : 'good');
@@ -5822,8 +5834,8 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
 
       const labelY = pos.y + tileH * 0.52;
       scene.add.text(pos.x, labelY, ort.name, {
-        fontSize: '9px', fontFamily: '"Courier New", monospace',
-        color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+        fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
+        color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
       }).setOrigin(0.5, 0).setDepth(10);
       return;   // gezeichnete Variante überspringen
     }
@@ -5908,8 +5920,8 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     }
     if (o.type === 'building' && orte[o.id]) {
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
-        fontSize: '9px', fontFamily: '"Courier New", monospace',
-        color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+        fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
+        color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
       }).setOrigin(0.5, 1).setDepth(baseY + 0.3);
     }
   });
@@ -5924,8 +5936,8 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       .setInteractive()
       .on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt('dealer'); });
     scene.add.text(pos.x, pos.y + tileH * 0.52, dealer.name, {
-      fontSize: '9px', fontFamily: '"Courier New", monospace',
-      color: '#c8c0a0', stroke: '#080808', strokeThickness: 3,
+      fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
+      color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
     }).setOrigin(0.5, 0).setDepth(pos.y + 0.3);
   }
 }
@@ -6407,7 +6419,7 @@ class StartSzene extends Phaser.Scene {
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
         naechsterAmtsBesuch: 2, amtsTermineVerpasst: 0, algGesperrt: false,
-        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0, kampfsportGelernt: false,
+        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0, kampfsportGelernt: false, anzeigeCooldownMonat: 0,
         eheKriseAktiv: false, eheKriseSchritt: 0, frauAusgezogen: false,
         unterhaltProMonat: 0, geschenkeSumme: 0,
         loanSharkSchuld: 0, loanSharkMahnungStufe: 0,
@@ -8121,6 +8133,8 @@ function ladeSpiel(slot) {
     if (gameState.krankmeldungWochenRest === undefined) gameState.krankmeldungWochenRest = 0;
     if (gameState.krankmeldungCooldownWochen === undefined) gameState.krankmeldungCooldownWochen = 0;
     if (gameState.ernaehrungAttest === undefined) gameState.ernaehrungAttest = false;
+    if (gameState.kampfsportGelernt === undefined) gameState.kampfsportGelernt = false;
+    if (gameState.anzeigeCooldownMonat === undefined) gameState.anzeigeCooldownMonat = 0;
     if (gameState.billigKaeufeInFolge === undefined) gameState.billigKaeufeInFolge = 0;
     if (gameState.amtsTermineVerpasst === undefined) gameState.amtsTermineVerpasst = 0;
     if (gameState.algGesperrt         === undefined) gameState.algGesperrt         = false;
