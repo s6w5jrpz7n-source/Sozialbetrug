@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v58 – Batch E';
+const BUILD_MARKE = 'v59 – Villa sichtbar';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5905,7 +5905,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
   // 2) Objekte zeichnen (nach Boden-Y sortiert → hinten zuerst)
   const objs = [...layout.objects].sort((a, b) => (a.fy + a.fh) - (b.fy + b.fh));
   objs.forEach(o => {
-    if (o.id === 'villa' && !(gameState.immobilie && gameState.immobilie.modus === 'eigen')) return;
+    const villaUnbewohnt = (o.id === 'villa') && !(gameState.immobilie && gameState.immobilie.modus === 'eigen');
     const key = o.type === 'building' ? ('geb_' + o.id) : o.id;
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
@@ -5916,6 +5916,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // Gebäude vor dem Spieler, der davor auf dem Gehsteig vorbeiläuft.
     const baseY = y + h * 0.60;
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
+    if (villaUnbewohnt) img.setAlpha(0.55);   // noch nicht gekauft → blass (Vorschau)
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
       img.setInteractive({ pixelPerfect: true });
