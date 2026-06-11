@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v50 – Hauptmenü-Fix';
+const BUILD_MARKE = 'v51 – Balance+Bugs';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -216,7 +216,7 @@ const NEBENKOSTEN            = 200;      // €/Monat Strom, Internet, Handy (se
 const ALG1_ZAHLUNG           = 1200;
 const ALG2_ZAHLUNG           = 563;
 const ALG2_VERMOEGENS_GRENZE = 50000;
-const ECHTZEIT_PRO_WOCHE     = 420;      // Sekunden pro Spielwoche (7 Tage × 60 s = 1 Tag/Minute)
+const ECHTZEIT_PRO_WOCHE     = 280;      // Sekunden pro Spielwoche (7 Tage × 40 s = 1 Tag/40 s)
 const WOCHEN_PRO_MONAT       = 4;
 const RAZZIA_INTERVALL       = 60;       // Sekunden zwischen Razzia-Prüfungen
 const RAZZIA_SCHWELLE        = 70;       // Ab diesem Risiko aktiv
@@ -2261,11 +2261,23 @@ function spieleSoundFuerEvent(kategorie, istGutesErgebnis) {
 // ================================================================
 // ABSCHNITT 9: EVENT-SCHEDULER
 // ================================================================
-function randomEventIntervall() { return 30 + Math.random() * 30; }
+function randomEventIntervall() { return 30 + Math.random() * 30; }   // 30–60 s (echte Zeit, unabhängig vom Tempo)
+
+// Hat der Spieler überhaupt schon etwas Illegales/Auffälliges getan?
+// Behörden-/Ermittlungs-Events (Finanzamt, Staatsanwalt, Prüfungen …) sollen
+// NICHT kommen, wenn man gerade erst sauber startet.
+function spielerIstKriminell(gs = gameState) {
+  return !!(gs.hatSchwarzgearbeitet || (gs.schwarzeKasse || 0) > 0 || (gs.scheinbewerbungen || 0) > 0
+    || gs.ernaehrungFake || (gs.kindergeldKinder && gs.kindergeldKinder.length > 0)
+    || (gs.suchtStufe || 0) > 0 || (gs.loanSharkSchuld || 0) > 0 || (gs.strafStufe || 0) > 0
+    || (gs.risikoRaster || 0) > 20);
+}
 
 function waehleEvent() {
   const gs = gameState;
-  const erlaubt = e => !e.bedingung || e.bedingung(gs);   // optionale Bedingung je Event
+  const kriminell = spielerIstKriminell(gs);
+  // Behörden-Events erst zulassen, wenn der Spieler auffällig/kriminell ist
+  const erlaubt = e => (!e.bedingung || e.bedingung(gs)) && (e.kategorie !== 'behoerde' || kriminell);
   const behoerden  = eventDatabase.filter(e => e.kategorie === 'behoerde' && erlaubt(e));
 
   // Loan-Shark-Events NUR wenn Schulden vorhanden; Events mit Bedingung filtern
@@ -2958,20 +2970,16 @@ function interact(ortId) {
  */
 function verbraucheTag(anzahl) {
   const gs = gameState;
-  for (let i = 0; i < anzahl; i++) {
-    gs.tag++;
-    if (gs.tag > 7) {
-      gs.tag = 1;
-      // Woche vorziehen – Phaser-Loop wird synchronisiert
-      // (zeitAkku in SpielSzene bleibt unverändert, Woche wird manuell getriggert)
-      gs.woche++;
-      // Amtstermin-Countdown läuft ausschließlich über spielwocheVorbei()
-      // (verhindert doppelte Dekrementierung)
-    }
-    // Kleine Energie-Regeneration über Nacht (wenn Tag auf 1 zurückspringt)
-    if (gs.tag === 1) {
-      gs.energie = clamp(gs.energie + 5, 0, 100);
-    }
+  const tagSek = ECHTZEIT_PRO_WOCHE / 7;
+  const sz = window._phaserGameRef && window._phaserGameRef.scene.getScene('SpielSzene');
+  // WICHTIG: update() leitet gs.tag aus zeitAkku ab und überschreibt es jeden Frame.
+  // Deshalb müssen wir die ECHTE Zeit vorspulen, nicht gs.tag direkt setzen –
+  // sonst „verfällt" der Tagessprung sofort wieder. update() zieht dann Tag/Woche/
+  // Hunger (tagGewechselt) korrekt nach.
+  if (sz && typeof sz.zeitAkku === 'number') {
+    sz.zeitAkku += anzahl * tagSek;
+  } else {
+    for (let i = 0; i < anzahl; i++) { gs.tag++; if (gs.tag > 7) { gs.tag = 1; gs.woche++; } }
   }
   updateHUD();
 }
@@ -3416,7 +3424,7 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- SPORTVEREIN ---
   if (ortId === 'sportverein') {
     if (aktionsId === 'sozial') {
-      if (gs.energie < 20) { logEvent('⚠️ Zu wenig Energie.', 'warn'); return; }
+      if (gs.energie < 20) { oeffneModal('😴 Zu erschöpft', 'Du hast <strong>zu wenig Energie</strong> für eine soziale Tätigkeit.<br><br>Schlafe zuerst (Wohnung).', []); return; }
       gs.energie         = clamp(gs.energie - 20, 0, 100);
       gs.risikoRaster    = clamp(gs.risikoRaster - 23, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
@@ -3424,7 +3432,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       logEvent('⚽ Soziale Tätigkeit: E -20, Risiko -23, Laune +10. 1 Tag vergangen.', 'good');
     }
     if (aktionsId === 'training') {
-      if (gs.energie < 15) { logEvent('⚠️ Zu wenig Energie.', 'warn'); return; }
+      if (gs.energie < 15) { oeffneModal('😴 Zu erschöpft', 'Du hast <strong>zu wenig Energie</strong> fürs Training.<br><br>Schlafe zuerst (Wohnung).', []); return; }
       gs.energie         = clamp(gs.energie - 15, 0, 100);
       gs.risikoRaster    = clamp(gs.risikoRaster - 15, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100);
@@ -6844,7 +6852,7 @@ class SpielSzene extends Phaser.Scene {
     }
 
     // Events
-    this.eventTimer -= dtZeit;
+    this.eventTimer -= dt;   // echte Zeit → Events werden vom Zeitraffer NICHT beschleunigt
     if (this.eventTimer <= 0) {
       this.eventTimer = randomEventIntervall();
       triggerEvent(waehleEvent());
