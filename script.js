@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v66 – noch heller';
+const BUILD_MARKE = 'v67 – ohne Tint';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5805,7 +5805,6 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         const img = scene.add.image(bx, by, 'stadtboden')
           .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
           .setDepth(mitte ? -19 : -20);   // Umgebung hinter allem
-        if (!mitte) img.setTint(RING_TINT);
       }
     }
 
@@ -5831,7 +5830,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         const bx = cx + i * Ax + j * Bx;
         scene.add.image(bx, by, b.key)
           .setOrigin(b.ox, b.oy).setDisplaySize(b.dw, b.dh)
-          .setTint(0xf2f4f8).setDepth(-19.5);   // Deko praktisch volle Helligkeit
+          .setDepth(-19.5);   // Deko ohne Toenung (genau wie Original-Tile)
       });
     }
   } else {
