@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v62 – Grafik-Pass';
+const BUILD_MARKE = 'v63 – Stadt-Blocks';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5808,6 +5808,28 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         if (!mitte) img.setTint(RING_TINT);
       }
     }
+
+    // ---- Deko-Stadtblöcke: abwechselnd in die 8 direkten Nachbar-Diamanten ----
+    // Jeder Block ist ein iso-Stadtviertel mit eigenem Boden-Diamanten (1920×960).
+    // Origin = Diamant-Mittelpunkt der Grafik, damit er exakt auf der Gitter-
+    // Position sitzt (passt nahtlos an den zentralen Diamanten an).
+    if (scene.textures.exists('stadt_block_1') && scene.textures.exists('stadt_block_2')) {
+      // Werte ausgemessen: Boden-Diamant-Breite (width) → Skalierung feldW/width.
+      // ox/oy = Diamant-Mittelpunkt im Bild (als Anteil), dw/dh = Anzeigegröße.
+      const bloecke = [
+        { key: 'stadt_block_1', ox: 0.4996, oy: 0.5389, dw: 1921, dh: 1044 },  // 1373×746, width 1372
+        { key: 'stadt_block_2', ox: 0.4996, oy: 0.5497, dw: 1921, dh: 1069 },  // 1339×745, width 1338
+      ];
+      const nachbarn = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+      nachbarn.forEach(([i, j], k) => {
+        const b = bloecke[k % 2];
+        const bx = cx + i * Ax + j * Bx;
+        const by = cy + i * Ay + j * By;
+        scene.add.image(bx, by, b.key)
+          .setOrigin(b.ox, b.oy).setDisplaySize(b.dw, b.dh)
+          .setTint(0x8b95a6).setDepth(-19.5);   // Deko hinter dem spielbaren Diamanten
+      });
+    }
   } else {
     const gBoden = scene.add.graphics().setDepth(0);
     zeichneStadtboden(gBoden, tileW, tileH, offsetX, offsetY, COLS, ROWS);
@@ -6643,6 +6665,9 @@ class SpielSzene extends Phaser.Scene {
   preload() {
     // Boden + Straßennetz (eine große Iso-Grafik, wird auch außen herum gekachelt)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
+    // Deko-Stadtblöcke für die Umgebung (füllen die angrenzenden Diamanten)
+    this.load.image('stadt_block_1', 'assets/stadt_block_1.png');
+    this.load.image('stadt_block_2', 'assets/stadt_block_2.png');
     // Nebel-Overlay (zeigt die Grenze des bespielbaren Bereichs)
     this.load.image('fog', 'assets/fog.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
