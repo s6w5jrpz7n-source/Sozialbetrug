@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v60 – Nebel weiter';
+const BUILD_MARKE = 'v61 – Deko-NPCs raus';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -7109,21 +7109,8 @@ class SpielSzene extends Phaser.Scene {
   // NPCs
   // ----------------------------------------------------------------
   initNPCs() {
-    const farben = [0xff8866, 0x88bbff, 0x88ffaa, 0xffdd88, 0xdd88ff, 0xff88bb, 0xaaffee];
+    // Deko-NPCs (kleine bunte Figuren) entfernt – nicht mehr gebraucht.
     this.npcs = [];
-    for (let i = 0; i < 10; i++) {
-      // NPCs bevorzugen Straßen-Positionen
-      const onStrasse = STRASSENLAYOUT.laengs;
-      this.npcs.push({
-        col:   onStrasse[i % onStrasse.length] + (Math.random() - 0.5) * 0.8,
-        row:   0.5 + Math.random() * 12,
-        dcol:  (Math.random() - 0.5) * 0.025,
-        drow:  (Math.random() - 0.5) * 0.025,
-        timer: Math.random() * 80,
-        farbe: farben[i % farben.length],
-        walkF: Math.floor(Math.random() * 4)
-      });
-    }
   }
   animiereNPCs() {
     this.npcGfx.clear();
