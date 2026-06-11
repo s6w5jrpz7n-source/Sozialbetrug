@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v59 – Villa sichtbar';
+const BUILD_MARKE = 'v60 – Nebel weiter';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6803,7 +6803,7 @@ class SpielSzene extends Phaser.Scene {
     // (Häuser bleiben schemenhaft sichtbar) → erklärt, warum man nicht weiter kann.
     if (this.textures.exists('fog')) {
       this.add.image(this.offsetX, this.offsetY + fH / 2, 'fog')
-        .setOrigin(0.5, 0.5).setDisplaySize(4400, 2800).setDepth(50000);
+        .setOrigin(0.5, 0.5).setDisplaySize(5200, 3300).setDepth(50000);
     }
 
     // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
