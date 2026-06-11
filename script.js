@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v67 – ohne Tint';
+const BUILD_MARKE = 'v68 – Naht weg';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5802,7 +5802,10 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         const bx = cx + i * Ax + j * Bx;
         const by = cy + i * Ay + j * By;
         const os = mitte ? OS_MITTE : OS_RING;
-        const img = scene.add.image(bx, by, 'stadtboden')
+        // Mitte: Original (saubere Kante). Umgebung: beschnittene Variante
+        // (heller Rand erodiert) → keine „X"-Nähte zwischen den Kacheln.
+        const tex = (!mitte && scene.textures.exists('stadtboden_trim')) ? 'stadtboden_trim' : 'stadtboden';
+        scene.add.image(bx, by, tex)
           .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
           .setDepth(mitte ? -19 : -20);   // Umgebung hinter allem
       }
@@ -6668,6 +6671,8 @@ class SpielSzene extends Phaser.Scene {
   preload() {
     // Boden + Straßennetz (eine große Iso-Grafik, wird auch außen herum gekachelt)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
+    // Beschnittene Variante (heller Rand erodiert) → nahtlose Umgebungs-Kacheln
+    this.load.image('stadtboden_trim', 'assets/buildings/stadtboden_trim.png');
     // Deko-Stadtblöcke für die Umgebung (füllen die angrenzenden Diamanten)
     this.load.image('stadt_block_1', 'assets/stadt_block_1.png');
     this.load.image('stadt_block_2', 'assets/stadt_block_2.png');
