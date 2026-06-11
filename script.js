@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v56 – Batch C';
+const BUILD_MARKE = 'v57 – Batch D';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -207,7 +207,8 @@ function gesamtVermoegen() {
 
 // Zählt staatliche Leistungen für den "Vom Staat kassiert"-Counter mit
 function staatGibt(betrag) {
-  if (betrag > 0) gameState.vomStaatGesamt = (gameState.vomStaatGesamt || 0) + betrag;
+  // Positiv = Leistung kassiert; negativ = Rückzahlung an den Staat (Zähler sinkt, min. 0)
+  gameState.vomStaatGesamt = Math.max(0, (gameState.vomStaatGesamt || 0) + betrag);
 }
 
 // ================================================================
@@ -3340,9 +3341,10 @@ function aktionAusfuehren(ortId, aktionsId) {
         oeffneModal('🪑 Kein Kind gemeldet', 'Den Möbel-Zuschuss (Jugendbett/Schreibtisch) gibt es nur fürs Kind.', []);
         return;
       }
-      gs.kontostand += 250; staatGibt(250);
+      const moebelBetrag = 250 * (gs.kindergeldKinder || []).length;
+      gs.kontostand += moebelBetrag; staatGibt(moebelBetrag);
       gs.pauschalen.moebel = true;
-      logEvent('🪑 Möbel/Schreibtisch fürs Kind: +250 €.', 'good');
+      logEvent(`🪑 Möbel/Schreibtisch (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(moebelBetrag)}.`, 'good');
     }
     if (aktionsId === 'pausch_bekleidung') {
       if ((gs.kindergeldKinder || []).length < 1) {
@@ -3353,9 +3355,10 @@ function aktionAusfuehren(ortId, aktionsId) {
         oeffneModal('👕 Noch zu früh', `Die Bekleidungspauschale gibt es nur alle 6 Monate – wieder ab Monat ${gs.bekleidungCooldownMonat}.`, []);
         return;
       }
-      gs.kontostand += 150; staatGibt(150);
+      const bekleidungBetrag = 150 * (gs.kindergeldKinder || []).length;
+      gs.kontostand += bekleidungBetrag; staatGibt(bekleidungBetrag);
       gs.bekleidungCooldownMonat = gs.monat + 6;
-      logEvent('👕 Kinder-Bekleidung: +150 €.', 'good');
+      logEvent(`👕 Kinder-Bekleidung (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(bekleidungBetrag)}.`, 'good');
     }
     // ---- Korrupter Sachbearbeiter schmieren ----
     if (aktionsId === 'sachbearbeiter') {
@@ -4502,10 +4505,12 @@ function monatsAbschluss() {
     const anzahl  = gs.kindergeldKinder.length;
     const zahlung = anzahl * 300;
     if (gs.unterhaltsTarnung) {
+      const tarnGebuehr = Math.round(zahlung * 0.10);   // Schattenbank nimmt 10% der Kindergeld-Summe
       gs.kontostand  += zahlung; staatGibt(zahlung);
+      gs.kontostand  -= tarnGebuehr;
       gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
-      meldungen.push(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)} behalten. Risiko +${anzahl * 5}.`);
-      logEvent(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung aktiv).`, 'warn');
+      meldungen.push(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)}, Tarnungs-Gebühr -${formatEuro(tarnGebuehr)} (10%). Risiko +${anzahl * 5}.`);
+      logEvent(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung -${formatEuro(tarnGebuehr)}).`, 'warn');
     } else {
       meldungen.push(`👶 Auslands-Kindergeld ${formatEuro(zahlung)} fließt, wird aber voll als Einkommen angerechnet → netto 0 €. Tipp: Unterhalts-Tarnung in der Schattenbank.`);
       logEvent('👶 Kindergeld komplett angerechnet (netto 0).', '');
@@ -4527,32 +4532,34 @@ function monatsAbschluss() {
       if (Math.random() < chance) {
         let rueck = 0;
         const gestrichen = [];
+        // Rückforderung NUR für den letzten Monat (×1, nicht mehr ×3)
         if (gs.ernaehrungFake) {
-          rueck += MEHRBEDARF_BETRAG.ernaehrung * 3;
+          rueck += MEHRBEDARF_BETRAG.ernaehrung;
           gs.mehrbedarf.ernaehrung = false; gs.ernaehrungFake = false;
           gestrichen.push('Ernährungs-Mehrbedarf');
         }
         if (gs.unterhaltsTarnung) {
-          rueck += (gs.kindergeldKinder || []).length * 300 * 3;
+          rueck += (gs.kindergeldKinder || []).length * 300;
           gs.unterhaltsTarnung = false;
           gestrichen.push('Unterhalts-Tarnung');
         }
         if (gs.scheinWG) {
-          rueck += SCHEINWG_BETRAG * 3;
+          rueck += SCHEINWG_BETRAG;
           gs.scheinWG = false;
           gestrichen.push('Schein-WG (Hausbesuch!)');
         }
         if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') {
-          rueck += gs.immobilie.miete * 3;
+          rueck += gs.immobilie.miete;
           gs.immobilie.modus = 'vermietet';   // KdU-Masche auffgeflogen → nur noch vermieten
           gestrichen.push('Immobilien-KdU-Masche');
         }
         if (gs.einliegerVermietet) {
-          rueck += EINLIEGER_MIETE * 3;
+          rueck += EINLIEGER_MIETE;
           gs.einliegerVermietet = false;
           gestrichen.push('Einliegerwohnung-Schwarzvermietung');
         }
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
+        staatGibt(-rueck);   // Rückzahlung → "Vom Staat kassiert" sinkt
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
         meldungen.push(`🚨 Jobcenter-Prüfung AUFGEFLOGEN! Rückforderung ${formatEuro(rueck)}, Risiko +30. Gestrichen: ${gestrichen.join(', ')}.`);
         logEvent(`🚨 Jobcenter-Prüfung aufgeflogen: -${formatEuro(rueck)}, Risiko +30.`, 'danger');
@@ -4613,12 +4620,18 @@ function monatsAbschluss() {
   staatGibt(KRANKENKASSE_BEITRAG);
   meldungen.push(`🏥 Krankenkasse vom Staat: +${formatEuro(KRANKENKASSE_BEITRAG)} (Beitrag übernommen).`);
 
-  // Laufende Lebenshaltung (Strom, Internet, Handy) – selbst zahlen
+  // Laufende Lebenshaltung (Strom, Internet, Handy) – selbst zahlen.
+  // Bei ALG2 übernimmt das Jobcenter den Strom (100 €) → günstiger + zählt zum Staat.
   {
-    const zahlbar = Math.min(NEBENKOSTEN, Math.max(0, gs.kontostand));
+    const stromVomAmt = (gs.status === 'ALG2') ? 100 : 0;
+    if (stromVomAmt) { staatGibt(stromVomAmt); }
+    const eigeneNK = NEBENKOSTEN - stromVomAmt;
+    const zahlbar = Math.min(eigeneNK, Math.max(0, gs.kontostand));
     gs.kontostand -= zahlbar;
-    meldungen.push(`💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
-    fehlt(NEBENKOSTEN - zahlbar, 'Nebenkosten');
+    meldungen.push(stromVomAmt
+      ? `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom vom Amt übernommen, +${formatEuro(stromVomAmt)}).`
+      : `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
+    fehlt(eigeneNK - zahlbar, 'Nebenkosten');
   }
 
   // ---- Schmiergeld für den Sachbearbeiter ----
