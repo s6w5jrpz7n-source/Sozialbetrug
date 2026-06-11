@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v53 – Kiosk+Kühlschrank+GameOver';
+const BUILD_MARKE = 'v54 – Batch A';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -260,15 +260,12 @@ const ORTE_CONFIG = [
     beschreibung: 'Dein Zuhause. Hier schläfst du, versteckst Bargeld und planst Cheats.',
     aktionen: [
       { label: '🛏️  Schlafen (Energie +25)',                    id: 'schlafen' },
-      { label: '💵  500 € verstecken (Konto → Schwarze Kasse)', id: 'verstecken' },
-      { label: '💵  500 € holen  (Schwarze Kasse → Konto)',     id: 'holen' },
+      { label: '🎭  Sozialbetrug...',                          id: 'cheats_menu' },
       { label: '🛒  Kaufen …',                                  id: 'kaufen_menu' },
-      { label: '🏖️  Kur beantragen (volle Erholung)',           id: 'kur' },
       { label: '🏠  Schein-WG deklarieren (+200 €/M, riskant)', id: 'scheinwg' },
       { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
       { label: '⚖️  Anwalt anrufen (Strafe anfechten)',         id: 'anwalt' },
-      { label: '✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)',    id: 'auswandern' },
-      { label: '🎭  Sozialbetrug...',                          id: 'cheats_menu' }
+      { label: '✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)',    id: 'auswandern' }
     ]
   },
   {
@@ -278,6 +275,7 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: '📋  Pflichttermin wahrnehmen',               id: 'pflichttermin' },
       { label: '📝  Scheinbewerbung einreichen (Risiko -5)', id: 'scheinbewerbung' },
+      { label: '🏖️  Kur beantragen (volle Erholung)',         id: 'kur' },
       { label: '🚿  Mehrbedarf Warmwasser (+15 €/M)',         id: 'mb_warmwasser' },
       { label: '👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)',    id: 'mb_alleinerziehend' },
       { label: '🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', id: 'mb_ernaehrung' },
@@ -1273,11 +1271,11 @@ function zeigeGewinnStempel() { _zeigeStempel('gewinn-flash', 'niete-flash'); }
 // Ein einzelnes Los ziehen → Gewinnbetrag (0 = Niete).
 function rubbellosZiehung() {
   const r = Math.random();
-  if (r < 0.60)  return 0;
-  if (r < 0.85)  return 10;
-  if (r < 0.95)  return 30;
-  if (r < 0.99)  return 200;
-  if (r < 0.999) return 2000;
+  if (r < 0.80)   return 0;       // Gewinnchance halbiert (vorher 40% → jetzt 20%)
+  if (r < 0.925)  return 10;
+  if (r < 0.975)  return 30;
+  if (r < 0.995)  return 200;
+  if (r < 0.9995) return 2000;
   return 50000;
 }
 
@@ -1586,15 +1584,6 @@ const eventDatabase = [
       effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return 'Jobcenter besänftigt.'; }},
     optionB: { label: '🚪 Brief ignorieren (Risiko +20)',
       effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); return 'Das wird Konsequenzen haben.'; }}
-  },
-  {
-    id: 'behoerde_02', kategorie: 'behoerde',
-    titel: '🚔 Finanzamt-Kontrolle',
-    text: 'Ein Finanzbeamter klingelt für eine Routinekontrolle.',
-    optionA: { label: '🤝 Kooperieren',
-      effekt(gs) { const v = Math.floor(gs.kontostand * 0.05); gs.kontostand = Math.max(0, gs.kontostand - v); gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); return `Nachzahlung ${formatEuro(v)}.`; }},
-    optionB: { label: '🚫 Tür nicht öffnen (Risiko +25)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 25, 0, 100); return 'Formelle Prüfung angekündigt.'; }}
   },
   {
     id: 'behoerde_03', kategorie: 'behoerde',
@@ -2923,8 +2912,8 @@ function interact(ortId) {
         ? '🤝  Sachbearbeiter geschmiert AKTIV (beenden)'
         : '🤝  Sachbearbeiter schmieren (150 €/M)';
     }
-    // Wohnung: Kur / Schein-WG / Umzug
-    if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'kur') {
+    // Kur (jetzt am Arbeitsamt) / Schein-WG / Umzug
+    if (a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
         ? `🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`
         : '🏖️  Kur beantragen (volle Erholung)';
@@ -2968,7 +2957,7 @@ function interact(ortId) {
   if (ortId === 'arbeitsamt') {
     const byId = {}; aktionen.forEach(x => byId[x.id] = x);
     const pick = ids => ids.map(i => byId[i]).filter(Boolean);
-    const top = pick(['pflichttermin', 'scheinbewerbung']);
+    const top = pick(['pflichttermin', 'scheinbewerbung', 'kur']);
     top.push({ label: '📂  Anträge & Förderungen …', callback: () => {
       oeffneModal('📂 Anträge & Förderungen',
         'Wähle einen Antrag. <br><span style="color:#9aa6b4;font-size:0.62rem;">Ernährungs-Mehrbedarf braucht ein Attest vom Arzt.</span>',
@@ -3005,6 +2994,31 @@ function verbraucheTag(anzahl) {
   updateHUD();
 }
 
+// Kur / Sanatorium (volle Erholung, Cooldown 3 Monate) – jetzt am Arbeitsamt.
+function kurBeantragen() {
+  const gs = gameState;
+  if (gs.monat < gs.kurCooldownMonat) {
+    oeffneModal('🏖️ Noch keine neue Kur', `Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, []);
+    return;
+  }
+  const attestKosten = 300;
+  oeffneModal('🏖️ Kur – nur mit Attest',
+    `Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`
+    + 'Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).',
+    [{ label: `🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, danger: true, callback: () => {
+        if (gs.kontostand < attestKosten) { logEvent('⚠️ Nicht genug Geld fürs Attest.', 'warn'); return; }
+        gs.kontostand      -= attestKosten;
+        gs.risikoRaster     = clamp(gs.risikoRaster + 12, 0, 100);
+        gs.energie          = 100;
+        gs.gesundheit       = 100;
+        gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
+        gs.kurCooldownMonat = gs.monat + 3;
+        verbraucheTag(7);
+        logEvent('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', 'warn');
+        oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', []);
+      }}]);
+}
+
 function aktionAusfuehren(ortId, aktionsId) {
   const gs = gameState;
 
@@ -3018,6 +3032,9 @@ function aktionAusfuehren(ortId, aktionsId) {
     soundAlarm && soundAlarm();
     return;
   }
+
+  // ---- Kur (jetzt am Arbeitsamt) – ortunabhängig behandeln ----
+  if (aktionsId === 'kur') { kurBeantragen(); return; }
 
   // --- WOHNUNG (oder bewohnte Villa) ---
   if (ortId === 'wohnung' || ortId === 'villa') {
@@ -3653,9 +3670,10 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.lebensmittelDiesenMonat = typ;
       // Rollender Vorrat: jeder Einkauf reicht 2 Wochen, verlängert (max. 4 Wochen)
       // Großer Kühlschrank → doppelte Reichweite (+28 Tage, bis 56) statt +14/56
-      const proEinkauf = gs.grosserKuehlschrank ? 28 : 14;
-      const maxVorrat  = gs.grosserKuehlschrank ? 56 : 28;
-      gs.lebensmittelTageRest = Math.min(maxVorrat, (gs.lebensmittelTageRest || 0) + proEinkauf);
+      // Jeder Einkauf reicht 2 Wochen (+14). Großer Kühlschrank verdoppelt nur den
+      // Lager-MAX (28 statt 14), sodass man seltener einkaufen muss.
+      const maxVorrat = gs.grosserKuehlschrank ? 28 : 14;
+      gs.lebensmittelTageRest = Math.min(maxVorrat, (gs.lebensmittelTageRest || 0) + 14);
       gs.kuehlschrankWarnung = false;   // bei nächstem Leerstand wieder warnen
 
       if (typ === 'gut') {
