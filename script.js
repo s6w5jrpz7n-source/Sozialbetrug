@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v49 – Disclaimer+Info';
+const BUILD_MARKE = 'v50 – Hauptmenü-Fix';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6060,6 +6060,13 @@ class StartSzene extends Phaser.Scene {
 
   create() {
     // HUD ausblenden -> Startbildschirm = reines Vollbild-Titelbild
+    this._menuAktiv = false;   // Rückkehr aus dem Spiel: Buttons wieder aktiv
+    // evtl. offenes Modal/Overlay sicher schließen (z. B. Game-Over) → Startmenü klickbar
+    try {
+      modalOffen = false; modalQueue = [];
+      const _ov = document.getElementById('modal-overlay');
+      if (_ov) _ov.classList.remove('active');
+    } catch (e) {}
     setHudSichtbar(false);
     document.body.classList.remove('im-spiel');   // Topbar/Zahnrad im Startscreen aus
     const _c = document.getElementById('game-container');
