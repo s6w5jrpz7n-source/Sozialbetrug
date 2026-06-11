@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v72 – 5 neue Events';
+const BUILD_MARKE = 'v73 – Luecken weg';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5824,7 +5824,7 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     // „X"-Nähte mehr, und der spielbare Zentral-Diamant hebt sich klar ab
     // (Stadt verliert sich nach außen im Dunst).
     const OS_MITTE = 1.012;   // zentrale Kachel: Original-Look
-    const OS_RING  = 1.04;    // Umgebung: mehr Überlappung, deckt Ränder
+    const OS_RING  = 1.085;   // Umgebung: starke Überlappung (deckt Beschnitt-Luecken)
     const RING_TINT = 0xd2d7de;   // nur ganz leicht abgedunkelt
     for (let i = -R; i <= R; i++) {
       for (let j = -R; j <= R; j++) {
