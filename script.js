@@ -5789,17 +5789,23 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
     const Bx = -feldW / 2, By = feldH / 2;
     const R = 3;   // Ring-Radius (deckt den Viewport auch bei rausgezoomter Kamera)
     // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
-    // Straßen passen exakt). Später kommen hier echte Gebäude drauf.
-    // Leichte Überlappung (OS) lässt die Kacheln einander überdecken → keine
-    // sichtbare Naht/Linie zwischen den Kacheln.
-    const OS = 1.012;
+    // Straßen passen exakt). Die UMGEBUNG wird abgedunkelt/entsättigt (Tint) und
+    // stärker überlappt → die hellen Diamant-Ränder erzeugen keine sichtbaren
+    // „X"-Nähte mehr, und der spielbare Zentral-Diamant hebt sich klar ab
+    // (Stadt verliert sich nach außen im Dunst).
+    const OS_MITTE = 1.012;   // zentrale Kachel: Original-Look
+    const OS_RING  = 1.04;    // Umgebung: mehr Überlappung, deckt Ränder
+    const RING_TINT = 0x5f6b7d;   // dunkles, leicht blaues Grau (Dunst)
     for (let i = -R; i <= R; i++) {
       for (let j = -R; j <= R; j++) {
+        const mitte = (i === 0 && j === 0);
         const bx = cx + i * Ax + j * Bx;
         const by = cy + i * Ay + j * By;
-        scene.add.image(bx, by, 'stadtboden')
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW * OS, feldH * OS)
-          .setDepth(i === 0 && j === 0 ? -19 : -20);   // Umgebung hinter allem
+        const os = mitte ? OS_MITTE : OS_RING;
+        const img = scene.add.image(bx, by, 'stadtboden')
+          .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
+          .setDepth(mitte ? -19 : -20);   // Umgebung hinter allem
+        if (!mitte) img.setTint(RING_TINT);
       }
     }
   } else {
