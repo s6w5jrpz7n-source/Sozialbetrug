@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v68 – Naht weg';
+const BUILD_MARKE = 'v69 – 3D-Kante weg';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5802,9 +5802,10 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         const bx = cx + i * Ax + j * Bx;
         const by = cy + i * Ay + j * By;
         const os = mitte ? OS_MITTE : OS_RING;
-        // Mitte: Original (saubere Kante). Umgebung: beschnittene Variante
-        // (heller Rand erodiert) → keine „X"-Nähte zwischen den Kacheln.
-        const tex = (!mitte && scene.textures.exists('stadtboden_trim')) ? 'stadtboden_trim' : 'stadtboden';
+        // ALLE Kacheln (auch die Mitte) nutzen die beschnittene Variante:
+        // heller Rand + dunkle 3D-Sockelkante (unten/rechts) sind erodiert
+        // → flacher, nahtloser Übergang. Innenflächen/Straßen bleiben unberührt.
+        const tex = scene.textures.exists('stadtboden_trim') ? 'stadtboden_trim' : 'stadtboden';
         scene.add.image(bx, by, tex)
           .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
           .setDepth(mitte ? -19 : -20);   // Umgebung hinter allem
