@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v51 – Balance+Bugs';
+const BUILD_MARKE = 'v52 – Warnungen+Zeit';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -2383,7 +2383,32 @@ function updateHUD() {
   _set('tb-staat',   formatEuro(gs.vomStaatGesamt || 0));
   _set('tb-zeit',    `M${gs.monat} W${gs.woche} T${gs.tag}`);
   _set('tb-status',  gs.status === 'ALG1' ? 'ALG I' : 'ALG II');
-  _set('tb-amt',     Math.max(0, Math.round(gs.naechsterAmtsBesuch * 7 - (gs.tag - 1))) + 'T');
+  const amtTage = Math.max(0, Math.round(gs.naechsterAmtsBesuch * 7 - (gs.tag - 1)));
+  _set('tb-amt',     amtTage + 'T');
+  const essenTage = gs.lebensmittelTageRest || 0;
+  _set('tb-essen',   essenTage > 0 ? essenTage + 'T' : 'leer');
+
+  // ---- Spielzeit (mm:ss / h:mm:ss) – wird bei neuem Spiel zurückgesetzt ----
+  const sek = Math.floor(window._spielzeitSek || 0);
+  const ss = String(sek % 60).padStart(2, '0');
+  const min = Math.floor(sek / 60);
+  _set('tb-spielzeit', min >= 60
+    ? `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}:${ss}`
+    : `${min}:${ss}`);
+
+  // ---- Warn-Blink bei kritischen Werten ----
+  const warnPill = (id, kritisch) => {
+    const el = document.getElementById(id);
+    const pill = el && el.closest && el.closest('.tb-pill');
+    if (pill) pill.classList.toggle('warn', !!kritisch);
+  };
+  warnPill('tb-energie', gs.energie          <= 20);
+  warnPill('tb-gesund',  gs.gesundheit       <= 25);
+  warnPill('tb-laune',   gs.happinessSpieler <= 20);
+  warnPill('tb-partner', gs.happinessPartner <= 20);
+  warnPill('tb-amt',     amtTage             <= 3);
+  warnPill('tb-konto',   gs.kontostand       <= 500);
+  warnPill('tb-essen',   essenTage           <= 3);
 
   // ---- Zeit (Monat / Woche / Tag) ----
   const zeitEl = document.getElementById('hud-zeit');
@@ -6524,6 +6549,7 @@ class SpielSzene extends Phaser.Scene {
     this.ortRects         = [];
     this.zeitAkku         = 0;
     this.zeitTempo        = 1;   // Zeitraffer 1× / 2× / 4×
+    window._spielzeitSek  = 0;   // Spielzeit-Zähler bei (Neu-)Start zurücksetzen
     this.wochenSeitMonat  = 0;
     this.eventTimer       = randomEventIntervall();
     this.hudTickTimer     = 0;
@@ -6816,6 +6842,7 @@ class SpielSzene extends Phaser.Scene {
     // Zeitraffer: 1× / 2× / 4× beschleunigt nur den Spiel-Kalender & periodische
     // Ereignisse (nicht Steuerung/Animation).
     const dtZeit = dt * (this.zeitTempo || 1);
+    window._spielzeitSek = (window._spielzeitSek || 0) + dt;   // reale Spielzeit (mit Tempo NICHT skaliert)
     // Geklemmter dt für die Bewegung: verhindert „Sprints" nach Frame-Aussetzern
     // (Performance-Spikes) → konstantes Lauftempo statt erst schnell, dann langsam.
     const dtMove = Math.min(delta, 40) / 1000;

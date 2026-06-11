@@ -141,6 +141,15 @@
     .tb-partner { border-color: #e84bb8; } .tb-partner #tb-partner { color: #ff9ad8; }
     .tb-risiko  { border-color: #e8924b; } .tb-risiko  #tb-risiko  { color: #ffb877; }
     .tb-amt     { border-color: #5ab4e8; } .tb-amt     #tb-amt     { color: #9ad8ff; }
+    .tb-essen   { border-color: #e8a84b; } .tb-essen   #tb-essen   { color: #ffcf6a; }
+    /* Warn-Blink: Pille leuchtet neonrot und blinkt, wenn ein Wert kritisch ist */
+    .tb-pill.warn {
+      border-color: #ff1744 !important;
+      box-shadow: 0 0 8px #ff1744, 0 0 16px rgba(255,23,68,0.55);
+      animation: tbblink 0.7s steps(1) infinite;
+    }
+    .tb-pill.warn span { color: #ff5b74 !important; }
+    @keyframes tbblink { 50% { border-color:#4a0810 !important; box-shadow:0 0 2px #4a0810; } }
     .tb-line {
       font-family: var(--mono); font-size: 0.62rem; font-weight: bold;
       letter-spacing: 1px; color: #9fb0d8;
@@ -765,7 +774,7 @@
     <div id="game-container">
       <!-- Schwebende Status-Leiste (immer sichtbar, mobil-tauglich) -->
       <div id="topbar">
-        <div class="tb-line"><span id="tb-zeit">M1 W1 T1</span> · <span id="tb-status">ALG I</span></div>
+        <div class="tb-line"><span id="tb-zeit">M1 W1 T1</span> · <span id="tb-status">ALG I</span> · ⏱ <span id="tb-spielzeit">0:00</span></div>
         <div class="tb-pills">
           <div class="tb-pill tb-konto"><span class="tb-ico">🏦</span><span id="tb-konto">50.000 €</span></div>
           <div class="tb-pill tb-schwarz"><span class="tb-ico">💰</span><span id="tb-schwarz">0 €</span></div>
@@ -776,6 +785,7 @@
           <div class="tb-pill tb-gesund"><span class="tb-ico">❤️</span><span id="tb-gesund">80</span></div>
           <div class="tb-pill tb-laune"><span class="tb-ico">🙂</span><span id="tb-laune">70</span></div>
           <div class="tb-pill tb-partner"><span class="tb-ico">💑</span><span id="tb-partner">70</span></div>
+          <div class="tb-pill tb-essen"><span class="tb-ico">🍔</span><span id="tb-essen">–</span></div>
           <div class="tb-pill tb-risiko"><span class="tb-ico">⚠️</span><span id="tb-risiko">10</span></div>
           <div class="tb-pill tb-amt"><span class="tb-ico">📋</span><span id="tb-amt">14T</span></div>
         </div>
