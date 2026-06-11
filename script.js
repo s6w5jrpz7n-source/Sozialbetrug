@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v63 – Stadt-Blocks';
+const BUILD_MARKE = 'v64 – Blocks oben';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5820,11 +5820,15 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
         { key: 'stadt_block_1', ox: 0.4996, oy: 0.5389, dw: 1921, dh: 1044 },  // 1373×746, width 1372
         { key: 'stadt_block_2', ox: 0.4996, oy: 0.5497, dw: 1921, dh: 1069 },  // 1339×745, width 1338
       ];
-      const nachbarn = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+      // Nur die HINTEREN/seitlichen Nachbarn bestücken (Diamant-Mitte by <= cy).
+      // Vordere (untere) Blöcke würden mit ihren Häusern in den Spieldiamanten
+      // ragen und zu viel verdecken → dort bleibt die dunkle Umgebung.
+      const nachbarn = [[-1, 0], [0, -1], [-1, -1], [1, -1], [-1, 1]];
       nachbarn.forEach(([i, j], k) => {
+        const by = cy + i * Ay + j * By;
+        if (by > cy + 1) return;   // untere/vordere Diamanten frei lassen
         const b = bloecke[k % 2];
         const bx = cx + i * Ax + j * Bx;
-        const by = cy + i * Ay + j * By;
         scene.add.image(bx, by, b.key)
           .setOrigin(b.ox, b.oy).setDisplaySize(b.dw, b.dh)
           .setTint(0x8b95a6).setDepth(-19.5);   // Deko hinter dem spielbaren Diamanten
