@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v71 – kein Kind-Event';
+const BUILD_MARKE = 'v72 – 5 neue Events';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -1490,6 +1490,45 @@ const eventDatabase = [
     text: 'Der Hund vom Nachbarn schnappt sich deine Bratwurst vom Balkon.',
     optionA: { label: '🤬 Schimpfen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100); return 'Der Köter rennt grinsend weg.'; }},
     optionB: { label: '😂 Drüber lachen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return 'War eh nur die Billig-Wurst.'; }}
+  },
+  {
+    id: 'alltag_automat', kategorie: 'alltag',
+    titel: '🎰 Der letzte Zehner',
+    text: 'Beim Kiosk blinkt der Geldspielautomat dich verführerisch an.',
+    optionA: { label: '🎰 Zocken (10 €)', effekt(gs) {
+      if (gs.losesBargeld + gs.kontostand < 10) return 'Nicht mal 10 € übrig. Tragisch.';
+      const ausB = Math.min(10, gs.losesBargeld); gs.losesBargeld -= ausB; gs.kontostand -= (10 - ausB);
+      if (Math.random() < 0.4) { gs.losesBargeld += 40; gs.happinessSpieler = clamp(gs.happinessSpieler + 6, 0, 100); return 'JACKPOT! +40 € und ein Adrenalinschub.'; }
+      gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return 'Verzockt. Der Automat lacht dich aus.'; }},
+    optionB: { label: '🚶 Stark bleiben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return 'Du gehst erhobenen Hauptes vorbei.'; }}
+  },
+  {
+    id: 'alltag_falschgeld', kategorie: 'alltag',
+    titel: '💵 Falscher Fuffziger',
+    text: 'Der Späti gibt dir versehentlich einen verdächtig glänzenden 50er heraus.',
+    optionA: { label: '🤐 Behalten', effekt(gs) { gs.losesBargeld += 50; gs.risikoRaster = clamp(gs.risikoRaster + 8, 0, 100); return '+50 € Bargeld – aber Falschgeld ist heiß.'; }},
+    optionB: { label: '😇 Zurückgeben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return 'Ehrlich währt am längsten. Reines Gewissen.'; }}
+  },
+  {
+    id: 'alltag_grillfest', kategorie: 'alltag',
+    titel: '🌭 Gratis-Grillfest',
+    text: 'Die Kirchengemeinde grillt umsonst für alle Bedürftigen.',
+    optionA: { label: '🍖 Vollschlagen', effekt(gs) { gs.energie = clamp(gs.energie + 12, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); return 'Fünf Bratwürste später: satt, glücklich, leicht übel.'; }},
+    optionB: { label: '🥗 Nur Salat', effekt(gs) { gs.energie = clamp(gs.energie + 4, 0, 100); gs.gesundheit = clamp(gs.gesundheit + 2, 0, 100); return 'Vernünftig. Langweilig, aber vernünftig.'; }}
+  },
+  {
+    id: 'alltag_fahrrad', kategorie: 'alltag',
+    titel: '🚲 Herrenloses Fahrrad',
+    text: 'Ein fast neues Rad steht seit Tagen ohne Schloss an der Laterne.',
+    optionA: { label: '🚲 „Mitnehmen"', effekt(gs) { gs.losesBargeld += 25; gs.risikoRaster = clamp(gs.risikoRaster + 6, 0, 100); return '+25 € beim Hehler – fühlt sich trotzdem komisch an.'; }},
+    optionB: { label: '👮 Fundbüro', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.losesBargeld += 5; return 'Ehrenmann! Der Besitzer drückt dir 5 € Finderlohn in die Hand.'; }}
+  },
+  {
+    id: 'alltag_wahrsagerin', kategorie: 'alltag',
+    titel: '🔮 Wahrsagerin',
+    text: 'Am Marktstand will dir eine Wahrsagerin die Zukunft lesen.',
+    optionA: { label: '💸 5 € zahlen', effekt(gs) { if (gs.losesBargeld + gs.kontostand < 5) return 'Nicht mal 5 € für die Zukunft übrig.'; if (gs.losesBargeld >= 5) gs.losesBargeld -= 5; else gs.kontostand -= 5; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return '„Großer Reichtum steht dir bevor!" Na also.'; }},
+    optionB: { label: '🙄 Humbug', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 1, 0, 100); return 'Sie murmelt dir einen kleinen Fluch hinterher.'; }}
   },
   {
     id: 'alltag_pfand', kategorie: 'alltag',
