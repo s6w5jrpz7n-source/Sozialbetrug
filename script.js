@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v48 – Fix Freeze+Musik+Menü';
+const BUILD_MARKE = 'v49 – Disclaimer+Info';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -691,6 +691,107 @@ function oeffneCheatMenu() {
   }));
   oeffneModal('🎭 Sozialbetrug',
     'Illegale Aktionen. Jede kostet Energie und beeinflusst Risiko.', aktionen);
+}
+
+// ================================================================
+//  DISCLAIMER (Pflicht-Hinweis) + INFO/ANLEITUNG (mit Reitern)
+// ================================================================
+function zeigeDisclaimer(ausInfo) {
+  const txt =
+    '<span style="display:block;font-size:12.5px;line-height:1.6;color:#d6ceb4;">' +
+    'Dieses Spiel ist reine <strong>Satire und Fiktion</strong> – bewusst überzeichnet und ' +
+    '<strong>ironisch</strong> gemeint. „Gurkistan", alle Figuren und Vorgänge sind frei erfunden.<br><br>' +
+    '<strong>Sozialbetrug ist kein Kavaliersdelikt.</strong> Er schadet der Allgemeinheit und ' +
+    'gerade den Menschen, die wirklich auf Unterstützung angewiesen sind. Die im Spiel ' +
+    'dargestellten Handlungen (z. B. Leistungsbetrug, Schwarzarbeit, gefälschte Atteste, ' +
+    'Bestechung, Drogenhandel) sind in der Realität <strong>strafbar</strong>.<br><br>' +
+    'Dieses Spiel ist <strong>keine Anleitung</strong> und ruft <strong>nicht</strong> zur ' +
+    'Nachahmung auf. Bitte nichts davon im echten Leben tun.<br><br>' +
+    '<span style="color:#9aa6b4;">Mit „Verstanden" bestätigst du, dass du diesen Hinweis gelesen und verstanden hast.</span>' +
+    '</span>';
+  oeffneModal('⚖️ Wichtiger Hinweis – bitte lesen', txt, [
+    { label: '✅ Verstanden – ich habe gelesen', primary: true, callback: () => {
+        try { localStorage.setItem('disclaimer_ok', '1'); } catch (e) {}
+        if (ausInfo) oeffneInfo('disclaimer');
+      } },
+  ]);
+}
+
+const INFO_TEXTE = {
+  story:
+    '<strong>📖 Willkommen in Gurkistan</strong><br><br>' +
+    'Gurkistan – ein kleines Land mit einem erstaunlich großzügigen Sozialsystem. ' +
+    'Arbeit gilt hier als… überbewertet. Schon mit ganz normaler Unterstützung lässt es ' +
+    'sich bequem leben. Aber du hast Größeres vor: Mit ein paar „kreativen Optimierungen" ' +
+    'willst du es vom Arbeitslosen zum <strong>Millionär</strong> bringen.<br><br>' +
+    '<span style="color:#9aa6b4;font-size:0.85em;">(Alles satirisch &amp; fiktiv – siehe Reiter „Hinweis".)</span>',
+  ziel:
+    '<strong>🎯 Dein Ziel</strong><br><br>Erreiche eines von beiden:<br>' +
+    '• <strong>100.000 €</strong> vom Staat kassiert, <em>oder</em><br>' +
+    '• <strong>1.000.000 €</strong> Gesamtvermögen.<br><br>' +
+    'Achte dabei auf <strong>Gesundheit, Energie, Laune</strong> und dein <strong>Risiko-Raster</strong>. ' +
+    'Zu viel Risiko → Razzia. Bei 0 Gesundheit ist Schluss.',
+  amt:
+    '<strong>🏛️ Arbeitsamt &amp; Pflichten</strong><br><br>' +
+    '• Zieh erst eine <strong>Wartenummer</strong> (grünes LED-Schild). Erst wenn deine Nummer dran ist ' +
+    '(oder du dich für 100 € vordrängelst), kommst du zu den Anträgen.<br>' +
+    '• <strong>Pflichttermine</strong> wahrnehmen – sonst Risiko +15, nach 3 Fehlterminen ALG-Sperre.<br>' +
+    '• Unter <strong>Anträge</strong>: legale Mehrbedarfe &amp; Förderungen (Warmwasser, Alleinerziehend, ' +
+    'Ernährung [<em>Attest vom Arzt nötig</em>], Bildung, Erstausstattung, Möbel, Bekleidung, Einstiegsgeld).<br>' +
+    '• <strong>Krankmeldung</strong> beim Arzt befreit dich zeitweise von Terminen &amp; Prüfungen.',
+  essen:
+    '<strong>🛒 Einkaufen</strong><br><br>' +
+    'Dein Lebensmittel-Vorrat hält ca. <strong>2 Wochen</strong>. Läuft er leer ' +
+    '(„Kühlschrank ist leer"), verlierst du <strong>täglich Gesundheit, Energie und Laune</strong>, ' +
+    'bis du wieder einkaufst.<br><br>' +
+    'Bio-Einkauf gibt Boni, billig spart Geld (aber Abzüge &amp; Ärger mit der Partnerin).',
+  npc:
+    '<strong>👥 Leute auf der Straße</strong><br><br>' +
+    '• <strong>Bettler:</strong> bittet um Spenden (freiwillige Unterstützung fürs Projekt).<br>' +
+    '• <strong>Räuber</strong> (Schatten-Viertel um Schattenbank &amp; Arzt): überfällt dich bei Kontakt – ' +
+    'kooperieren (Bargeld weg) oder kämpfen (50/50). Verlässt du das Viertel, entkommst du.<br>' +
+    '• <strong>Dealer</strong> (Park): Laune rauf – Gesundheit &amp; Risiko leider auch.<br><br>' +
+    'Tipp: <strong>Loses Bargeld</strong> schnell sichern (Bank/Schattenbank) – sonst Beute für Räuber oder Razzia.',
+  gebaeude:
+    '<strong>🏢 Wichtige Orte</strong><br><br>' +
+    '• <strong>Wohnung/Villa:</strong> schlafen, Geld verstecken, „Sozialbetrug"-Menü.<br>' +
+    '• <strong>Bank:</strong> Bargeld aufs Konto, Aktiendepot.<br>' +
+    '• <strong>Schattenbank:</strong> Schwarzkasse sichern, Immobilien, Tarnungen.<br>' +
+    '• <strong>Baustelle:</strong> Schwarzarbeit (Bargeld, aber Risiko).<br>' +
+    '• <strong>Supermarkt:</strong> Lebensmittel, Minijob.<br>' +
+    '• <strong>Arztpraxis:</strong> Behandlung, Krankmeldung, Ernährungs-Attest.<br>' +
+    '• <strong>Arbeitsamt:</strong> Pflichttermine &amp; Anträge.<br>' +
+    '• <strong>Pfandleiher, Kasino, Kiosk, Sportverein, Amüsierbetrieb, Kredithai, Kirche</strong> – entdecke sie selbst.',
+  disclaimer:
+    '<strong>⚖️ Rechtlicher Hinweis</strong><br><br>' +
+    'Reine <strong>Satire &amp; Fiktion</strong>, ironisch gemeint. <strong>Sozialbetrug ist strafbar</strong> ' +
+    'und schadet der Allgemeinheit. Dieses Spiel ist <strong>keine Anleitung</strong> und ruft nicht zur ' +
+    'Nachahmung auf. Bitte nichts davon im echten Leben nachmachen.',
+};
+
+function oeffneInfo(tab) {
+  tab = tab || 'story';
+  const tabs = [
+    ['story', '📖 Story'], ['ziel', '🎯 Ziel'], ['amt', '🏛️ Amt'],
+    ['essen', '🛒 Essen'], ['npc', '👥 Leute'], ['gebaeude', '🏢 Orte'], ['disclaimer', '⚖️ Hinweis'],
+  ];
+  const nav = tabs.map(([k, l]) =>
+    `<button class="info-tab${k === tab ? ' aktiv' : ''}" onclick="oeffneInfo('${k}')">${l}</button>`).join('');
+  // Direkt rendern (nicht über oeffneModal, sonst landet der Reiter-Wechsel in der Warteschlange)
+  modalOffen = true;
+  const titleEl = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  if (!body) return;
+  if (titleEl) titleEl.textContent = 'ℹ️ Info & Anleitung';
+  body.innerHTML =
+    `<div class="info-nav">${nav}</div>` +
+    `<div class="info-body">${INFO_TEXTE[tab] || ''}</div>`;
+  const close = document.createElement('button');
+  close.className = 'action-btn'; close.textContent = '✕ Schließen';
+  close.onclick = () => schliesseModal();
+  body.appendChild(close);
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) overlay.classList.add('active');
 }
 
 // ================================================================
@@ -6012,7 +6113,7 @@ class StartSzene extends Phaser.Scene {
     this._menuItems = [
       { icon: '👑', label: 'NEUES SPIEL',   relY: 0.548, aktion: () => this._neuesSpiel()    },
       { icon: '📁', label: 'SPIEL LADEN',   relY: 0.611, aktion: () => this._spielLaden()    },
-      { icon: '⚙️', label: 'EINSTELLUNGEN', relY: 0.679, aktion: () => this._einstellungen() },
+      { icon: 'ℹ️', label: 'INFO & ANLEITUNG', relY: 0.679, aktion: () => oeffneInfo('story') },
       { icon: '🏆', label: 'BESTENLISTE',   relY: 0.747, aktion: () => this._bestenliste()   },
       { icon: '🚪', label: 'BEENDEN',       relY: 0.810, aktion: () => this._beenden()        },
     ];
@@ -6028,6 +6129,11 @@ class StartSzene extends Phaser.Scene {
 
     this.input.keyboard.once('keydown-ENTER', () => this._neuesSpiel());
     this.input.keyboard.once('keydown-SPACE', () => this._neuesSpiel());
+
+    // Pflicht-Disclaimer beim ersten Start (bis bestätigt)
+    try {
+      if (localStorage.getItem('disclaimer_ok') !== '1') setTimeout(() => zeigeDisclaimer(), 600);
+    } catch (e) {}
   }
 
   _layoutStartMenu() {

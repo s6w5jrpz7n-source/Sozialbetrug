@@ -195,6 +195,16 @@
       color: #0a0e1a; background: var(--accent); border-color: var(--accent);
       box-shadow: 0 0 8px rgba(232,184,75,0.4);
     }
+    /* Info-Reiter */
+    .info-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .info-tab {
+      font-family: var(--mono); font-size: 0.66rem; font-weight: bold;
+      color: #9fb0d8; background: rgba(20,30,55,0.6);
+      border: 1px solid var(--border-hi); border-radius: 10px;
+      padding: 4px 8px; cursor: pointer;
+    }
+    .info-tab.aktiv { color: #0a0e1a; background: var(--accent); border-color: var(--accent); }
+    .info-body { font-size: 0.8rem; line-height: 1.55; color: var(--text); text-align: left; }
     /* Topbar + Zahnrad + Tempo nur IM SPIEL anzeigen (nicht im Startbildschirm) */
     #topbar, #gear-btn, #speed-ctrl { display: none; }
     body.im-spiel #topbar  { display: flex; }
