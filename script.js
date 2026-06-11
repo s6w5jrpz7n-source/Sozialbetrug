@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v70 – Events 90-180s';
+const BUILD_MARKE = 'v71 – kein Kind-Event';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -1802,15 +1802,6 @@ const eventDatabase = [
       effekt(gs) { gs.energie = clamp(gs.energie - 15, 0, 100); gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); pruefeEheKrise(); return 'Schwieriges Gespräch.'; }},
     optionB: { label: '🚶 Rausgehen (Partner -10)',
       effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); pruefeEheKrise(); return 'Spannung ungelöst.'; }}
-  },
-  {
-    id: 'beziehung_04', kategorie: 'beziehung',
-    titel: '🍼 Kind braucht 250 €',
-    text: 'Schulfahrt.',
-    optionA: { label: '✅ Geld geben (-250 €, Partner +10)',
-      effekt(gs) { if (gs.kontostand >= 250 || gs.schwarzeKasse >= 250) { if (gs.schwarzeKasse >= 250) gs.schwarzeKasse -= 250; else gs.kontostand -= 250; gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); return 'Kind glücklich.'; } gs.happinessPartner = clamp(gs.happinessPartner - 15, 0, 100); pruefeEheKrise(); return 'Kein Geld.'; }},
-    optionB: { label: '❌ Ablehnen (Partner -20)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); pruefeEheKrise(); return 'Belastend.'; }}
   },
   {
     id: 'beziehung_05', kategorie: 'beziehung',
