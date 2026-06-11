@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v57 – Batch D';
+const BUILD_MARKE = 'v58 – Batch E';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -118,6 +118,8 @@ const gameState = {
   krankmeldungCooldownWochen: 0,  // Sperre bis zur nächsten Krankmeldung (max. alle 6 Wochen)
   kampfsportGelernt: false,       // Kampfsport gelernt → 75% statt 50% gegen den Räuber
   anzeigeCooldownMonat: 0,        // nach Schweigegeld: keine Anonyme-Anzeige bis zu diesem Monat
+  bettlerAus: false,              // Bettler dauerhaft weggeschickt ("Nicht mehr fragen")
+  millionHinweis: false,          // Millionär-Hinweis (auswandern!) schon gezeigt
 
   // ---- Legale Mehrbedarfe / Anträge (Arbeitsamt) ----
   mehrbedarf: {             // aktive monatliche Zuschläge
@@ -209,6 +211,23 @@ function gesamtVermoegen() {
 function staatGibt(betrag) {
   // Positiv = Leistung kassiert; negativ = Rückzahlung an den Staat (Zähler sinkt, min. 0)
   gameState.vomStaatGesamt = Math.max(0, (gameState.vomStaatGesamt || 0) + betrag);
+}
+
+// Voll-Bild-Siegesbildschirm (nur nach Auswandern).
+function zeigeGewonnen(vermoegen) {
+  const el = document.getElementById('win-screen');
+  const sub = document.getElementById('win-sub');
+  if (sub) sub.innerHTML = `Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`;
+  if (el) { el.classList.add('show'); return; }
+  // Fallback
+  oeffneModal('🏆 Gewonnen!', `Ausgewandert mit ${formatEuro(vermoegen)}!`, [
+    { label: '🔄 Neues Spiel', primary: true, callback: () => window.location.reload() }]);
+}
+
+// Bettler dauerhaft abgeschaltet? (Spielstand-Flag + localStorage-Kompatibilität)
+function bettlerDeaktiviert() {
+  if (gameState.bettlerAus) return true;
+  try { return localStorage.getItem('spende_aus') === '1'; } catch (e) { return false; }
 }
 
 // ================================================================
@@ -2726,7 +2745,7 @@ function oeffneSpendenModal() {
     `Das tut keinem weh und hält das Projekt am Leben. Danke! ❤️</span>`;
   oeffneModal("Haste ma 'n Euro?", html, [
     { label: '❤️  Spenden', primary: true, callback: () => oeffneSpende() },
-    { label: 'Nicht mehr fragen', callback: () => { try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
+    { label: 'Nicht mehr fragen', callback: () => { gameState.bettlerAus = true; try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
   ]);
 }
 
@@ -3203,19 +3222,8 @@ function aktionAusfuehren(ortId, aktionsId) {
       }
       gs.gameOver = true;
       soundGut && soundGut();
-      oeffneModal('🏆 Ausgewandert – Gewonnen!',
-        `<div style="text-align:center; padding:10px 0;">
-          <div style="font-size:2rem; margin-bottom:10px;">🏝️ ✈️ 🍹</div>
-          <strong>Du hast es geschafft!</strong><br><br>
-          Mit <strong style="color:#ffd700; font-size:1.1rem;">${formatEuro(v)}</strong> setzt du dich ins sonnige Ausland ab.<br>
-          Kein Amt, keine Razzia, kein Knast – nur Strand.<br><br>
-          Vom Arbeitslosen zum Millionär. <strong>Der Staat hat verloren.</strong>
-        </div>`,
-        [{ label: '🔄 Neues Spiel', primary: true, callback: () => {
-            window._phaserGameRef && window._phaserGameRef.scene.stop('SpielSzene');
-            window._phaserGameRef && window._phaserGameRef.scene.start('StartSzene');
-          }}]);
       logEvent(`🏆 Ausgewandert mit ${formatEuro(v)} – gewonnen!`, 'good');
+      zeigeGewonnen(v);
       return;
     }
     if (aktionsId === 'cheats_menu') { oeffneCheatMenu(); return; }
@@ -4796,34 +4804,17 @@ function pruefeGameOverBedingungen() {
   const gs = gameState;
   if (gs.gameOver) return;
 
-  // ---- GEWINN: 1 Million € in Konto + Depot ----
+  // ---- Millionär? Noch KEIN Sieg – erst Auswandern gewinnt das Spiel ----
   const depotWert   = (gs.depot || []).reduce((s,p) => s + p.anteile * p.aktuellerKurs, 0);
   const gesamtLegal = gs.kontostand + depotWert;
-  if (gesamtLegal >= 1000000) {
-    gs.gameOver = true;
-    const formatiertGesamt = gesamtLegal.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0});
+  if (gesamtLegal >= 1000000 && !gs.millionHinweis) {
+    gs.millionHinweis = true;
     soundGut && soundGut();
-    oeffneModal(
-      '🏆 GEWONNEN! Millionär!',
-      `<div style="text-align:center; padding:10px 0;">
-        <div style="font-size:2rem; margin-bottom:12px;">💰🎉🥂</div>
-        <strong>Glückwunsch!</strong> Du hast es geschafft!<br><br>
-        Kontostand + Depot: <strong style="color:#ffd700; font-size:1.1rem;">
-          ${formatiertGesamt} €
-        </strong><br><br>
-        Vom Arbeitslosen zum Millionär!<br>
-        Der Staat hat verloren.<br><br>
-        <em style="color:var(--text-dim); font-size:0.75rem;">
-          CEO – Chief Excuse Officer 🏆
-        </em>
-      </div>`,
-      [{ label: '🔄 Neues Spiel', primary: true, callback: () => {
-        window._phaserGameRef && window._phaserGameRef.scene.stop('SpielSzene');
-        window._phaserGameRef && window._phaserGameRef.scene.start('StartSzene');
-      }}]
-    );
-    logEvent('🏆 GEWONNEN! 1 Million €!', 'good');
-    return;
+    oeffneModal('💰 Du bist Millionär!',
+      'Kontostand + Depot liegen über <strong>1.000.000 €</strong>! 🎉<br><br>' +
+      'Aber so richtig <strong>gewonnen</strong> hast du erst, wenn du dich ins Ausland absetzt. ' +
+      'Geh in deine <strong>Wohnung/Villa → „Ins Ausland absetzen"</strong>.', []);
+    logEvent('💰 Millionär! Jetzt auswandern, um zu gewinnen.', 'good');
   }
 
   // Gesundheits-Tod
@@ -6432,7 +6423,7 @@ class StartSzene extends Phaser.Scene {
         gesundheit: 80, risikoRaster: 10, status: 'ALG1',
         monat: 1, woche: 1, tag: 1,
         naechsterAmtsBesuch: 2, amtsTermineVerpasst: 0, algGesperrt: false,
-        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0, kampfsportGelernt: false, anzeigeCooldownMonat: 0,
+        krankmeldungWochenRest: 0, krankmeldungCooldownWochen: 0, kampfsportGelernt: false, anzeigeCooldownMonat: 0, bettlerAus: false, millionHinweis: false,
         eheKriseAktiv: false, eheKriseSchritt: 0, frauAusgezogen: false,
         unterhaltProMonat: 0, geschenkeSumme: 0,
         loanSharkSchuld: 0, loanSharkMahnungStufe: 0,
@@ -6741,6 +6732,15 @@ class SpielSzene extends Phaser.Scene {
     this.dealerGfx  = this.add.graphics();
     this.dealerAnimT = 0;
 
+    // Startposition: direkt vor der eigenen Wohnung (erste begehbare Nachbarkachel)
+    const _woh = ORTE_CONFIG.find(o => o.id === 'wohnung');
+    if (_woh) {
+      const kandidaten = [[1, 1], [0, 1], [1, 0], [-1, 1], [1, -1], [0, 2], [2, 0], [-1, 0], [0, -1]];
+      for (const [dc, dr] of kandidaten) {
+        const c = _woh.col + dc, r = _woh.row + dr;
+        if (this.begehbar(c, r)) { this.spielerCol = c; this.spielerRow = r; break; }
+      }
+    }
     // Spieler – kontinuierliche Weltposition (flüssige Bewegung)
     const startPos = isoToScreen(this.spielerCol + 0.5, this.spielerRow + 0.5,
                                  this.tileW, this.tileH, this.offsetX, this.offsetY);
@@ -6781,6 +6781,9 @@ class SpielSzene extends Phaser.Scene {
     // → Gebäude „vibrieren" beim Laufen nicht mehr.
     this.cameras.main.startFollow(this.camTarget, true, 1, 1);
     this.cameras.main.centerOn(this.spielerX, this.spielerY);
+    // Sicherheitshalber nach Layout/Resize nochmal exakt auf den Spieler zentrieren
+    this.time.delayedCall(60,  () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
+    this.time.delayedCall(300, () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
 
     // ---- Adaptiver Zoom: auf jedem Gerät etwa gleich viel Fläche sichtbar ----
     // Ziel: ca. SICHT_BREITE Welt-Pixel breit zeigen. Kleine Handys zoomen dadurch
@@ -7339,7 +7342,7 @@ class SpielSzene extends Phaser.Scene {
   // Lässt einen Bettler weit weg vom Spieler erscheinen, der ihn dann verfolgt.
   // Bettler an einem zufälligen, begehbaren Punkt ins Leben rufen (Wander-Modus).
   initBettler() {
-    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (bettlerDeaktiviert()) return;
     if (this._bettlerExists || gameState.gameOver) return;
     let best = null, bestD = -1;
     for (let i = 0; i < 40; i++) {
@@ -7362,7 +7365,7 @@ class SpielSzene extends Phaser.Scene {
 
   // 10-Min-Timer / Test-Knopf: Bettler wird aufdringlich und greift an.
   spawnBettler() {
-    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (bettlerDeaktiviert()) return;
     if (gameState.gameOver) return;
     if (!this._bettlerExists) this.initBettler();
     if (!this._bettlerExists) return;
@@ -7415,7 +7418,7 @@ class SpielSzene extends Phaser.Scene {
   // Pro Frame: Bettler bewegen (wandern oder angreifen), Sprechblase, Klickzone.
   updateBettler(dt) {
     if (!this._bettlerExists) return;
-    try { if (localStorage.getItem('spende_aus') === '1') { this.despawnBettler(); return; } } catch (e) {}
+    if (bettlerDeaktiviert()) { this.despawnBettler(); if (this._spendeTimer) this._spendeTimer.remove(false); return; }
 
     const dx = this.spielerX - this._bettlerX, dy = this.spielerY - this._bettlerY;
     const dist = Math.hypot(dx, dy);
@@ -7495,7 +7498,7 @@ class SpielSzene extends Phaser.Scene {
   // Popup zeigen – aber nur, wenn der Spieler nicht gerade in einem Menü/Popup
   // steckt und es nicht dauerhaft abgeschaltet wurde.
   zeigeBettler() {
-    try { if (localStorage.getItem('spende_aus') === '1') return; } catch (e) {}
+    if (bettlerDeaktiviert()) return;
     if (modalOffen || this._menuAktiv || gameState.gameOver) {
       this.time.delayedCall(2000, () => this.zeigeBettler());   // gleich erneut versuchen
       return;
@@ -8148,6 +8151,8 @@ function ladeSpiel(slot) {
     if (gameState.ernaehrungAttest === undefined) gameState.ernaehrungAttest = false;
     if (gameState.kampfsportGelernt === undefined) gameState.kampfsportGelernt = false;
     if (gameState.anzeigeCooldownMonat === undefined) gameState.anzeigeCooldownMonat = 0;
+    if (gameState.bettlerAus === undefined) gameState.bettlerAus = false;
+    if (gameState.millionHinweis === undefined) gameState.millionHinweis = false;
     if (gameState.billigKaeufeInFolge === undefined) gameState.billigKaeufeInFolge = 0;
     if (gameState.amtsTermineVerpasst === undefined) gameState.amtsTermineVerpasst = 0;
     if (gameState.algGesperrt         === undefined) gameState.algGesperrt         = false;
