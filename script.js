@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v84 – Räuber-Animation';
+const BUILD_MARKE = 'v85 – Räuber-Revier/Stopp + Tiefe';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5966,7 +5966,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // Grundlinie passen (oben: fy + fh*0.85), sonst sortieren v. a. HOHE Gebäude zu
     // flach → Charaktere DAHINTER werden über die Dachkante gezeichnet. 0.82 = knapp
     // über der Standlinie (kleiner Puffer, damit Figuren direkt davor nicht verschwinden).
-    const baseY = y + h * 0.82;
+    const baseY = y + h * 0.78;   // Tiefenlinie etwas höher → Figuren vorn/seitlich (z. B. Penner an der Arztpraxis-Ecke) werden nicht mehr verdeckt; nördlich stehende bleiben dahinter
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
@@ -7636,7 +7636,8 @@ class SpielSzene extends Phaser.Scene {
     });
     this._revier = {
       cx: (pa.x + pb.x) / 2, cy: (pa.y + pb.y) / 2,
-      r: Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 170,   // beide + Puffer
+      // Radius gedeckelt → bleibt ein Viertel, nicht die halbe Karte
+      r: Math.min(Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 110, 300),
       minY: isFinite(minY) ? minY : -Infinity,
     };
   }
@@ -7715,9 +7716,13 @@ class SpielSzene extends Phaser.Scene {
       if (gameState.losesBargeld >= 20) { this.ueberfall(); return; }
     }
 
-    // Spieler per Pathfinding verfolgen – aber nur, solange er im Revier ist
-    // (verlässt der Spieler das Viertel, gibt der Räuber die Jagd auf → entkommen).
-    if (this._raeuberFreilauf || this.imRevier(this.spielerX, this.spielerY)) {
+    // Hat den Spieler erreicht → stehen bleiben (nicht weiter/überlaufen).
+    this._raeuberSteht = dist < 30;
+
+    // Spieler per Pathfinding verfolgen – aber nur, solange er im Revier ist und
+    // ihn noch nicht erreicht hat (verlässt der Spieler das Viertel, gibt der
+    // Räuber die Jagd auf → entkommen).
+    if (!this._raeuberSteht && (this._raeuberFreilauf || this.imRevier(this.spielerX, this.spielerY))) {
       this._raeuberRepath = (this._raeuberRepath || 0) - dt;
       if (this._raeuberRepath <= 0 || !this._raeuberPfad || !this._raeuberPfad.length) {
         this._raeuberPfad = this.npcPfad(this._raeuberX, this._raeuberY, this.spielerX, this.spielerY) || [];
@@ -7725,13 +7730,16 @@ class SpielSzene extends Phaser.Scene {
       }
       if (this._raeuberPfad.length) {
         const np = this.folgePfad(this._raeuberX, this._raeuberY, this._raeuberPfad, 80, dt);
-        if (this._raeuberFreilauf || this.imRevier(np.x, np.y)) {
+        // Nur bewegen, wenn Ziel im Revier UND begehbar (nie durch Gebäude laufen).
+        if ((this._raeuberFreilauf || this.imRevier(np.x, np.y)) && this.weltBegehbar(np.x, np.y)) {
           if (Math.abs(np.x - this._raeuberX) > 0.05) this._raeuberDX = np.x - this._raeuberX;
           this._raeuberX = np.x; this._raeuberY = np.y;
+        } else {
+          this._raeuberPfad = [];   // blockiert/außer Revier → neu planen
         }
       }
     } else {
-      this._raeuberPfad = [];   // außer Revier → nicht verfolgen
+      this._raeuberPfad = [];   // erreicht oder außer Revier → nicht verfolgen
     }
     this._raeuberWalkT += dt;
     if (this._raeuberWalkT > 0.12) { this._raeuberWalkT = 0; this._raeuberFrame = (this._raeuberFrame + 1) % 4; }
@@ -7803,7 +7811,9 @@ class SpielSzene extends Phaser.Scene {
       // Sheet läuft nach rechts → bei Links-Lauf spiegeln
       if (this._raeuberDX < -0.05) s.setFlipX(true);
       else if (this._raeuberDX > 0.05) s.setFlipX(false);
-      if (this.anims.exists('raeuber_walk')) s.play('raeuber_walk', true);
+      // Steht er (Spieler erreicht), Animation anhalten; sonst laufen.
+      if (this._raeuberSteht) { s.anims.stop(); s.setFrame(0); }
+      else if (this.anims.exists('raeuber_walk')) s.play('raeuber_walk', true);
     }
   }
 
