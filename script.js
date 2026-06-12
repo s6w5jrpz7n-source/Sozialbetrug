@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v79 – Park/Dealer justiert';
+const BUILD_MARKE = 'v80 – Boden 1.0 (Park bündig)';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5822,10 +5822,13 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       // Gebäude-Sprites bleiben sichtbar.
       const UMG_W = 3200, UMG_H = 2000;        // native Bildgröße
       const sc = feldW / 1920;                  // 1920 px = Diamant-Breite im Bild
-      // Zentraler (spielbarer) Diamant-Boden ZUERST/DARUNTER, leicht vergrößert,
-      // damit er sicher bis unter die nach innen überlappende Loch-Kante reicht.
-      scene.add.image(cx, cy, tex)
-        .setOrigin(0.5, 0.5).setDisplaySize(feldW * 1.05, feldH * 1.05)
+      // Zentraler (spielbarer) Diamant-Boden ZUERST/DARUNTER bei EXAKT 1.0 (volle
+      // stadtboden, nicht beschnitten) → Straßen liegen exakt auf dem Gitter, genau
+      // wie im Layout-Editor. Nötig, damit grid-platzierte Objekte (Park/Dealer)
+      // bündig zu den Gehsteigen sitzen. Der Rand wird ohnehin von der gemalten
+      // Umgebung (liegt darüber, überlappt nach innen) verdeckt → keine Naht.
+      scene.add.image(cx, cy, 'stadtboden')
+        .setOrigin(0.5, 0.5).setDisplaySize(feldW, feldH)
         .setDepth(-25);
       // Gemalte Umgebung DARÜBER (transparentes Loch in der Mitte). Ihre nach
       // innen reichende Straßen-Kante deckt den Übergang ab → keine Naht.
