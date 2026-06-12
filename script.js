@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v75 – Dealer+Park';
+const BUILD_MARKE = 'v76 – Umgebung gemalt';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5810,62 +5810,45 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
 
   // ---- Boden + Straßennetz: Bild bevorzugen, sonst gezeichnet ----
   if (scene.textures.exists('stadtboden')) {
-    // Zentraler (spielbarer) Diamant + nahtlos gekachelte Stadt drumherum.
-    // Das Straßenraster hat Periode 4 Kacheln, der Block ist 16 Kacheln groß
-    // (Vielfaches von 4) → beim Verschieben um ±16 Kacheln passen die Straßen
-    // exakt. Gitter-Vektoren: A = +16 Spalten, B = +16 Reihen.
-    const cx = offsetX, cy = offsetY + feldH / 2;
-    const Ax = feldW / 2, Ay = feldH / 2;
-    const Bx = -feldW / 2, By = feldH / 2;
-    const R = 3;   // Ring-Radius (deckt den Viewport auch bei rausgezoomter Kamera)
-    // Das Original-stadtboden in alle Richtungen kacheln (gleiche Auflösung,
-    // Straßen passen exakt). Die UMGEBUNG wird abgedunkelt/entsättigt (Tint) und
-    // stärker überlappt → die hellen Diamant-Ränder erzeugen keine sichtbaren
-    // „X"-Nähte mehr, und der spielbare Zentral-Diamant hebt sich klar ab
-    // (Stadt verliert sich nach außen im Dunst).
-    const OS_MITTE = 1.012;   // zentrale Kachel: Original-Look
-    const OS_RING  = 1.085;   // Umgebung: starke Überlappung (deckt Beschnitt-Luecken)
-    const RING_TINT = 0xd2d7de;   // nur ganz leicht abgedunkelt
-    for (let i = -R; i <= R; i++) {
-      for (let j = -R; j <= R; j++) {
-        const mitte = (i === 0 && j === 0);
-        const bx = cx + i * Ax + j * Bx;
-        const by = cy + i * Ay + j * By;
-        const os = mitte ? OS_MITTE : OS_RING;
-        // ALLE Kacheln (auch die Mitte) nutzen die beschnittene Variante:
-        // heller Rand + dunkle 3D-Sockelkante (unten/rechts) sind erodiert
-        // → flacher, nahtloser Übergang. Innenflächen/Straßen bleiben unberührt.
-        const tex = scene.textures.exists('stadtboden_trim') ? 'stadtboden_trim' : 'stadtboden';
-        scene.add.image(bx, by, tex)
-          .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
-          .setDepth(mitte ? -19 : -20);   // Umgebung hinter allem
-      }
-    }
+    const cx = offsetX, cy = offsetY + feldH / 2;   // Diamant-Mittelpunkt (Welt)
+    const tex = scene.textures.exists('stadtboden_trim') ? 'stadtboden_trim' : 'stadtboden';
 
-    // ---- Deko-Stadtblöcke: abwechselnd in die 8 direkten Nachbar-Diamanten ----
-    // Jeder Block ist ein iso-Stadtviertel mit eigenem Boden-Diamanten (1920×960).
-    // Origin = Diamant-Mittelpunkt der Grafik, damit er exakt auf der Gitter-
-    // Position sitzt (passt nahtlos an den zentralen Diamanten an).
-    if (scene.textures.exists('stadt_block_1') && scene.textures.exists('stadt_block_2')) {
-      // Werte ausgemessen: Boden-Diamant-Breite (width) → Skalierung feldW/width.
-      // ox/oy = Diamant-Mittelpunkt im Bild (als Anteil), dw/dh = Anzeigegröße.
-      const bloecke = [
-        { key: 'stadt_block_1', ox: 0.4996, oy: 0.5389, dw: 1921, dh: 1044 },  // 1373×746, width 1372
-        { key: 'stadt_block_2', ox: 0.4996, oy: 0.5497, dw: 1921, dh: 1069 },  // 1339×745, width 1338
-      ];
-      // Nur die HINTEREN/seitlichen Nachbarn bestücken (Diamant-Mitte by <= cy).
-      // Vordere (untere) Blöcke würden mit ihren Häusern in den Spieldiamanten
-      // ragen und zu viel verdecken → dort bleibt die dunkle Umgebung.
-      const nachbarn = [[-1, 0], [0, -1], [-1, -1], [1, -1], [-1, 1]];
-      nachbarn.forEach(([i, j], k) => {
-        const by = cy + i * Ay + j * By;
-        if (by > cy + 1) return;   // untere/vordere Diamanten frei lassen
-        const b = bloecke[k % 2];
-        const bx = cx + i * Ax + j * Bx;
-        scene.add.image(bx, by, b.key)
-          .setOrigin(b.ox, b.oy).setDisplaySize(b.dw, b.dh)
-          .setDepth(-19.5);   // Deko ohne Toenung (genau wie Original-Tile)
-      });
+    if (scene.textures.exists('umgebung')) {
+      // ---- Gemalte Umgebung als EIN Bild (3200×2000) ----
+      // Referenz aus der Gitter-Vorlage: Leinwand 3200×2000, obere Diamant-Spitze
+      // bei (1600,520), Diamant-Breite 1920 = feldW → Skalierung 1:1. Der spielbare
+      // Diamant ist im Bild zentriert (Bildmitte = Diamant-Mitte), daher Origin
+      // 0.5/0.5 auf (cx,cy). Mitte ist transparent → der zentrale Boden + die
+      // Gebäude-Sprites bleiben sichtbar.
+      const UMG_W = 3200, UMG_H = 2000;        // native Bildgröße
+      const sc = feldW / 1920;                  // 1920 px = Diamant-Breite im Bild
+      // Zentraler (spielbarer) Diamant-Boden ZUERST/DARUNTER, leicht vergrößert,
+      // damit er sicher bis unter die nach innen überlappende Loch-Kante reicht.
+      scene.add.image(cx, cy, tex)
+        .setOrigin(0.5, 0.5).setDisplaySize(feldW * 1.05, feldH * 1.05)
+        .setDepth(-25);
+      // Gemalte Umgebung DARÜBER (transparentes Loch in der Mitte). Ihre nach
+      // innen reichende Straßen-Kante deckt den Übergang ab → keine Naht.
+      scene.add.image(cx, cy, 'umgebung')
+        .setOrigin(0.5, 0.5).setDisplaySize(UMG_W * sc, UMG_H * sc)
+        .setDepth(-20);
+    } else {
+      // ---- Fallback: zentralen Boden in alle Richtungen kacheln (alt) ----
+      const Ax = feldW / 2, Ay = feldH / 2;
+      const Bx = -feldW / 2, By = feldH / 2;
+      const R = 3;
+      const OS_MITTE = 1.012, OS_RING = 1.085;
+      for (let i = -R; i <= R; i++) {
+        for (let j = -R; j <= R; j++) {
+          const mitte = (i === 0 && j === 0);
+          const bx = cx + i * Ax + j * Bx;
+          const by = cy + i * Ay + j * By;
+          const os = mitte ? OS_MITTE : OS_RING;
+          scene.add.image(bx, by, tex)
+            .setOrigin(0.5, 0.5).setDisplaySize(feldW * os, feldH * os)
+            .setDepth(mitte ? -19 : -20);
+        }
+      }
     }
   } else {
     const gBoden = scene.add.graphics().setDepth(0);
@@ -6723,9 +6706,9 @@ class SpielSzene extends Phaser.Scene {
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
     // Beschnittene Variante (heller Rand erodiert) → nahtlose Umgebungs-Kacheln
     this.load.image('stadtboden_trim', 'assets/buildings/stadtboden_trim.png');
-    // Deko-Stadtblöcke für die Umgebung (füllen die angrenzenden Diamanten)
-    this.load.image('stadt_block_1', 'assets/stadt_block_1.png');
-    this.load.image('stadt_block_2', 'assets/stadt_block_2.png');
+    // Gemalte Umgebung (ein Bild, 3200×2000, Mitte transparent) → ersetzt die
+    // früheren Deko-Stadtblöcke/Ring-Kacheln. Liegt hinter dem Spieldiamanten.
+    this.load.image('umgebung', 'assets/umgebung.png');
     // Park-Grafik + animierter Dealer (7 Frames)
     this.load.image('park', 'assets/park.png');
     this.load.spritesheet('dealer', 'assets/dealer.png', { frameWidth: 96, frameHeight: 141 });
