@@ -124,9 +124,31 @@ async function placeSpecials(){
       x:cx-DEALER.ax*w, y:dcy-DEALER.ay*h, w, h}); }
 }
 
+// Ein Objekt aus der gespeicherten layout.json platzieren (exakt wie im Spiel)
+async function placeFromLayout(o){
+  let file, src;
+  if(o.type==='prop'){ file=o.id+'.png'; src=propPath(file); }
+  else { const b=BUILDINGS.find(x=>x.id===o.id); file=b?b.file:(o.id+'.png'); src=buildingPath(file); }
+  const im=await load(src); if(!im)return;
+  objects.push({type:o.type||'building', id:o.id, file, img:im,
+    x:MARGIN+o.fx*fieldW, y:MARGIN+o.fy*fieldH, w:o.fw*fieldW, h:o.fh*fieldH});
+}
+
 async function init(){
   ground=await load(buildingPath('stadtboden.png'));
-  for(const b of BUILDINGS) await placeBuilding(b);
+  // Echte, gespeicherte Positionen aus layout.json laden (wie im Spiel). Nur wenn
+  // keine vorhanden → Standard-Raster aus dem BUILDINGS-Array als Startpunkt.
+  let geladen=false;
+  try{
+    const r=await fetch('layout.json',{cache:'no-store'});
+    if(r.ok){ const lay=await r.json();
+      if(lay && Array.isArray(lay.objects) && lay.objects.length){
+        for(const o of lay.objects) await placeFromLayout(o);
+        geladen=true;
+      }
+    }
+  }catch(e){ console.warn('layout.json nicht ladbar – nutze Standard-Raster:', e); }
+  if(!geladen){ for(const b of BUILDINGS) await placeBuilding(b); }
   await placeSpecials();
   // Dropdown füllen
   const se=document.getElementById('add');
