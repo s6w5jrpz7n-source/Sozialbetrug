@@ -29,13 +29,14 @@ Ohne diese Anpassungen lässt sich das Spiel am Handy kaum bedienen.
   - 🤝 **Interagieren** (ersetzt `E`)
   - ⏩ **Woche überspringen** (ersetzt `SPACE`)
   - ☰ **HUD / Menü ein-/ausblenden**
-- [ ] **Querformat erzwingen** (Landscape) — am einfachsten für das breite Iso-Layout.
+- [x] **Hochformat erzwingen** (Portrait) — Querformat wird unterbunden (Manifest, s. u.).
 - [ ] **HUD responsiv**: rechtes 230px-Panel als ein-/ausklappbares Overlay.
 - [ ] **Tap-Ziele vergrößern** (Modal-Buttons mind. ~44px hoch).
 - [ ] **Mobile-Gesten unterdrücken**: kein Doppeltipp-Zoom, kein Text-Markieren,
       kein Lange-Drücken-Menü (CSS `touch-action`, `user-select:none`).
 - [ ] **Phaser Scale-Mode** auf `RESIZE`/`FIT` für verschiedene Displaygrößen.
-- [ ] **App-Icon** (512×512 PNG) und **Splashscreen** vorbereiten.
+- [x] **App-Icon** (512×512 PNG) und **Splashscreen** vorbereitet → liegen in `resources/`
+      (`icon.png`, `icon-foreground.png`, `icon-background.png`, `splash.png`, `splash-dark.png`).
 
 > 👉 Sag Bescheid, dann setze ich Abschnitt A im Code um (das ist der nächste
 > sinnvolle Schritt vor dem Verpacken).
@@ -44,37 +45,37 @@ Ohne diese Anpassungen lässt sich das Spiel am Handy kaum bedienen.
 
 ## B. Capacitor-Projekt anlegen  (auf deinem Rechner, im Projektordner)
 
+> Repo ist schon vorbereitet: `package.json`, `capacitor.config.json`
+> (App-ID **`com.sozialbetrug.game`** – bleibt!), `tools/build-www.mjs` (baut `www/`
+> **und bündelt Phaser offline**), sowie `resources/` mit Icon + Splash.
+
 ```bash
-# 1) Node-Projekt + Capacitor
-npm init -y
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npm install @capacitor/splash-screen @capacitor/status-bar @capacitor/app
+# 1) Abhängigkeiten installieren
+npm install
 
-# 2) Initialisieren (App-ID = umgekehrte Domain, eindeutig & dauerhaft!)
-npx cap init "Sozialbetrug" "com.DEINNAME.sozialbetrug" --web-dir=www
+# 2) Web-Ordner www/ bauen (Phaser wird automatisch lokal eingebunden)
+npm run build:www
 
-# 3) Spieldateien in den Web-Ordner kopieren
-#    (index.html, script.js, *.png, *.mp3, assets/ … → nach www/)
-#    Tipp: Ordner "www" anlegen und alle Web-Dateien hineinkopieren.
-
-# 4) Android-Plattform hinzufügen + Dateien synchronisieren
+# 3) Android-Plattform hinzufügen + synchronisieren
 npx cap add android
 npx cap sync
+
+# 4) App-Icon + Splash aus resources/ generieren (alle Größen/Adaptive-Icons)
+npx @capacitor/assets generate --android
 
 # 5) In Android Studio öffnen
 npx cap open android
 ```
 
 **Wichtig:**
-- Die **App-ID** (`com.deinname.sozialbetrug`) ist dauerhaft — später nicht mehr
-  änderbar ohne neue App. Gut wählen.
-- Nach **jeder** Änderung am Web-Code: Dateien neu nach `www/` kopieren →
-  `npx cap sync`.
+- Die **App-ID** (`com.sozialbetrug.game`) ist dauerhaft — nicht mehr änderbar
+  ohne neue App.
+- Nach **jeder** Änderung am Web-Code: `npm run sync` (= `build:www` + `cap sync`).
 
-### Querformat & Vollbild (in `android/app/src/main/AndroidManifest.xml`)
-In der `<activity ...>` ergänzen:
+### Hochformat (Portrait) erzwingen — Querformat unterbinden
+In `android/app/src/main/AndroidManifest.xml`, in der `<activity ...>` ergänzen:
 ```xml
-android:screenOrientation="landscape"
+android:screenOrientation="portrait"
 ```
 
 ---

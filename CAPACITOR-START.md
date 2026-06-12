@@ -23,9 +23,15 @@ npx cap add android
 # 4) Web-Dateien + Plugins in das Android-Projekt synchronisieren
 npx cap sync
 
+# 4b) App-Icon + Splash aus resources/ generieren (alle Größen/Adaptive-Icons)
+npx @capacitor/assets generate --android
+
 # 5) In Android Studio öffnen
 npx cap open android
 ```
+
+**Hochformat erzwingen:** In `android/app/src/main/AndroidManifest.xml` in der
+`<activity ...>` `android:screenOrientation="portrait"` ergänzen (Querformat aus).
 
 In **Android Studio** dann:
 - Oben ein Gerät wählen (ein angeschlossenes Handy mit USB-Debugging **oder** einen Emulator über den *Device Manager* anlegen).
