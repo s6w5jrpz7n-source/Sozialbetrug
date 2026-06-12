@@ -104,9 +104,30 @@ async function addBuildingById(id){
   await placeBuilding(b); sel=objects[objects.length-1];
 }
 
+// ---------- Park + Dealer (Sonderobjekte, nicht in layout.json) ----------
+const SPECIAL_TILE={col:1,row:11};           // ORTE 'dealer'
+const PARK   ={src:'../assets/park.png',  ax:0.4992, ay:0.5616, kacheln:4};
+const DEALER ={src:'../assets/dealer.png',frameW:96, frameH:141, ax:0.5, ay:1.0,
+               scale:(92/141)*0.7, dyTiles:0.15};
+async function placeSpecials(){
+  const tc=iso(SPECIAL_TILE.col+0.5, SPECIAL_TILE.row+0.5);
+  const cx=MARGIN+tc.x, cy=MARGIN+tc.y;
+  const pim=await load(PARK.src);
+  if(pim){ const w=tileW*PARK.kacheln, h=w*pim.naturalHeight/pim.naturalWidth;
+    objects.push({type:'special', id:'park', img:pim, ax:PARK.ax, ay:PARK.ay,
+      x:cx-PARK.ax*w, y:cy-PARK.ay*h, w, h}); }
+  const dim=await load(DEALER.src);
+  if(dim){ const w=DEALER.frameW*DEALER.scale, h=DEALER.frameH*DEALER.scale;
+    const dcy=cy+tileH*DEALER.dyTiles;
+    objects.push({type:'special', id:'dealer', img:dim, ax:DEALER.ax, ay:DEALER.ay,
+      sx:0, sy:0, sw:DEALER.frameW, sh:DEALER.frameH,
+      x:cx-DEALER.ax*w, y:dcy-DEALER.ay*h, w, h}); }
+}
+
 async function init(){
   ground=await load(buildingPath('stadtboden.png'));
   for(const b of BUILDINGS) await placeBuilding(b);
+  await placeSpecials();
   // Dropdown füllen
   const se=document.getElementById('add');
   const og1=document.createElement('optgroup'); og1.label='Gebäude (erneut)';
@@ -118,13 +139,16 @@ async function init(){
 }
 
 // ---------- Zeichnen ----------
+// Bild zeichnen, ggf. mit Quell-Ausschnitt (Spritesheet-Frame für den Dealer)
+function blit(c,o,x,y,w,h){ if(o.sw) c.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,x,y,w,h);
+  else c.drawImage(o.img,x,y,w,h); }
 function draw(){
   ctx.clearRect(0,0,worldW,worldH);
   ctx.fillStyle='#4f7a44'; ctx.fillRect(0,0,worldW,worldH);   // Wiese (Vorschau)
   if(ground) ctx.drawImage(ground, MARGIN, MARGIN, fieldW, fieldH);
   if(document.getElementById('grid').checked) drawGrid();
   const ord=[...objects].sort((a,b)=>(a.y+a.h)-(b.y+b.h));
-  for(const o of ord){ ctx.drawImage(o.img,o.x,o.y,o.w,o.h);
+  for(const o of ord){ blit(ctx,o,o.x,o.y,o.w,o.h);
     if(o===sel){ ctx.strokeStyle='#e8b84b'; ctx.lineWidth=3; ctx.strokeRect(o.x,o.y,o.w,o.h);
       ctx.fillStyle='#e8b84b'; ctx.fillRect(o.x+o.w-12,o.y+o.h-12,12,12); } }
 }
@@ -140,7 +164,7 @@ function drawGrid(){
 const hc=document.createElement('canvas'), hctx=hc.getContext('2d');
 function hit(o,wx,wy){ if(wx<o.x||wx>o.x+o.w||wy<o.y||wy>o.y+o.h)return false;
   hc.width=Math.max(1,o.w|0); hc.height=Math.max(1,o.h|0); hctx.clearRect(0,0,hc.width,hc.height);
-  hctx.drawImage(o.img,0,0,o.w,o.h);
+  blit(hctx,o,0,0,o.w,o.h);
   try{ return hctx.getImageData((wx-o.x)|0,(wy-o.y)|0,1,1).data[3]>20; }catch(e){ return true; } }
 function toWorld(ev){ const r=cv.getBoundingClientRect();
   return { x:(ev.clientX-r.left)*(cv.width/r.width), y:(ev.clientY-r.top)*(cv.height/r.height) }; }
@@ -176,12 +200,27 @@ document.getElementById('grid').onchange=draw;
 document.getElementById('reset').onclick=async()=>{ objects=objects.filter(o=>o.type!=='building');
   for(const b of BUILDINGS) await placeBuilding(b); sel=null; draw(); refresh(); };
 document.getElementById('export').onclick=()=>{
+  // layout.json (Gebäude + Props) – Sonderobjekte Park/Dealer NICHT hier
   const out={ ground:'stadtboden.png', fieldW, fieldH, margin:MARGIN,
-    objects: objects.map(o=>({ id:o.id, type:o.type,
+    objects: objects.filter(o=>o.type!=='special').map(o=>({ id:o.id, type:o.type,
       fx:+((o.x-MARGIN)/fieldW).toFixed(5), fy:+((o.y-MARGIN)/fieldH).toFixed(5),
       fw:+(o.w/fieldW).toFixed(5), fh:+(o.h/fieldH).toFixed(5) })) };
   const txt=JSON.stringify(out,null,1);
-  document.getElementById('out').value=txt; document.getElementById('dlg').style.display='flex';
+  // Park/Dealer-Werte als Konstanten für script.js
+  const tc=iso(SPECIAL_TILE.col+0.5, SPECIAL_TILE.row+0.5);
+  const tcx=MARGIN+tc.x, tcy=MARGIN+tc.y;
+  let extra='// ----- Park/Dealer: in script.js übernehmen -----\n';
+  for(const o of objects.filter(o=>o.type==='special')){
+    const ax=o.x+o.ax*o.w, ay=o.y+o.ay*o.h;          // Ankerpunkt im Welt-Raum
+    if(o.id==='park'){
+      extra+=`const PARK_KACHELN = ${(o.w/tileW).toFixed(2)};\n`
+           +`const PARK_DX = ${(ax-tcx).toFixed(1)}, PARK_DY = ${(ay-tcy).toFixed(1)};\n`;
+    } else if(o.id==='dealer'){
+      extra+=`const DEALER_SCALE = ${(o.h/DEALER.frameH).toFixed(3)};\n`
+           +`const DEALER_DX = ${(ax-tcx).toFixed(1)}, DEALER_DY = ${(ay-(tcy+tileH*DEALER.dyTiles)).toFixed(1)};\n`;
+    }
+  }
+  document.getElementById('out').value=extra+'\n'+txt; document.getElementById('dlg').style.display='flex';
   const blob=new Blob([txt],{type:'application/json'}); const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download='layout.json'; a.click(); };
 
