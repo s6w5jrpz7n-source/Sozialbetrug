@@ -36,7 +36,7 @@ Ohne diese Anpassungen lässt sich das Spiel am Handy kaum bedienen.
       kein Lange-Drücken-Menü (CSS `touch-action`, `user-select:none`).
 - [ ] **Phaser Scale-Mode** auf `RESIZE`/`FIT` für verschiedene Displaygrößen.
 - [x] **App-Icon** (512×512 PNG) und **Splashscreen** vorbereitet → liegen in `resources/`
-      (`icon.png`, `icon-foreground.png`, `icon-background.png`, `splash.png`, `splash-dark.png`).
+      (`icon-only.png`, `icon-foreground.png`, `icon-background.png`, `splash.png`, `splash-dark.png`).
 
 > 👉 Sag Bescheid, dann setze ich Abschnitt A im Code um (das ist der nächste
 > sinnvolle Schritt vor dem Verpacken).
@@ -61,7 +61,7 @@ npx cap add android
 npx cap sync
 
 # 4) App-Icon + Splash aus resources/ generieren (alle Größen/Adaptive-Icons)
-npx @capacitor/assets generate --android
+npx @capacitor/assets generate --assetPath resources --android
 
 # 5) In Android Studio öffnen
 npx cap open android

@@ -24,7 +24,7 @@ npx cap add android
 npx cap sync
 
 # 4b) App-Icon + Splash aus resources/ generieren (alle Größen/Adaptive-Icons)
-npx @capacitor/assets generate --android
+npx @capacitor/assets generate --assetPath resources --android
 
 # 5) In Android Studio öffnen
 npx cap open android

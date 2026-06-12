@@ -91,7 +91,7 @@ zulässig, solange alles ehrlich angegeben ist.
 ---
 
 ## Benötigte Grafiken (liegen bzw. entstehen so)
-- [x] **App-Icon 512×512** → aus `resources/icon.png` (von `@capacitor/assets`).
+- [x] **App-Icon 512×512** → `resources/playstore-icon-512.png` (Launcher-Icons via `@capacitor/assets`).
 - [x] **Feature-Grafik 1024×500** → `resources/feature-graphic.png`.
 - [ ] **Screenshots** (mind. 2, Hochformat): auf dem Handy aufnehmen
       (Lautstärke-leise + Power gleichzeitig) – Start-Screen, Stadt, ein Menü,
