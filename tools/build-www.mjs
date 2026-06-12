@@ -43,4 +43,7 @@ if (existsSync(phaserSrc)) {
 }
 writeFileSync(`${OUT}/index.html`, html);
 
+// 6) Datenschutzerklärung mit ins Paket (über Start-Screen-Link erreichbar)
+if (existsSync('privacy.html')) cpSync('privacy.html', `${OUT}/privacy.html`);
+
 console.log('✅ www/ gebaut – bereit für: npx cap sync');
