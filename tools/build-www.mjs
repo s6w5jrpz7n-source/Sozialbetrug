@@ -11,6 +11,8 @@ mkdirSync(OUT, { recursive: true });
 
 // 1) Feste Ordner
 if (existsSync('assets')) cpSync('assets', `${OUT}/assets`, { recursive: true });
+// Lokale Schriften (offline, kein Google-Fonts-Request)
+if (existsSync('fonts')) cpSync('fonts', `${OUT}/fonts`, { recursive: true });
 
 // 2) script.js
 if (existsSync('script.js')) cpSync('script.js', `${OUT}/script.js`);
