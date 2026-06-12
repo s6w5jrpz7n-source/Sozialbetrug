@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v86 – Datenschutz-Link';
+const BUILD_MARKE = 'v87 – Copyright';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6349,16 +6349,16 @@ class StartSzene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    // Kleiner Datenschutz-Link unten (beide Layouts) – öffnet die mitgelieferte
-    // privacy.html (offline). Pflicht für den Play Store.
-    const dsLink = this.add.text(W / 2, H - 8, 'Datenschutz', {
+    // Fußzeile: Copyright + Datenschutz (beide Layouts), zentriert. Tippen öffnet
+    // die mitgelieferte privacy.html (offline). Copyright ist Pflicht/üblich.
+    const foot = this.add.text(W / 2, H - 8, '© 2026 Andreas Lang   ·   Datenschutz', {
       fontFamily: '"Courier New", monospace', fontSize: '13px',
       color: '#9fb0d8', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5, 1).setDepth(9999).setInteractive({ useHandCursor: true });
-    dsLink.on('pointerover', () => dsLink.setColor('#ffd700'));
-    dsLink.on('pointerout',  () => dsLink.setColor('#9fb0d8'));
-    dsLink.on('pointerdown', () => { try { window.location.assign('privacy.html'); } catch (e) {} });
-    this._startObjekte.push(dsLink);
+    foot.on('pointerover', () => foot.setColor('#ffd700'));
+    foot.on('pointerout',  () => foot.setColor('#9fb0d8'));
+    foot.on('pointerdown', () => { try { window.location.assign('privacy.html'); } catch (e) {} });
+    this._startObjekte.push(foot);
 
     // ===== HOCHFORMAT (Handy): Titelbild oben + große Tipp-Buttons darunter =====
     if (H > W * 1.05 && this.textures.exists('startbg')) {
