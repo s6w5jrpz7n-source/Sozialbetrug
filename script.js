@@ -6,12 +6,13 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v83 – Sportplatz Streucluster weg';
+const BUILD_MARKE = 'v84 – Räuber-Animation';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
 const SPIELER_H = 88;   // Spieler ~65% größer als zuvor
 const BETTLER_H = 82;   // Bettler entsprechend größer
+const RAEUBER_H = 84;   // Räuber etwa Spielergröße
 document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
@@ -6740,6 +6741,8 @@ class SpielSzene extends Phaser.Scene {
     // Park-Grafik + animierter Dealer (7 Frames)
     this.load.image('park', 'assets/park.png');
     this.load.spritesheet('dealer', 'assets/dealer.png', { frameWidth: 96, frameHeight: 141 });
+    // Räuber-Walkcycle (16 Frames, kopf-zentriert)
+    this.load.spritesheet('raeuber', 'assets/raeuber.png', { frameWidth: 104, frameHeight: 151 });
     // Nebel-Overlay (zeigt die Grenze des bespielbaren Bereichs)
     this.load.image('fog', 'assets/fog.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
@@ -6959,8 +6962,19 @@ class SpielSzene extends Phaser.Scene {
     // ihn bei Kontakt (Kooperieren = Bargeld weg; Kämpfen = 50/50). Man kann ihm
     // entkommen, indem man das Viertel verlässt.
     this.raeuberGfx = this.add.graphics();
+    // Animierter Räuber-Sprite (16-Frame-Walkcycle, läuft nach rechts → für Links
+    // gespiegelt). Ersetzt den früher gezeichneten Räuber.
+    if (this.textures.exists('raeuber')) {
+      if (!this.anims.exists('raeuber_walk')) {
+        this.anims.create({ key: 'raeuber_walk',
+          frames: this.anims.generateFrameNumbers('raeuber', { start: 0, end: 15 }),
+          frameRate: 14, repeat: -1 });
+      }
+      this.raeuberSprite = this.add.sprite(-9999, -9999, 'raeuber').setOrigin(0.5, 1).setVisible(false);
+    }
     this._raeuberExists = false;
     this._raeuberX = 0; this._raeuberY = 0;
+    this._raeuberDX = 1;            // Laufrichtung (für Spiegelung)
     this._raeuberFrame = 0; this._raeuberWalkT = 0;
     this._raeuberLebt = 0;          // verbleibende Lebensdauer (s), dann zieht er ab
     this._raeuberCooldown = 0;      // Sperre nach einem Überfall (s)
@@ -7668,6 +7682,7 @@ class SpielSzene extends Phaser.Scene {
     this._raeuberExists = false;
     this._raeuberFreilauf = false;
     this.raeuberGfx.clear();
+    if (this.raeuberSprite) this.raeuberSprite.setVisible(false).setPosition(-9999, -9999);
   }
 
   // Test (Zahnrad): Räuber sofort neben dem Spieler erscheinen lassen – überall.
@@ -7710,7 +7725,10 @@ class SpielSzene extends Phaser.Scene {
       }
       if (this._raeuberPfad.length) {
         const np = this.folgePfad(this._raeuberX, this._raeuberY, this._raeuberPfad, 80, dt);
-        if (this._raeuberFreilauf || this.imRevier(np.x, np.y)) { this._raeuberX = np.x; this._raeuberY = np.y; }
+        if (this._raeuberFreilauf || this.imRevier(np.x, np.y)) {
+          if (Math.abs(np.x - this._raeuberX) > 0.05) this._raeuberDX = np.x - this._raeuberX;
+          this._raeuberX = np.x; this._raeuberY = np.y;
+        }
       }
     } else {
       this._raeuberPfad = [];   // außer Revier → nicht verfolgen
@@ -7775,39 +7793,18 @@ class SpielSzene extends Phaser.Scene {
   drawRaeuber(px, py) {
     const g = this.raeuberGfx;
     g.clear();
-    g.setDepth(py);
-    const cx = px, cy = py - 7;
-    const fr = [[-3, 4, 3, -4], [-1, 1, 1, -1], [3, -4, -3, 4], [1, -1, -1, 1]];
-    const [lxO, lyO, rxO, ryO] = fr[this._raeuberFrame % 4];
-    // Schatten
-    g.fillStyle(0x000000, 0.28); g.fillEllipse(cx + 1, cy + 22, 28, 10);
-    // Beine (dunkle Hose)
-    g.fillStyle(0x202430, 1);
-    g.fillRect(cx - 5 + lxO, cy + 9 + lyO, 6, 13);
-    g.fillRect(cx + 1 + rxO, cy + 9 + ryO, 6, 13);
-    g.fillStyle(0x111318, 1);
-    g.fillRect(cx - 6 + lxO, cy + 20 + lyO, 8, 4);
-    g.fillRect(cx + 0 + rxO, cy + 20 + ryO, 8, 4);
-    // Kapuzenpulli (dunkelgrau)
-    g.fillStyle(0x2c3038, 1); g.fillRect(cx - 10, cy - 4, 20, 16);
-    g.fillStyle(0x23262d, 1); g.fillRect(cx - 4, cy - 3, 4, 14);   // Reißverschluss-Schatten
-    // Arme
-    g.fillStyle(0x262a32, 1); g.fillRect(cx - 13, cy - 2, 5, 12);
-    g.fillStyle(0x262a32, 1); g.fillRect(cx + 9, cy - 2, 5, 12);
-    // Messer in der rechten Hand
-    g.fillStyle(0x3a2a1a, 1); g.fillRect(cx + 13, cy + 7, 3, 5);   // Griff
-    g.fillStyle(0xd8dce0, 1); g.fillTriangle(cx + 14, cy + 7, cx + 15, cy - 4, cx + 17, cy + 7);  // Klinge
-    // Hände
-    g.fillStyle(0xcaa688, 1); g.fillCircle(cx - 11, cy + 10, 2.6); g.fillCircle(cx + 12, cy + 9, 2.6);
-    // Kopf mit Kapuze
-    g.fillStyle(0xcaa688, 1); g.fillEllipse(cx, cy - 13, 14, 15); // Gesicht
-    g.fillStyle(0x2c3038, 1);                                     // Kapuze
-    g.fillEllipse(cx, cy - 18, 17, 12);
-    g.fillRect(cx - 9, cy - 19, 18, 7);
-    g.fillRect(cx - 9, cy - 14, 3, 9); g.fillRect(cx + 6, cy - 14, 3, 9);
-    // Augen-Schlitz (Maske)
-    g.fillStyle(0x101216, 1); g.fillRect(cx - 6, cy - 14, 12, 4);
-    g.fillStyle(0xff5050, 0.9); g.fillCircle(cx - 2, cy - 12, 1); g.fillCircle(cx + 3, cy - 12, 1);
+    g.setDepth(py - 0.1);
+    // kleiner Bodenschatten
+    g.fillStyle(0x000000, 0.28); g.fillEllipse(px + 1, py - 1, 26, 9);
+    if (this.raeuberSprite) {
+      const s = this.raeuberSprite;
+      s.setVisible(true).setPosition(px, py).setDepth(py);
+      if (s.height) s.setScale(RAEUBER_H / s.height);
+      // Sheet läuft nach rechts → bei Links-Lauf spiegeln
+      if (this._raeuberDX < -0.05) s.setFlipX(true);
+      else if (this._raeuberDX > 0.05) s.setFlipX(false);
+      if (this.anims.exists('raeuber_walk')) s.play('raeuber_walk', true);
+    }
   }
 
   // ============================================================
