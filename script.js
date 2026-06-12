@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v74 – Block-Slab weg';
+const BUILD_MARKE = 'v75 – Dealer+Park';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6000,15 +6000,34 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
   const dealer = orte['dealer'];
   if (dealer) {
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
-    bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
-    // anklickbare Zone über dem Park
-    scene.add.zone(pos.x, pos.y - tileH * 0.3, tileW * 1.3, tileH * 1.8)
+    // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) auf ~5 Kacheln skaliert
+    if (scene.textures.exists('park')) {
+      const sc = (tileW * 5) / 1320;
+      scene.add.image(pos.x, pos.y, 'park')
+        .setOrigin(0.4992, 0.5616).setDisplaySize(1322 * sc, 755 * sc)
+        .setDepth(pos.y - 0.5);   // Boden-Deko (knapp hinter dem Dealer)
+    } else {
+      bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
+    }
+    // Animierter Dealer (Sprite, 7 Frames) – steht vorne im Park
+    if (scene.textures.exists('dealer')) {
+      if (!scene.anims.exists('dealer_anim')) {
+        scene.anims.create({ key: 'dealer_anim',
+          frames: scene.anims.generateFrameNumbers('dealer', { start: 0, end: 6 }),
+          frameRate: 6, repeat: -1 });
+      }
+      scene.dealerSprite = scene.add.sprite(pos.x, pos.y + tileH * 0.15, 'dealer')
+        .setOrigin(0.5, 1).setScale(92 / 141).setDepth(pos.y + 2);
+      scene.dealerSprite.play('dealer_anim');
+    }
+    // anklickbare Zone über dem Park (größer)
+    scene.add.zone(pos.x, pos.y - tileH * 0.4, tileW * 2.2, tileH * 2.6)
       .setInteractive()
       .on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt('dealer'); });
-    scene.add.text(pos.x, pos.y + tileH * 0.52, dealer.name, {
+    scene.add.text(pos.x, pos.y + tileH * 0.6, dealer.name, {
       fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
       color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5, 0).setDepth(pos.y + 0.3);
+    }).setOrigin(0.5, 0).setDepth(pos.y + 2.3);
   }
 }
 
@@ -6707,6 +6726,9 @@ class SpielSzene extends Phaser.Scene {
     // Deko-Stadtblöcke für die Umgebung (füllen die angrenzenden Diamanten)
     this.load.image('stadt_block_1', 'assets/stadt_block_1.png');
     this.load.image('stadt_block_2', 'assets/stadt_block_2.png');
+    // Park-Grafik + animierter Dealer (7 Frames)
+    this.load.image('park', 'assets/park.png');
+    this.load.spritesheet('dealer', 'assets/dealer.png', { frameWidth: 96, frameHeight: 141 });
     // Nebel-Overlay (zeigt die Grenze des bespielbaren Bereichs)
     this.load.image('fog', 'assets/fog.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
@@ -7222,6 +7244,8 @@ class SpielSzene extends Phaser.Scene {
   // Animierter Dealer im Park (Ort 'dealer' bei col/row 14/14).
   // Nervöses Loitern: Kopf glanzt nach „Cops", leichtes Wippen, ab und zu Deal-Funkeln.
   animiereDealer() {
+    // Dealer ist jetzt ein Sprite (dealer.png) → gezeichnete Variante deaktiviert.
+    if (this.dealerSprite) { if (this.dealerGfx) this.dealerGfx.clear(); return; }
     if (!this.dealerGfx) return;
     const ort = ORTE_CONFIG.find(o => o.id === 'dealer');
     if (!ort) { this.dealerGfx.clear(); return; }
