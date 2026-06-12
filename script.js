@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v78 – Editor: Park/Dealer';
+const BUILD_MARKE = 'v79 – Park/Dealer justiert';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5984,10 +5984,10 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
     // ===== Park + Dealer – Werte aus dem Layout-Editor (layout/editor.html) =====
     // Diese Konstanten kannst du direkt aus dem Editor-Export übernehmen.
-    const PARK_KACHELN = 4;       // Park-Breite in Kacheln (kleiner = kleiner)
-    const PARK_DX = 0, PARK_DY = 0;             // Park-Versatz vom Kachel-Mittelpunkt (px)
-    const DEALER_SCALE = (92 / 141) * 0.7;      // Dealer-Größe (30% kleiner)
-    const DEALER_DX = 0, DEALER_DY = 0;         // Dealer-Versatz (px)
+    const PARK_KACHELN = 2.36;       // Park-Breite in Kacheln (kleiner = kleiner)
+    const PARK_DX = 110.2, PARK_DY = -38.9;     // Park-Versatz vom Kachel-Mittelpunkt (px)
+    const DEALER_SCALE = 0.293;                 // Dealer-Größe
+    const DEALER_DX = 84.0, DEALER_DY = -35.5;  // Dealer-Versatz (px)
     // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) skaliert.
     if (scene.textures.exists('park')) {
       const sc = (tileW * PARK_KACHELN) / 1320;
