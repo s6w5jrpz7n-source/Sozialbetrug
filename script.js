@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v76 – Umgebung gemalt';
+const BUILD_MARKE = 'v77 – Villa/Dealer/Park';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5964,7 +5964,6 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // über der Standlinie (kleiner Puffer, damit Figuren direkt davor nicht verschwinden).
     const baseY = y + h * 0.82;
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
-    if (villaUnbewohnt) img.setAlpha(0.55);   // noch nicht gekauft → blass (Vorschau)
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
       img.setInteractive({ pixelPerfect: true });
@@ -5983,9 +5982,11 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
   const dealer = orte['dealer'];
   if (dealer) {
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
-    // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) auf ~5 Kacheln skaliert
+    // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) skaliert.
+    // >>> GRÖSSE HIER ANPASSEN: Anzahl Kacheln Breite <<<
+    const PARK_KACHELN = 4;   // war 5; kleiner = kleiner
     if (scene.textures.exists('park')) {
-      const sc = (tileW * 5) / 1320;
+      const sc = (tileW * PARK_KACHELN) / 1320;
       scene.add.image(pos.x, pos.y, 'park')
         .setOrigin(0.4992, 0.5616).setDisplaySize(1322 * sc, 755 * sc)
         .setDepth(pos.y - 0.5);   // Boden-Deko (knapp hinter dem Dealer)
@@ -5997,10 +5998,10 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       if (!scene.anims.exists('dealer_anim')) {
         scene.anims.create({ key: 'dealer_anim',
           frames: scene.anims.generateFrameNumbers('dealer', { start: 0, end: 6 }),
-          frameRate: 6, repeat: -1 });
+          frameRate: 1.5, repeat: -1 });   // 1/4 der vorherigen Geschwindigkeit
       }
       scene.dealerSprite = scene.add.sprite(pos.x, pos.y + tileH * 0.15, 'dealer')
-        .setOrigin(0.5, 1).setScale(92 / 141).setDepth(pos.y + 2);
+        .setOrigin(0.5, 1).setScale((92 / 141) * 0.7).setDepth(pos.y + 2);   // 30% kleiner
       scene.dealerSprite.play('dealer_anim');
     }
     // anklickbare Zone über dem Park (größer)
