@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v80 – Boden 1.0 (Park bündig)';
+const BUILD_MARKE = 'v81 – Sportplatz + Park-Glow/Sperre';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -5973,6 +5973,15 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
       scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
     }
+    // Sportplatz/-verein ist ein ganzes Grundstück → nicht betretbar machen
+    if (o.id === 'sportverein') {
+      scene._sperrTiles = scene._sperrTiles || [];
+      for (let u = 0.12; u <= 0.88; u += 0.08)
+        for (let v = 0.45; v <= 0.96; v += 0.08) {
+          const t = scene.screenZuTile(x + u * w, y + v * h);
+          if (t) scene._sperrTiles.push(t.col + ',' + t.row);
+        }
+    }
     if (o.type === 'building' && orte[o.id]) {
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
@@ -5994,9 +6003,20 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) skaliert.
     if (scene.textures.exists('park')) {
       const sc = (tileW * PARK_KACHELN) / 1320;
-      scene.add.image(pos.x + PARK_DX, pos.y + PARK_DY, 'park')
+      const parkImg = scene.add.image(pos.x + PARK_DX, pos.y + PARK_DY, 'park')
         .setOrigin(0.4992, 0.5616).setDisplaySize(1322 * sc, 755 * sc)
         .setDepth(pos.y - 0.5);   // Boden-Deko (knapp hinter dem Dealer)
+      // Park soll wie ein Gebäude aufleuchten, wenn man in der Nähe ist
+      scene.gebaeudeSprites['dealer'] = parkImg;
+      // Park nicht betretbar: Kacheln unter der Park-Grafik sperren
+      scene._sperrTiles = scene._sperrTiles || [];
+      const pW = 1322 * sc, pH = 755 * sc;
+      const pL = (pos.x + PARK_DX) - 0.4992 * pW, pT = (pos.y + PARK_DY) - 0.5616 * pH;
+      for (let u = 0.15; u <= 0.85; u += 0.1)
+        for (let v = 0.45; v <= 0.95; v += 0.1) {
+          const t = scene.screenZuTile(pL + u * pW, pT + v * pH);
+          if (t) scene._sperrTiles.push(t.col + ',' + t.row);
+        }
     } else {
       bauePark(scene.add.graphics().setDepth(pos.y), pos.x, pos.y, tileW, tileH);
     }
@@ -6796,6 +6816,9 @@ class SpielSzene extends Phaser.Scene {
         });
       }
     }
+    // Zusätzliche Sperrflächen aus dem Layout (Park, Sportplatz) – nicht betretbar
+    if (this._sperrTiles) this._sperrTiles.forEach(s => this.blockierteFelder.add(s));
+
     // Sicherheit: Startfeld des Spielers immer begehbar lassen
     this.blockierteFelder.delete(this.spielerCol + ',' + this.spielerRow);
     this.pfad = [];          // aktueller Lauf-Pfad (Point-and-Click)

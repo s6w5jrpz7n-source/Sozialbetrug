@@ -24,9 +24,9 @@
    "id": "sportverein",
    "type": "building",
    "fx": 0.03879,
-   "fy": 0.42113,
+   "fy": 0.37021,
    "fw": 0.14116,
-   "fh": 0.14892
+   "fh": 0.20882
   },
   {
    "id": "supermarkt",
