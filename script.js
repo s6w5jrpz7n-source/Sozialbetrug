@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v91 – Zoom';
+const BUILD_MARKE = 'v92 – Zoom-Out begrenzt';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6926,12 +6926,15 @@ class SpielSzene extends Phaser.Scene {
     this.time.delayedCall(60,  () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
     this.time.delayedCall(300, () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
 
-    // ---- Zoom: adaptiver Startwert + frei zoombar (Pinch / Mausrad / +-Buttons) ----
-    const ZOOM_MIN = 0.45, ZOOM_MAX = 1.8;
+    // ---- Zoom: adaptiver Startwert + reinzoombar (Pinch / Mausrad / +-Buttons) ----
+    // Rauszoomen ist auf den Standard-Blick begrenzt – sonst sähe man über die
+    // bebaute Umgebung hinaus ins Leere. Reinzoomen bis ZOOM_MAX für Details.
+    const ZOOM_MAX = 1.8;
     this._zoom = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);   // Startwert adaptiv
+    this._minZoom = this._zoom;   // nicht weiter raus als der Standard
     this._applyZoom = () => this.cameras.main.setZoom(this._zoom);
     this._zoomUm = (faktor) => {
-      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
+      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, this._minZoom, ZOOM_MAX);
       this._applyZoom();
       this.cameras.main.centerOn(this.spielerX, this.spielerY);
     };
