@@ -147,3 +147,42 @@ als Insta-Reel. Ein Dreh, drei Plattformen.
 ## Rechtliches / Ton
 - Satire klar als Satire framen (im Profil/Pinned-Kommentar) – schützt vor Missverständnissen.
 - Keine echten Personen/Marken zeigen. Claude/Anthropic nur als genutztes Tool nennen, nichts behaupten, was nicht stimmt.
+
+---
+
+## Disclaimer-Texte für Social Media (copy-paste)
+
+**Profil-Bio (kurz, z. B. TikTok/Instagram):**
+```
+🎮 Satire-Aufbauspiel „Sozialbetrug" – mit KI gebaut.
+⚖️ Reine Fiktion, keine Aufforderung zur Nachahmung.
+👇 Gratis spielen
+```
+
+**Angepinnter Kommentar (unter jedes Video):**
+```
+⚖️ Hinweis: „Sozialbetrug" ist ein Satire-Spiel – reine Fiktion und bewusst
+überzeichnet. Keine Aufforderung zur Nachahmung; Sozialbetrug ist real strafbar.
+Glücksspiel im Spiel = Simulation ohne Echtgeld. Ab 16/18.
+```
+
+**YouTube-Videobeschreibung (Block ans Ende):**
+```
+⚖️ Disclaimer: Dieses Spiel und Video sind reine Satire & Fiktion, ironisch
+gemeint. Alle Figuren und Vorgänge sind frei erfunden. Das Spiel ist keine
+Anleitung und ruft nicht zur Nachahmung auf – Sozialbetrug ist real strafbar und
+schadet der Allgemeinheit. Glücksspiel-Elemente sind Simulation ohne Echtgeld.
+Altersfreigabe 16/18. „Claude Code" wird als KI-Werkzeug genutzt.
+```
+
+**Facebook (Seiten-Info / erster Pinned-Post):**
+```
+Willkommen bei „Sozialbetrug: Arbeitslos zum Millionär" – einem satirischen
+Aufbau-Spiel, das fast komplett mit KI entstanden ist.
+⚖️ Reine Satire & Fiktion. Keine Aufforderung zur Nachahmung; Sozialbetrug ist
+real strafbar. Glücksspiel = Simulation ohne Echtgeld. Ab 16/18.
+🎮 Gratis spielen: [Link]
+```
+
+> Tipp: Den Disclaimer **nicht** in jedes gesprochene Skript zwängen – einmal in
+> Bio + Pinned-Kommentar reicht und stört den Hook nicht.
