@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v95 – Nebel/Vibrieren/Raeuber';
+const BUILD_MARKE = 'v96 – Raeuber-Sprechblase';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -7040,6 +7040,12 @@ class SpielSzene extends Phaser.Scene {
       }
       this.raeuberSprite = this.add.sprite(-9999, -9999, 'raeuber').setOrigin(0.5, 1).setVisible(false);
     }
+    // Drohende Sprechblase über dem Räuber (wie beim Bettler, aber rot)
+    this.raeuberBubble = this.add.text(0, 0, 'Geld oder Leben!', {
+      fontFamily: '"Share Tech Mono", "Courier New", monospace', fontSize: '18px', fontStyle: 'bold',
+      color: '#ffffff', backgroundColor: '#a01818', padding: { x: 9, y: 6 },
+      resolution: Math.max(2, Math.min(window.devicePixelRatio || 2, 3)),
+    }).setOrigin(0.5, 1).setDepth(95000).setVisible(false);
     this._raeuberExists = false;
     this._raeuberX = 0; this._raeuberY = 0;
     this._raeuberDX = 1;            // Laufrichtung (für Spiegelung)
@@ -7752,6 +7758,7 @@ class SpielSzene extends Phaser.Scene {
     this._raeuberFreilauf = false;
     this.raeuberGfx.clear();
     if (this.raeuberSprite) this.raeuberSprite.setVisible(false).setPosition(-9999, -9999);
+    if (this.raeuberBubble) this.raeuberBubble.setVisible(false);
   }
 
   // Test (Zahnrad): Räuber sofort neben dem Spieler erscheinen lassen – überall.
@@ -7821,6 +7828,12 @@ class SpielSzene extends Phaser.Scene {
       }
     } else {
       this._raeuberPfad = [];   // erreicht oder außer Revier → nicht verfolgen
+    }
+    // Sprechblase „Geld oder Leben!" wenn er sich nähert
+    if (this.raeuberBubble) {
+      const nah = dist < 150;
+      this.raeuberBubble.setVisible(nah);
+      if (nah) this.raeuberBubble.setPosition(this._raeuberX, this._raeuberY - RAEUBER_H - 8);
     }
     this._raeuberWalkT += dt;
     if (this._raeuberWalkT > 0.12) { this._raeuberWalkT = 0; this._raeuberFrame = (this._raeuberFrame + 1) % 4; }
