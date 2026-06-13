@@ -86,7 +86,7 @@ zulässig, solange alles ehrlich angegeben ist.
 - Keine personenbezogenen Daten, kein Standort, keine Kennungen, keine Analytics.
 - Spielstand wird **nur lokal** auf dem Gerät gespeichert (kein Cloud-Upload).
 - Datenübertragung über das Internet: **keine** (App läuft offline).
-- **Datenschutzerklärung-URL:** (deine GitHub-Pages-URL zu `privacy.html`)
+- **Datenschutzerklärung-URL:** https://idyllic-chaja-570cc9.netlify.app/privacy.html  *(Netlify – ggf. nach Umbenennung anpassen)*
 
 ---
 
