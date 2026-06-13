@@ -29,8 +29,10 @@ if (existsSync('fonts')) cpSync('fonts', `${OUT}/fonts`, { recursive: true });
 if (existsSync('script.js')) cpSync('script.js', `${OUT}/script.js`);
 
 // 3) Alle Medien-Dateien im Wurzelverzeichnis (Bilder, Audio, Icons)
+// Hinweis: BEIDE Tracks werden gebraucht – Pixel_Parade.mp3 = Spielmusik (Phaser),
+// Pixel_Parade_1.mp3 = Startbildschirm-Musik. Also nichts überspringen.
 const mediaExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp3', '.ogg', '.wav', '.ico']);
-const ROOT_SKIP = new Set(['Pixel_Parade.mp3']);   // alter, ungenutzter Track
+const ROOT_SKIP = new Set();
 for (const f of readdirSync('.')) {
   if (mediaExt.has(extname(f).toLowerCase()) && !ROOT_SKIP.has(f)) cpSync(f, `${OUT}/${f}`);
 }

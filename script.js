@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v89 – Versionsnummer';
+const BUILD_MARKE = 'v90 – Musik+Disclaimer+Park-Label';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2743,6 +2743,7 @@ function _renderStdModal(item) {
 
 function schliesseModal() {
   modalOffen = false;
+  window._modalClosedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   _modalNaechstes();   // ggf. nächstes wartendes Popup zeigen
 }
 
@@ -6040,7 +6041,11 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     scene.add.zone(pos.x, pos.y - tileH * 0.4, tileW * 2.2, tileH * 2.6)
       .setInteractive()
       .on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt('dealer'); });
-    scene.add.text(pos.x, pos.y + tileH * 0.6, dealer.name, {
+    // Label direkt unter die (versetzte) Park-Grafik setzen: x = Park-Mitte,
+    // y = unter der unteren Spitze des Park-Boden-Diamanten.
+    const parkLabelX = pos.x + PARK_DX;
+    const parkLabelY = pos.y + PARK_DY + (tileW * PARK_KACHELN) / 4 + 4;
+    scene.add.text(parkLabelX, parkLabelY, dealer.name, {
       fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
       color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
     }).setOrigin(0.5, 0).setDepth(pos.y + 2.3);
@@ -6399,7 +6404,12 @@ class StartSzene extends Phaser.Scene {
           fontStyle: 'bold', color: first ? '#ffd700' : '#e8eeff', stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(3);
         const zone = this.add.zone(bx, by, bw, bh).setDepth(4).setInteractive({ useHandCursor: true });
-        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        zone.on('pointerdown', () => {
+          if (this._menuAktiv || modalOffen) return;
+          const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          if (now - (window._modalClosedAt || 0) < 400) return;   // direkt nach Modal-Schließen nicht durchklicken
+          item.aktion();
+        });
         this._startObjekte.push(g, txt, zone);
         this._menuButtons.push({ bg: g, txt, zone });
       });
@@ -6444,7 +6454,12 @@ class StartSzene extends Phaser.Scene {
           hl.fillRoundedRect(sx - w/2, sy - h/2, w, h, 6);
         });
         zone.on('pointerout', () => hl.clear());
-        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        zone.on('pointerdown', () => {
+          if (this._menuAktiv || modalOffen) return;
+          const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          if (now - (window._modalClosedAt || 0) < 400) return;   // direkt nach Modal-Schließen nicht durchklicken
+          item.aktion();
+        });
         this._startObjekte.push(hl, zone);
         this._menuButtons.push({ hl, zone });
       });
@@ -6470,7 +6485,12 @@ class StartSzene extends Phaser.Scene {
         const zone = this.add.zone(bx, by, bw, bh).setDepth(7).setInteractive({ useHandCursor: true });
         zone.on('pointerover', () => { zeichne(true); txt.setColor(isFirst?'#ffe866':'#ffffff'); });
         zone.on('pointerout',  () => { zeichne(false); txt.setColor(isFirst?'#ffd700':'#e8e0c8'); });
-        zone.on('pointerdown', () => { if (this._menuAktiv) return; item.aktion(); });
+        zone.on('pointerdown', () => {
+          if (this._menuAktiv || modalOffen) return;
+          const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          if (now - (window._modalClosedAt || 0) < 400) return;   // direkt nach Modal-Schließen nicht durchklicken
+          item.aktion();
+        });
         this._startObjekte.push(bg2, txt, zone);
         this._menuButtons.push({ bg: bg2, txt, zone });
       });
