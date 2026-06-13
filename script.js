@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v87 – Copyright';
+const BUILD_MARKE = 'v88 – Aufgeraeumt';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -6744,8 +6744,6 @@ class SpielSzene extends Phaser.Scene {
   preload() {
     // Boden + Straßennetz (eine große Iso-Grafik, wird auch außen herum gekachelt)
     this.load.image('stadtboden', 'assets/buildings/stadtboden.png');
-    // Beschnittene Variante (heller Rand erodiert) → nahtlose Umgebungs-Kacheln
-    this.load.image('stadtboden_trim', 'assets/buildings/stadtboden_trim.png');
     // Gemalte Umgebung (ein Bild, 3200×2000, Mitte transparent) → ersetzt die
     // früheren Deko-Stadtblöcke/Ring-Kacheln. Liegt hinter dem Spieldiamanten.
     this.load.image('umgebung', 'assets/umgebung.png');
@@ -6760,11 +6758,8 @@ class SpielSzene extends Phaser.Scene {
     for (const id in BUILDING_SPRITES) {
       this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
     }
-    // Natur-Props (für ein evtl. vorhandenes Layout)
-    for (let n = 0; n < 35; n++) {
-      const id = 'prop_' + String(n).padStart(2, '0');
-      this.load.image(id, 'assets/props/' + id + '.png');
-    }
+    // (Natur-Props werden derzeit nicht verwendet → nicht laden; sie liegen für den
+    //  Layout-Editor weiterhin in assets/props/, sind aber nicht im App-Build.)
     // Manuelles Layout (aus dem Editor) – fehlt es, fällt alles auf Standard zurück
     this.load.json('layout', 'layout/layout.json');
     this.load.json('collision', 'layout/collision.json');   // pixelgenaue Standflächen

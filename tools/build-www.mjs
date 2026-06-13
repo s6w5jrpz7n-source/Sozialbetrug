@@ -10,7 +10,18 @@ if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
 // 1) Feste Ordner
-if (existsSync('assets')) cpSync('assets', `${OUT}/assets`, { recursive: true });
+// Nicht im Spiel verwendete / nur fürs Tooling gedachte Assets aus der App
+// ausschließen (kleineres Bundle): Editor-Props, Original-Quellgrafiken,
+// beschnittener Boden + alte Tiles/Track.
+const ASSET_SKIP = (p) => {
+  const s = p.replace(/\\/g, '/');
+  return /(^|\/)assets\/props(\/|$)/.test(s)
+    || /(^|\/)assets\/buildings\/source(\/|$)/.test(s)
+    || /(stadtboden_trim|casino_tag)\.png$/.test(s)
+    || /citytile_\d+\.png$/.test(s);
+};
+if (existsSync('assets'))
+  cpSync('assets', `${OUT}/assets`, { recursive: true, filter: (src) => !ASSET_SKIP(src) });
 // Lokale Schriften (offline, kein Google-Fonts-Request)
 if (existsSync('fonts')) cpSync('fonts', `${OUT}/fonts`, { recursive: true });
 
@@ -19,8 +30,9 @@ if (existsSync('script.js')) cpSync('script.js', `${OUT}/script.js`);
 
 // 3) Alle Medien-Dateien im Wurzelverzeichnis (Bilder, Audio, Icons)
 const mediaExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp3', '.ogg', '.wav', '.ico']);
+const ROOT_SKIP = new Set(['Pixel_Parade.mp3']);   // alter, ungenutzter Track
 for (const f of readdirSync('.')) {
-  if (mediaExt.has(extname(f).toLowerCase())) cpSync(f, `${OUT}/${f}`);
+  if (mediaExt.has(extname(f).toLowerCase()) && !ROOT_SKIP.has(f)) cpSync(f, `${OUT}/${f}`);
 }
 
 // 4) Layout-JSONs (werden zur Laufzeit geladen)
