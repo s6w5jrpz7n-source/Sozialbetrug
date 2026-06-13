@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v90 – Musik+Disclaimer+Park-Label';
+const BUILD_MARKE = 'v91 – Zoom';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6860,6 +6860,7 @@ class SpielSzene extends Phaser.Scene {
     // ---- Klick-Steuerung: auf Boden klicken → exakt dorthin laufen ----
     this.input.on('pointerdown', (pointer, currentlyOver) => {
       if (this._menuAktiv || modalOffen) return;
+      if (this.input.pointer2 && this.input.pointer2.isDown) return;   // Zwei-Finger-Pinch → nicht laufen
       if (currentlyOver && currentlyOver.length) return;   // Gebäude geklickt → eigener Handler
       this.geheZuWelt(pointer.worldX, pointer.worldY);
     });
@@ -6925,17 +6926,46 @@ class SpielSzene extends Phaser.Scene {
     this.time.delayedCall(60,  () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
     this.time.delayedCall(300, () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
 
-    // ---- Adaptiver Zoom: auf jedem Gerät etwa gleich viel Fläche sichtbar ----
-    // Ziel: ca. SICHT_BREITE Welt-Pixel breit zeigen. Kleine Handys zoomen dadurch
-    // automatisch raus (mehr Lauffläche zum Tippen), Desktop bleibt bei Zoom 1.
-    this._setzeZoom = () => {
-      const z = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);
-      this.cameras.main.setZoom(z);
+    // ---- Zoom: adaptiver Startwert + frei zoombar (Pinch / Mausrad / +-Buttons) ----
+    const ZOOM_MIN = 0.45, ZOOM_MAX = 1.8;
+    this._zoom = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);   // Startwert adaptiv
+    this._applyZoom = () => this.cameras.main.setZoom(this._zoom);
+    this._zoomUm = (faktor) => {
+      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
+      this._applyZoom();
+      this.cameras.main.centerOn(this.spielerX, this.spielerY);
     };
+    this._setzeZoom = this._applyZoom;   // bei Resize aktuellen Zoom beibehalten
     this.cameras.main.setRoundPixels(true);   // Scroll auf ganze Pixel → kein Gebäude-Vibrieren
-    this._setzeZoom();
-    this.scale.on('resize', this._setzeZoom, this);
-    this.events.once('shutdown', () => this.scale.off('resize', this._setzeZoom, this));
+    this._applyZoom();
+    this.scale.on('resize', this._applyZoom, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this._applyZoom, this));
+
+    // HTML +/- Buttons (unten rechts) → in die Szene
+    window._zoomGame = (faktor) => this._zoomUm(faktor);
+    this.events.once('shutdown', () => { window._zoomGame = null; });
+
+    // Mausrad (Desktop)
+    this.input.on('wheel', (pointer, over, dx, dy) => {
+      if (modalOffen || this._menuAktiv) return;
+      this._zoomUm(dy > 0 ? 0.9 : 1.1);
+    });
+
+    // Pinch (zwei Finger) – zweiten Zeiger aktivieren
+    this.input.addPointer(1);
+    this._pinchDist = 0;
+    this.input.on('pointermove', () => {
+      const p1 = this.input.pointer1, p2 = this.input.pointer2;
+      if (p1 && p2 && p1.isDown && p2.isDown) {
+        const d = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+        if (this._pinchDist > 0 && Math.abs(d - this._pinchDist) > 1.5) {
+          this._zoomUm(d / this._pinchDist);
+        }
+        this._pinchDist = d;
+      } else {
+        this._pinchDist = 0;
+      }
+    });
 
     // ---- Nebel: zeigt die Grenze des bespielbaren Bereichs ----
     // Über dem zentralen Diamanten transparent, nach außen zunehmend neblig

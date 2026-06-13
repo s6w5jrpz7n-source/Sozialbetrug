@@ -222,10 +222,25 @@
     .info-tab.aktiv { color: #0a0e1a; background: var(--accent); border-color: var(--accent); }
     .info-body { font-size: 0.8rem; line-height: 1.55; color: var(--text); text-align: left; }
     /* Topbar + Zahnrad + Tempo nur IM SPIEL anzeigen (nicht im Startbildschirm) */
-    #topbar, #gear-btn, #speed-ctrl { display: none; }
+    #topbar, #gear-btn, #speed-ctrl, #zoom-ctrl { display: none; }
     body.im-spiel #topbar  { display: flex; }
     body.im-spiel #gear-btn { display: block; }
     body.im-spiel #speed-ctrl { display: flex; }
+    body.im-spiel #zoom-ctrl { display: flex; }
+    /* Zoom-Steuerung (unten rechts) */
+    #zoom-ctrl {
+      position: absolute; right: 8px; bottom: 8px; z-index: 60;
+      display: flex; flex-direction: column; gap: 4px;
+      background: rgba(14,18,32,0.88); border: 1px solid var(--border-hi);
+      border-radius: 16px; padding: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    #zoom-ctrl .zoom-btn {
+      font-family: var(--mono); font-size: 1.1rem; font-weight: bold; line-height: 1;
+      color: #e8eeff; background: transparent; border: 1px solid var(--border-hi);
+      border-radius: 12px; width: 36px; height: 36px; cursor: pointer;
+    }
+    #zoom-ctrl .zoom-btn:active { background: var(--accent); color: #0a0e1a; }
 
     /* =================================================================
        HUD-PANEL – das polished rechte Panel
@@ -868,6 +883,11 @@
         <button class="spd-btn active" data-x="1" onclick="setTempo(1)">1×</button>
         <button class="spd-btn"        data-x="2" onclick="setTempo(2)">2×</button>
         <button class="spd-btn"        data-x="4" onclick="setTempo(4)">4×</button>
+      </div>
+      <!-- Zoom rein/raus (unten rechts) -->
+      <div id="zoom-ctrl">
+        <button class="zoom-btn" onclick="window._zoomGame && window._zoomGame(1.2)" title="Reinzoomen">+</button>
+        <button class="zoom-btn" onclick="window._zoomGame && window._zoomGame(0.8333)" title="Rauszoomen">−</button>
       </div>
     </div>
 
