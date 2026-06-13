@@ -3,14 +3,72 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sozialbetrug: Arbeitslos zum Millionär – das satirische Aufbau-Spiel</title>
-<meta name="description" content="Vom Arbeitslosen zum Millionär – auf die unmoralischste Tour. Satirische Wirtschafts-Simulation in einer isometrischen Stadt. Kostenlos, offline, ohne Werbung." />
-<!-- Social-Vorschau (beim Teilen des Links). Für volle Wirkung absolute URL eintragen, sobald die Seite live ist. -->
+
+<!-- ================================================================
+     SEO  –  WICHTIG: <BASIS-URL> einmal durch deine echte Adresse
+     ersetzen (z. B. https://sozialbetrug-game.github.io/sozialbetrug)
+     – betrifft: canonical, og:url, JSON-LD "url", sitemap.xml
+================================================================= -->
+<title>Sozialbetrug: Arbeitslos zum Millionär – Satire-Aufbauspiel</title>
+<meta name="description" content="Sozialbetrug – das satirische Aufbau-Spiel: vom Arbeitslosen zum Millionär. Wirtschafts-Simulation in der Iso-Stadt. Kostenlos, offline, ohne Werbung. Jetzt spielen!" />
+<meta name="keywords" content="Sozialbetrug Spiel, Arbeitslos zum Millionär, Satire Aufbauspiel, Wirtschaftssimulation Android, Iso Stadt Spiel, kostenloses Strategiespiel" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="https://DEINE-BASIS-URL/landing.html" />
+
+<!-- Open Graph / Social -->
 <meta property="og:title" content="Sozialbetrug: Arbeitslos zum Millionär" />
 <meta property="og:description" content="Satirische Aufbau-Simulation: vom Amt zum Millionär – mit Risiko, Glück & viel Schmäh. Kostenlos & offline." />
-<meta property="og:image" content="resources/store/feature-graphic-1024x500.png" />
+<meta property="og:image" content="https://DEINE-BASIS-URL/resources/store/feature-graphic-1024x500.png" />
+<meta property="og:url" content="https://DEINE-BASIS-URL/landing.html" />
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="Sozialbetrug" />
+<meta property="og:locale" content="de_DE" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Sozialbetrug: Arbeitslos zum Millionär" />
+<meta name="twitter:description" content="Satirische Aufbau-Simulation – kostenlos & offline." />
+<meta name="twitter:image" content="https://DEINE-BASIS-URL/resources/store/feature-graphic-1024x500.png" />
+
+<!-- Strukturierte Daten: Spiel -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Sozialbetrug: Arbeitslos zum Millionär",
+  "alternateName": "Sozialbetrug",
+  "description": "Satirische Wirtschafts-Simulation in einer isometrischen Stadt: vom Arbeitslosen zum Millionär – auf die unmoralischste Tour. Kostenlos, offline, ohne Werbung.",
+  "url": "https://DEINE-BASIS-URL/landing.html",
+  "image": "https://DEINE-BASIS-URL/resources/store/feature-graphic-1024x500.png",
+  "inLanguage": "de",
+  "genre": ["Simulation", "Strategie", "Wirtschaftssimulation"],
+  "gamePlatform": ["Android", "Web"],
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Android 7.0+, Webbrowser",
+  "author": { "@type": "Person", "name": "Andreas Lang" },
+  "publisher": { "@type": "Person", "name": "Andreas Lang" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR", "availability": "https://schema.org/InStock" },
+  "contentRating": "USK ab 16"
+}
+</script>
+<!-- Strukturierte Daten: FAQ (Rich-Result-Chance) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Ist Sozialbetrug kostenlos?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Ja. Das Spiel ist komplett kostenlos, ohne Werbung und ohne In-App-Käufe." } },
+    { "@type": "Question", "name": "Worum geht es in Sozialbetrug?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Eine satirische Wirtschafts-Simulation: Du startest arbeitslos vor dem Jobcenter und arbeitest dich mit cleveren und fragwürdigen Methoden zum Millionär hoch." } },
+    { "@type": "Question", "name": "Braucht das Spiel Internet?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Nein. Die Android-App läuft vollständig offline und speichert den Fortschritt nur lokal auf dem Gerät." } },
+    { "@type": "Question", "name": "Gibt es echtes Glücksspiel?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Nein. Casino und Rubbellose sind reine Spielsimulation ohne Echtgeld und ohne Auszahlung." } },
+    { "@type": "Question", "name": "Für welches Alter ist das Spiel?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Für Erwachsene. Wegen Glücksspiel-Simulation und Satire ist es ab 16/18 eingestuft." } }
+  ]
+}
+</script>
+
 <style>
   :root{ --bg:#0a0d18; --card:#141a2e; --border:#3a4e7a; --gold:#ffd700; --ink:#e8eeff; --muted:#9fb0d8; }
   *{ box-sizing:border-box; }
@@ -18,23 +76,17 @@
     background:var(--bg); color:var(--ink); line-height:1.6; }
   a{ color:var(--gold); }
   .wrap{ max-width:980px; margin:0 auto; padding:0 18px; }
-
-  /* Hero */
   .hero{ position:relative; text-align:center; padding:0 0 28px; overflow:hidden; }
-  .hero-bg{ width:100%; max-height:460px; object-fit:cover; display:block;
-    filter:brightness(.55); }
+  .hero-bg{ width:100%; max-height:460px; object-fit:cover; display:block; filter:brightness(.55); }
   .hero-inner{ position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; padding:16px; }
-  .hero h1{ font-size:clamp(1.6rem,5vw,3rem); margin:.2em 0; text-shadow:0 3px 12px #000;
-    color:#fff; letter-spacing:.5px; }
-  .hero p.tag{ font-size:clamp(1rem,2.6vw,1.3rem); color:#ffe9b0; margin:.2em 0 1em;
-    text-shadow:0 2px 8px #000; }
+  .hero h1{ font-size:clamp(1.5rem,4.6vw,2.7rem); margin:.2em 0; text-shadow:0 3px 12px #000; color:#fff; }
+  .hero p.tag{ font-size:clamp(1rem,2.6vw,1.3rem); color:#ffe9b0; margin:.2em 0 1em; text-shadow:0 2px 8px #000; }
   .btns{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .btn{ display:inline-block; padding:12px 22px; border-radius:10px; font-weight:bold;
     text-decoration:none; font-size:1rem; border:2px solid var(--gold); }
   .btn-play{ background:var(--gold); color:#1a1300; }
   .btn-web{ background:rgba(20,26,46,.85); color:var(--gold); }
-
   section{ padding:34px 0; border-top:1px solid #1d2640; }
   h2{ color:var(--gold); font-size:1.4rem; }
   .features{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
@@ -43,8 +95,10 @@
   .shots{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
   .shots img{ width:100%; border-radius:10px; border:1px solid var(--border); display:block; }
   .note{ color:var(--muted); font-size:.9rem; }
-  footer{ text-align:center; color:var(--muted); padding:26px 0 40px; font-size:.9rem;
-    border-top:1px solid #1d2640; }
+  details{ background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:10px 16px; margin:10px 0; }
+  summary{ cursor:pointer; font-weight:bold; color:#fff; }
+  footer{ text-align:center; color:var(--muted); padding:26px 0 40px; font-size:.9rem; border-top:1px solid #1d2640; }
   .badge{ display:inline-block; background:#2a1c00; color:#ffd700; border:1px solid #6b5300;
     border-radius:6px; padding:2px 8px; font-size:.8rem; }
 </style>
@@ -52,36 +106,40 @@
 <body>
 
 <header class="hero">
-  <img class="hero-bg" src="startbg.png" alt="Sozialbetrug Spielszene" />
+  <img class="hero-bg" src="startbg.png" alt="Sozialbetrug Spielszene – isometrische Stadt mit Jobcenter, Villa und Casino" width="1264" height="843" />
   <div class="hero-inner">
-    <h1>Sozialbetrug</h1>
-    <p class="tag">Arbeitslos zum Millionär – auf die unmoralischste Tour.</p>
-    <div class="btns">
-      <!-- Google-Play-Link: wird aktiv, sobald die App veröffentlicht ist (App-ID com.sozialbetrug.game) -->
-      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.sozialbetrug.game">▶ Bei Google Play</a>
+    <h1>Sozialbetrug: Arbeitslos zum Millionär</h1>
+    <p class="tag">Das satirische Aufbau-Spiel – auf die unmoralischste Tour.</p>
+    <nav class="btns">
+      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.sozialbetrug.game" rel="nofollow">▶ Bei Google Play</a>
       <a class="btn btn-web" href="index.html">🎮 Im Browser spielen</a>
-    </div>
+    </nav>
   </div>
 </header>
 
-<div class="wrap">
+<main class="wrap">
 
   <section>
     <h2>Worum geht's?</h2>
     <p>
-      <b>Sozialbetrug</b> ist eine satirische Wirtschafts-Simulation in einer
+      <strong>Sozialbetrug</strong> ist eine satirische Wirtschafts-Simulation in einer
       lebendigen isometrischen Stadt. Du startest mit leeren Taschen vor dem
       Jobcenter und arbeitest dich mit cleveren (und fragwürdigen) Methoden nach
       oben – bis zur Villa. Überspitzte Gesellschaftssatire mit Augenzwinkern.
     </p>
-    <p><span class="badge">Kostenlos</span> &nbsp;<span class="badge">Offline</span> &nbsp;<span class="badge">Keine Werbung</span> &nbsp;<span class="badge">Keine In-App-Käufe</span></p>
+    <p>
+      <span class="badge">Kostenlos</span>
+      <span class="badge">Offline</span>
+      <span class="badge">Keine Werbung</span>
+      <span class="badge">Keine In-App-Käufe</span>
+    </p>
   </section>
 
   <section>
-    <h2>Features</h2>
+    <h2>Features des Aufbau-Spiels</h2>
     <div class="features">
       <div class="feat"><b>🏙️ Lebendige Iso-Stadt</b><br>Arbeitsamt, Bank, Casino, Pfandleiher, Schattenbank, Baustelle u. v. m. – frei begehbar.</div>
-      <div class="feat"><b>💸 Wirtschafts-Kreislauf</b><br>Einnahmen, Schulden, Depot, Schwarzkasse – behalte Energie, Laune & Risiko im Blick.</div>
+      <div class="feat"><b>💸 Wirtschafts-Kreislauf</b><br>Einnahmen, Schulden, Depot, Schwarzkasse – behalte Energie, Laune &amp; Risiko im Blick.</div>
       <div class="feat"><b>🎲 Kuriose Events</b><br>Zufalls-Situationen mit kleinen Boni und fiesen Rückschlägen.</div>
       <div class="feat"><b>🔫 Gefahren</b><br>Im Schatten-Viertel lauert ein Räuber – sichere dein Bargeld rechtzeitig!</div>
       <div class="feat"><b>🏆 Wiederspielwert</b><br>Mehrere Spielstände, Bestenliste, Tag-/Wochen-Rhythmus.</div>
@@ -90,25 +148,32 @@
   </section>
 
   <section>
-    <h2>Eindrücke</h2>
+    <h2>Screenshots</h2>
     <div class="shots">
-      <img src="resources/store/feature-graphic-1024x500.png" alt="Sozialbetrug Titelbild" />
-      <img src="startbg.png" alt="Startbildschirm" />
+      <img src="resources/store/feature-graphic-1024x500.png" alt="Sozialbetrug Titelbild – Arbeitslos zum Millionär" loading="lazy" width="1024" height="500" />
+      <img src="startbg.png" alt="Sozialbetrug Startbildschirm mit Spielmenü" loading="lazy" width="1264" height="843" />
     </div>
-    <p class="note">Hier kommen die echten Handy-Screenshots rein, sobald sie fertig sind.</p>
+    <p class="note">Echte Handy-Screenshots folgen in Kürze.</p>
   </section>
 
   <section>
-    <h2>Spielen</h2>
-    <p>
-      <a class="btn btn-web" href="index.html">🎮 Sofort im Browser spielen</a>
-      &nbsp; oder &nbsp;
-      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.sozialbetrug.game">▶ Android-App laden</a>
-    </p>
-    <p class="note">Hinweis: Wegen Glücksspiel-Simulation (ohne Echtgeld) und Satire ab 16/18.</p>
+    <h2>Häufige Fragen</h2>
+    <details><summary>Ist Sozialbetrug kostenlos?</summary><p>Ja – komplett kostenlos, ohne Werbung und ohne In-App-Käufe.</p></details>
+    <details><summary>Worum geht es in Sozialbetrug?</summary><p>Eine satirische Wirtschafts-Simulation: Du startest arbeitslos vor dem Jobcenter und arbeitest dich mit cleveren und fragwürdigen Methoden zum Millionär hoch.</p></details>
+    <details><summary>Braucht das Spiel Internet?</summary><p>Nein. Die Android-App läuft vollständig offline; der Fortschritt wird nur lokal auf dem Gerät gespeichert.</p></details>
+    <details><summary>Gibt es echtes Glücksspiel?</summary><p>Nein. Casino und Rubbellose sind reine Spielsimulation – ohne Echtgeld und ohne Auszahlung.</p></details>
+    <details><summary>Für welches Alter ist das Spiel?</summary><p>Für Erwachsene. Wegen Glücksspiel-Simulation und Satire ist es ab 16/18 eingestuft.</p></details>
   </section>
 
-</div>
+  <section>
+    <h2>Jetzt spielen</h2>
+    <p class="btns">
+      <a class="btn btn-web" href="index.html">🎮 Sofort im Browser spielen</a>
+      <a class="btn btn-play" href="https://play.google.com/store/apps/details?id=com.sozialbetrug.game" rel="nofollow">▶ Android-App laden</a>
+    </p>
+  </section>
+
+</main>
 
 <footer>
   © 2026 Andreas Lang ·
