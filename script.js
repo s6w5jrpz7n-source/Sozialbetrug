@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v94 – Sperr-Tiles enger';
+const BUILD_MARKE = 'v95 – Nebel/Vibrieren/Raeuber';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6933,14 +6933,18 @@ class SpielSzene extends Phaser.Scene {
     // leere Umgebung jenseits der bebauten Reihen sichtbar wird (+ größerer Nebel).
     const ZOOM_MIN = 0.7, ZOOM_MAX = 1.8;
     this._zoom = Phaser.Math.Clamp(this.scale.width / 500, ZOOM_MIN, 1.0);   // Startwert adaptiv
-    this._applyZoom = () => this.cameras.main.setZoom(this._zoom);
+    // roundPixels nur bei exaktem 1× (pixelgenau, kein Vibrieren). Bei gebrochenem
+    // Zoom (z. B. 0,7×) würde das Pixel-Runden die Gebäude flimmern lassen → dort aus.
+    this._applyZoom = () => {
+      this.cameras.main.setZoom(this._zoom);
+      this.cameras.main.setRoundPixels(this._zoom === 1);
+    };
     this._zoomUm = (faktor) => {
       this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
       this._applyZoom();
       this.cameras.main.centerOn(this.spielerX, this.spielerY);
     };
     this._setzeZoom = this._applyZoom;   // bei Resize aktuellen Zoom beibehalten
-    this.cameras.main.setRoundPixels(true);   // Scroll auf ganze Pixel → kein Gebäude-Vibrieren
     this._applyZoom();
     this.scale.on('resize', this._applyZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this._applyZoom, this));
@@ -6976,7 +6980,7 @@ class SpielSzene extends Phaser.Scene {
     // (Häuser bleiben schemenhaft sichtbar) → erklärt, warum man nicht weiter kann.
     if (this.textures.exists('fog')) {
       this.add.image(this.offsetX, this.offsetY + fH / 2, 'fog')
-        .setOrigin(0.5, 0.5).setDisplaySize(5800, 4200).setDepth(50000);   // größer → deckt Ränder auch bei Zoom-Out 0.7
+        .setOrigin(0.5, 0.5).setDisplaySize(5200, 3300).setDepth(50000);
     }
 
     // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
@@ -7781,7 +7785,20 @@ class SpielSzene extends Phaser.Scene {
     }
 
     // Hat den Spieler erreicht → stehen bleiben (nicht weiter/überlaufen).
-    this._raeuberSteht = dist < 30;
+    this._raeuberSteht = dist < 34;
+    // Erreicht, aber nichts zu holen (zu wenig Bargeld oder Sperre nach Überfall)
+    // → kurz stehen bleiben, dann abziehen (statt den Spieler endlos zu verfolgen).
+    if (this._raeuberSteht && (this._raeuberCooldown > 0 || gameState.losesBargeld < 20)) {
+      this._raeuberAufgeben = (this._raeuberAufgeben || 0) + dt;
+      if (this._raeuberAufgeben > 2.5) {
+        this._raeuberAufgeben = 0;
+        this.despawnRaeuber();
+        logEvent('Der Räuber lässt von dir ab.', '');
+        return;
+      }
+    } else {
+      this._raeuberAufgeben = 0;
+    }
 
     // Spieler per Pathfinding verfolgen – aber nur, solange er im Revier ist und
     // ihn noch nicht erreicht hat (verlässt der Spieler das Viertel, gibt der
