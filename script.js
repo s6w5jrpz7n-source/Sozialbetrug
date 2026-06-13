@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v93 – Zoom-Out 0.7';
+const BUILD_MARKE = 'v94 – Sperr-Tiles enger';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -5979,11 +5979,12 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
       scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
     }
-    // Sportplatz/-verein ist ein ganzes Grundstück → nicht betretbar machen
+    // Sportplatz/-verein ist ein ganzes Grundstück → Kern nicht betretbar machen
+    // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
     if (o.id === 'sportverein') {
       scene._sperrTiles = scene._sperrTiles || [];
-      for (let u = 0.12; u <= 0.88; u += 0.08)
-        for (let v = 0.45; v <= 0.96; v += 0.08) {
+      for (let u = 0.35; u <= 0.65; u += 0.15)
+        for (let v = 0.62; v <= 0.82; v += 0.1) {
           const t = scene.screenZuTile(x + u * w, y + v * h);
           if (t) scene._sperrTiles.push(t.col + ',' + t.row);
         }
@@ -6014,12 +6015,13 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
         .setDepth(pos.y - 0.5);   // Boden-Deko (knapp hinter dem Dealer)
       // Park soll wie ein Gebäude aufleuchten, wenn man in der Nähe ist
       scene.gebaeudeSprites['dealer'] = parkImg;
-      // Park nicht betretbar: Kacheln unter der Park-Grafik sperren
+      // Park nicht betretbar: nur den Kern unter der Park-Grafik sperren
+      // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
       scene._sperrTiles = scene._sperrTiles || [];
       const pW = 1322 * sc, pH = 755 * sc;
       const pL = (pos.x + PARK_DX) - 0.4992 * pW, pT = (pos.y + PARK_DY) - 0.5616 * pH;
-      for (let u = 0.15; u <= 0.85; u += 0.1)
-        for (let v = 0.45; v <= 0.95; v += 0.1) {
+      for (let u = 0.35; u <= 0.65; u += 0.15)
+        for (let v = 0.5; v <= 0.78; v += 0.12) {
           const t = scene.screenZuTile(pL + u * pW, pT + v * pH);
           if (t) scene._sperrTiles.push(t.col + ',' + t.row);
         }
