@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v92 – Zoom-Out begrenzt';
+const BUILD_MARKE = 'v93 – Zoom-Out 0.7';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6926,15 +6926,14 @@ class SpielSzene extends Phaser.Scene {
     this.time.delayedCall(60,  () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
     this.time.delayedCall(300, () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
 
-    // ---- Zoom: adaptiver Startwert + reinzoombar (Pinch / Mausrad / +-Buttons) ----
-    // Rauszoomen ist auf den Standard-Blick begrenzt – sonst sähe man über die
-    // bebaute Umgebung hinaus ins Leere. Reinzoomen bis ZOOM_MAX für Details.
-    const ZOOM_MAX = 1.8;
-    this._zoom = Phaser.Math.Clamp(this.scale.width / 500, 0.55, 1.0);   // Startwert adaptiv
-    this._minZoom = this._zoom;   // nicht weiter raus als der Standard
+    // ---- Zoom: adaptiver Startwert, rein bis ZOOM_MAX, raus bis ZOOM_MIN ----
+    // ZOOM_MIN = 0.7: etwas Rauszoomen erlaubt, aber nicht so weit, dass die
+    // leere Umgebung jenseits der bebauten Reihen sichtbar wird (+ größerer Nebel).
+    const ZOOM_MIN = 0.7, ZOOM_MAX = 1.8;
+    this._zoom = Phaser.Math.Clamp(this.scale.width / 500, ZOOM_MIN, 1.0);   // Startwert adaptiv
     this._applyZoom = () => this.cameras.main.setZoom(this._zoom);
     this._zoomUm = (faktor) => {
-      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, this._minZoom, ZOOM_MAX);
+      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
       this._applyZoom();
       this.cameras.main.centerOn(this.spielerX, this.spielerY);
     };
@@ -6975,7 +6974,7 @@ class SpielSzene extends Phaser.Scene {
     // (Häuser bleiben schemenhaft sichtbar) → erklärt, warum man nicht weiter kann.
     if (this.textures.exists('fog')) {
       this.add.image(this.offsetX, this.offsetY + fH / 2, 'fog')
-        .setOrigin(0.5, 0.5).setDisplaySize(5200, 3300).setDepth(50000);
+        .setOrigin(0.5, 0.5).setDisplaySize(5800, 4200).setDepth(50000);   // größer → deckt Ränder auch bei Zoom-Out 0.7
     }
 
     // Regen (über allem) – am Bildschirm fixiert, scrollt NICHT mit
