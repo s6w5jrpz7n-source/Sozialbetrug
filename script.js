@@ -6,7 +6,9 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v88 – Aufgeraeumt';
+const BUILD_MARKE = 'v89 – Versionsnummer';
+// Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
+const APP_VERSION = '1.0.0';
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -809,7 +811,9 @@ function oeffneInfo(tab) {
   if (titleEl) titleEl.textContent = 'ℹ️ Info & Anleitung';
   body.innerHTML =
     `<div class="info-nav">${nav}</div>` +
-    `<div class="info-body">${INFO_TEXTE[tab] || ''}</div>`;
+    `<div class="info-body">${INFO_TEXTE[tab] || ''}</div>` +
+    `<div style="text-align:center;margin-top:10px;font-size:11px;color:#7f8db5;">` +
+    `Version ${APP_VERSION} · © 2026 Andreas Lang</div>`;
   const close = document.createElement('button');
   close.className = 'action-btn'; close.textContent = '✕ Schließen';
   close.onclick = () => schliesseModal();
@@ -6351,7 +6355,7 @@ class StartSzene extends Phaser.Scene {
 
     // Fußzeile: Copyright + Datenschutz (beide Layouts), zentriert. Tippen öffnet
     // die mitgelieferte privacy.html (offline). Copyright ist Pflicht/üblich.
-    const foot = this.add.text(W / 2, H - 8, '© 2026 Andreas Lang   ·   Datenschutz', {
+    const foot = this.add.text(W / 2, H - 8, '© 2026 Andreas Lang   ·   v' + APP_VERSION + '   ·   Datenschutz', {
       fontFamily: '"Courier New", monospace', fontSize: '13px',
       color: '#9fb0d8', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5, 1).setDepth(9999).setInteractive({ useHandCursor: true });
