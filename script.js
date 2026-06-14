@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v104 – Schuldenerlass raus';
+const BUILD_MARKE = 'v105 – Einkauf pro Tag';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -106,8 +106,8 @@ const gameState = {
 
   // ---- Supermarkt ----
   lebensmittelDiesenMonat: null, // zuletzt gekaufte Qualität 'gut'|'normal'|'billig'|null (für Anzeige)
-  lebensmittelTageRest: 0,       // verbleibende Vorrats-Tage (Einkauf = +14, stapelbar bis 28)
-  grosserKuehlschrank: false,    // gekauft → Einkauf reicht doppelt so lange (+28, bis 56)
+  lebensmittelTageRest: 0,       // verbleibende Vorrats-Tage (Einkauf füllt bis zur Kapazität)
+  grosserKuehlschrank: false,    // gekauft → Vorrats-Kapazität 14 statt 7 Tage
   billigKaeufeInFolge: 0,   // Für "Frau beschwert sich"-Event
   supermarktFaellig: false, // true ab Tag 3 des Monats
   kuehlschrankWarnung: false, // "Kühlschrank leer"-Popup schon gezeigt (pro Monat)
@@ -369,9 +369,9 @@ const ORTE_CONFIG = [
     farbe: 0x2a6a8a, dachFarbe: 0x3a9aba,
     beschreibung: 'Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.',
     aktionen: [
-      { label: '🥗  Bio-Qualität  (800€, Gesundheit +10, Laune +10)',        id: 'einkauf_gut'    },
-      { label: '🥙  Normal       (500€, Gesundheit ±0, Laune ±0)',            id: 'einkauf_normal' },
-      { label: '🍟  Billig       (250€, Gesundheit -5/M, Laune -10/M)',       id: 'einkauf_billig' },
+      { label: '🥗  Bio-Qualität  (57€/Tag, Gesundheit & Laune +)',           id: 'einkauf_gut'    },
+      { label: '🥙  Normal       (36€/Tag)',                                   id: 'einkauf_normal' },
+      { label: '🍟  Billig       (18€/Tag, Gesundheit/Laune -)',              id: 'einkauf_billig' },
       { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  },
       { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
     ]
@@ -766,7 +766,8 @@ const INFO_TEXTE = {
     '• <strong>Krankmeldung</strong> beim Arzt befreit dich zeitweise von Terminen &amp; Prüfungen.',
   essen:
     '<strong>🛒 Einkaufen</strong><br><br>' +
-    'Dein Lebensmittel-Vorrat hält ca. <strong>2 Wochen</strong>. Läuft er leer ' +
+    'Du bezahlst <strong>pro Tag</strong> und füllst nur bis zur Kapazität auf ' +
+    '(<strong>7 Tage</strong>, mit großem Kühlschrank <strong>14 Tage</strong>). Läuft der Vorrat leer ' +
     '(„Kühlschrank ist leer"), verlierst du <strong>täglich Gesundheit, Energie und Laune</strong>, ' +
     'bis du wieder einkaufst.<br><br>' +
     'Bio-Einkauf gibt Boni, billig spart Geld (aber Abzüge &amp; Ärger mit der Partnerin).',
@@ -3017,11 +3018,12 @@ function interact(ortId) {
   }
   if (ortId === 'supermarkt') {
     const tage = gs.lebensmittelTageRest || 0;
+    const kap = gs.grosserKuehlschrank ? 14 : 7;
     const einkauf = gs.lebensmittelDiesenMonat;
     const qual = einkauf === 'gut' ? 'Bio 🥗' : einkauf === 'normal' ? 'Normal 🥙' : einkauf === 'billig' ? 'Billig 🍟' : '';
     beschreibung += tage > 0
-      ? `<br><br>✅ Vorrat: noch <strong>${tage} Tage</strong>${qual ? ` (${qual})` : ''}. Jeder Einkauf reicht ~2 Wochen.`
-      : `<br><br>⚠️ <strong>Kühlschrank leer!</strong> Ein Einkauf reicht ~2 Wochen.`;
+      ? `<br><br>✅ Vorrat: <strong>${tage}/${kap} Tage</strong>${qual ? ` (${qual})` : ''}. Kosten pro Tag – es wird nur bis zur Kapazität (${kap} Tage) aufgefüllt.`
+      : `<br><br>⚠️ <strong>Kühlschrank leer!</strong> Kapazität ${kap} Tage, Kosten pro Tag.`;
   }
 
   // Arbeitsamt: gegliedertes Menü (Pflichttermin · Scheinbewerbung · Anträge · Bestechung)
@@ -3113,7 +3115,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       oeffneModal('🛒 Kaufen', 'Anschaffungen für dein Zuhause.', [
         { label: gs.grosserKuehlschrank
             ? '🧊 Großer Kühlschrank ✅ vorhanden'
-            : '🧊 Großer Kühlschrank (1.000 €) – Vorrat hält doppelt so lange',
+            : '🧊 Großer Kühlschrank (1.000 €) – Vorrats-Kapazität 14 statt 7 Tage',
           callback: () => aktionAusfuehren(ortId, 'kauf_kuehlschrank') },
       ]);
       return;
@@ -3123,10 +3125,10 @@ function aktionAusfuehren(ortId, aktionsId) {
       if (gs.kontostand < 1000) { oeffneModal('💸 Zu wenig Geld', 'Der große Kühlschrank kostet <strong>1.000 €</strong> (vom Konto).', []); return; }
       gs.kontostand -= 1000;
       gs.grosserKuehlschrank = true;
-      logEvent('🧊 Großer Kühlschrank gekauft – Einkäufe reichen jetzt doppelt so lange.', 'good');
+      logEvent('🧊 Großer Kühlschrank gekauft – Vorrats-Kapazität jetzt 14 statt 7 Tage.', 'good');
       oeffneModal('🧊 Großer Kühlschrank',
-        'Gekauft! Ab jetzt reicht <strong>jeder Einkauf doppelt so lange</strong> (ca. 4 statt 2 Wochen) – ' +
-        'du musst seltener zum Supermarkt.', []);
+        'Gekauft! Deine <strong>Vorrats-Kapazität steigt auf 14 Tage</strong> (statt 7) – ' +
+        'du kannst auf einmal mehr einkaufen und musst seltener zum Supermarkt.', []);
       updateHUD();
       return;
     }
@@ -3715,41 +3717,45 @@ function aktionAusfuehren(ortId, aktionsId) {
 
   // --- SUPERMARKT ---
   if (ortId === 'supermarkt') {
-    const kaufOptionen = { einkauf_gut: 800, einkauf_normal: 500, einkauf_billig: 250 };
-    const kosten = kaufOptionen[aktionsId];
-    if (kosten !== undefined) {
+    // Pro-Tag-Kosten je Qualität; gekauft wird nur bis zur Kapazität (pro rata).
+    const proTag = { gut: 57, normal: 36, billig: 18 };
+    const typ = aktionsId.startsWith('einkauf_') ? aktionsId.replace('einkauf_', '') : null;
+    if (typ && proTag[typ] !== undefined) {
+      const kapazitaet = gs.grosserKuehlschrank ? 14 : 7;   // Kühlschrank verdoppelt die Kapazität
+      const haben = gs.lebensmittelTageRest || 0;
+      const tageKauf = kapazitaet - haben;
+      if (tageKauf <= 0) {
+        oeffneModal('🧊 Vorrat voll', `Dein Vorrat ist schon voll (<strong>${haben}/${kapazitaet} Tage</strong>). Erst etwas aufbrauchen, dann wieder einkaufen.`, []);
+        return;
+      }
+      const kosten = Math.round(proTag[typ] * tageKauf);
       // Bezahlung: erst loses Bargeld, Rest vom Konto
       if (gs.kontostand + gs.losesBargeld < kosten) {
-        oeffneModal('💸 Zu wenig Geld', `Der Einkauf kostet <strong>${formatEuro(kosten)}</strong> (Konto + Bargeld reichen nicht).`, []);
+        oeffneModal('💸 Zu wenig Geld', `Einkauf für <strong>${tageKauf} Tage</strong> kostet <strong>${formatEuro(kosten)}</strong> (Konto + Bargeld reichen nicht).`, []);
         return;
       }
       let rest = kosten;
       const ausBar = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausBar; rest -= ausBar;
       gs.kontostand -= rest;
       gs.supermarktFaellig = false;
-      const typ = aktionsId.replace('einkauf_', '');
       gs.lebensmittelDiesenMonat = typ;
-      // Rollender Vorrat: jeder Einkauf reicht 2 Wochen, verlängert (max. 4 Wochen)
-      // Großer Kühlschrank → doppelte Reichweite (+28 Tage, bis 56) statt +14/56
-      // Jeder Einkauf reicht 2 Wochen (+14). Großer Kühlschrank verdoppelt nur den
-      // Lager-MAX (28 statt 14), sodass man seltener einkaufen muss.
-      const maxVorrat = gs.grosserKuehlschrank ? 28 : 14;
-      gs.lebensmittelTageRest = Math.min(maxVorrat, (gs.lebensmittelTageRest || 0) + 14);
-      gs.kuehlschrankWarnung = false;   // bei nächstem Leerstand wieder warnen
+      gs.lebensmittelTageRest = kapazitaet;   // bis zur Kapazität aufgefüllt
+      gs.kuehlschrankWarnung = false;
+      const f = tageKauf / 7;   // Boni/Mali pro rata (voller Effekt bei 7-Tage-Kauf)
 
       if (typ === 'gut') {
-        gs.gesundheit       = clamp(gs.gesundheit + 10, 0, 100);
-        gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
-        gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
+        gs.gesundheit       = clamp(gs.gesundheit + Math.round(10 * f), 0, 100);
+        gs.happinessSpieler = clamp(gs.happinessSpieler + Math.round(10 * f), 0, 100);
+        gs.happinessPartner = clamp(gs.happinessPartner + Math.round(10 * f), 0, 100);
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥗 Bio-Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat). Gesundheit +10, Laune +10.`, 'good');
+        logEvent(`🥗 Bio-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit & Laune +.`, 'good');
       } else if (typ === 'normal') {
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥙 Normaler Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat).`, 'good');
+        logEvent(`🥙 Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}.`, 'good');
       } else if (typ === 'billig') {
-        gs.gesundheit = clamp(gs.gesundheit - 5, 0, 100);
+        gs.gesundheit = clamp(gs.gesundheit - Math.round(5 * f), 0, 100);
         gs.billigKaeufeInFolge++;
-        logEvent(`🍟 Billiger Einkauf: -${formatEuro(kosten)} (+2 Wochen Vorrat). Gesundheit -5.`, 'warn');
+        logEvent(`🍟 Billig-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit -.`, 'warn');
         if (gs.billigKaeufeInFolge >= 2) {
           setTimeout(() => oeffneModal('😤 Deine Frau beschwert sich!',
             'Zwei Monate hintereinander Billig-Essen! Deine Partnerin ist sauer.<br><br>'
