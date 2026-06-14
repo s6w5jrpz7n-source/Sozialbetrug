@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v99 – Spenden-Button';
+const BUILD_MARKE = 'v100 – Spendenlink';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2759,9 +2759,8 @@ function schliesseModal() {
 // Dadurch ist KEIN Google Play Billing nötig – ein externer Spendenlink
 // (PayPal.me / Ko-fi …) im Browser genügt.
 // ================================================================
-// TODO: Hier den ECHTEN Spendenlink eintragen (z. B. 'https://paypal.me/DEINNAME'
-//       oder 'https://ko-fi.com/DEINNAME'). Bis dahin Platzhalter:
-const SPENDEN_URL = 'https://example.com/spenden';
+// Echter Spendenlink (PayPal.me) – freiwillige Unterstützung, schaltet nichts frei.
+const SPENDEN_URL = 'https://paypal.me/findichsozial';
 
 function oeffneSpende(betrag) {
   // betrag (z. B. '0.50') ist für später gedacht: paypal.me erlaubt
