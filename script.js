@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v109 – Ring unten/Villa-Schlafen/Text';
+const BUILD_MARKE = 'v110 – Voller Ring';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -7469,13 +7469,8 @@ class SpielSzene extends Phaser.Scene {
 
   // Begehbar = im Feld und kein Gebäude-Feld (Straße/Bürgersteig/Lücken frei)
   begehbar(c, r) {
-    if (this.blockierteFelder.has(c + ',' + r)) return false;
-    if (c >= 0 && c <= 15 && r >= 0 && r <= 15) return true;     // Spieldiamant
-    // Laufweg-Ring NUR an den hinteren (oberen) Kanten – nicht unten, da läuft
-    // man sonst auf den gemalten Häusern (c=16 / r=16 = vordere Kanten = tabu).
-    if (c === -1 && r >= -1 && r <= 15) return true;
-    if (r === -1 && c >= -1 && c <= 15) return true;
-    return false;
+    // Spieldiamant 0..15 + voller Laufweg-Ring (−1..16) rundherum.
+    return c >= GEH_MIN && c <= GEH_MAX && r >= GEH_MIN && r <= GEH_MAX && !this.blockierteFelder.has(c + ',' + r);
   }
 
   // Bildschirm-/Weltkoordinate → Kachel (col,row)
