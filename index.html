@@ -1155,6 +1155,7 @@
         { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
         { label: '🏠 Hauptmenü / Neues Spiel', callback: () => hauptmenueBtn() },
+        { label: '❤️ Spenden / Unterstützen', callback: () => { if (typeof oeffneSpendenModal === 'function') oeffneSpendenModal(); } },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
       ]);
     }
