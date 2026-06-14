@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v101 – Event-Bilder (20)';
+const BUILD_MARKE = 'v102 – Fixes (Zoom/Penner/Raeuber/Arzt)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3872,8 +3872,8 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- ARZTPRAXIS ---
   if (ortId === 'arztpraxis') {
     if (aktionsId === 'arzt_behandlung') {
-      if (gs.kontostand < 500) { logEvent('⚠️ Nicht genug Geld für die Behandlung (500€).', 'warn'); return; }
-      gs.kontostand -= 500;
+      if (gs.kontostand + gs.losesBargeld < 500) { logEvent('⚠️ Nicht genug Geld für die Behandlung (500€).', 'warn'); return; }
+      let rest = 500; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
       gs.gesundheit  = clamp(gs.gesundheit + 30, 0, 100);
       logEvent('🩺 Behandlung: Gesundheit +30 (-500€).', 'good');
     }
@@ -3915,8 +3915,8 @@ function aktionAusfuehren(ortId, aktionsId) {
     }
     if (aktionsId === 'arzt_entzug') {
       if ((gs.suchtStufe || 0) === 0) { oeffneModal('💉 Entzug', 'Du hast (noch) keine Sucht. Bleib so!', []); return; }
-      if (gs.kontostand < 800) { logEvent('⚠️ Nicht genug Geld für die Therapie (800€).', 'warn'); return; }
-      gs.kontostand -= 800;
+      if (gs.kontostand + gs.losesBargeld < 800) { logEvent('⚠️ Nicht genug Geld für die Therapie (800€).', 'warn'); return; }
+      let rest = 800; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
       gs.suchtStufe  = 0;
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
       logEvent('💉 Entzug erfolgreich – Sucht überwunden!', 'good');
@@ -6939,7 +6939,7 @@ class SpielSzene extends Phaser.Scene {
     // Zoom (z. B. 0,7×) würde das Pixel-Runden die Gebäude flimmern lassen → dort aus.
     this._applyZoom = () => {
       this.cameras.main.setZoom(this._zoom);
-      this.cameras.main.setRoundPixels(this._zoom === 1);
+      this.cameras.main.setRoundPixels(true);
     };
     this._zoomUm = (faktor) => {
       this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
@@ -7249,8 +7249,12 @@ class SpielSzene extends Phaser.Scene {
 
     const s = this.spielerSprite;
     if (s) s.setPosition(this.spielerX, this.spielerY).setDepth(this.spielerY);
-    // Kamera-Folgeziel mitführen
-    if (this.camTarget) this.camTarget.setPosition(this.spielerX, this.spielerY);
+    // Kamera-Folgeziel mitführen – auf Bildschirm-Pixel-Raster snappen (zoom-fest),
+    // damit Gebäude bei gebrochenem Zoom nicht ruckeln/vibrieren.
+    if (this.camTarget) {
+      const cz = this.cameras.main.zoom || 1;
+      this.camTarget.setPosition(Math.round(this.spielerX * cz) / cz, Math.round(this.spielerY * cz) / cz);
+    }
     if (!s) return;
 
     if (!laufen) {
@@ -7528,7 +7532,8 @@ class SpielSzene extends Phaser.Scene {
   // Lässt einen Bettler weit weg vom Spieler erscheinen, der ihn dann verfolgt.
   // Bettler an einem zufälligen, begehbaren Punkt ins Leben rufen (Wander-Modus).
   initBettler() {
-    if (bettlerDeaktiviert()) return;
+    // Auch nach "Nicht mehr fragen" darf er wandern (nur kein aufdringliches
+    // Betteln mehr) → kein bettlerDeaktiviert-Abbruch beim Spawn.
     if (this._bettlerExists || gameState.gameOver) return;
     let best = null, bestD = -1;
     for (let i = 0; i < 40; i++) {
@@ -7604,7 +7609,11 @@ class SpielSzene extends Phaser.Scene {
   // Pro Frame: Bettler bewegen (wandern oder angreifen), Sprechblase, Klickzone.
   updateBettler(dt) {
     if (!this._bettlerExists) return;
-    if (bettlerDeaktiviert()) { this.despawnBettler(); if (this._spendeTimer) this._spendeTimer.remove(false); return; }
+    // Weggeschickt ("Nicht mehr fragen") → NICHT verschwinden, nur nicht mehr
+    // aufdringlich werden: er wandert einfach weiter herum.
+    if (bettlerDeaktiviert() && this._bettlerMode === 'attack') {
+      this._bettlerMode = 'wander'; this.neuesWanderZiel(); this.bettlerBubble.setVisible(false);
+    }
 
     const dx = this.spielerX - this._bettlerX, dy = this.spielerY - this._bettlerY;
     const dist = Math.hypot(dx, dy);
@@ -7828,8 +7837,28 @@ class SpielSzene extends Phaser.Scene {
           this._raeuberPfad = [];   // blockiert/außer Revier → neu planen
         }
       }
+    } else if (!this._raeuberSteht && !this._raeuberFreilauf && this._revier) {
+      // Spieler außerhalb des Reviers → nicht am Rand kleben, sondern zurück ins
+      // Revier wandern (Richtung Revier-Mitte).
+      const z = this._revier;
+      if (Phaser.Math.Distance.Between(this._raeuberX, this._raeuberY, z.cx, z.cy) > 60) {
+        this._raeuberRepath = (this._raeuberRepath || 0) - dt;
+        if (this._raeuberRepath <= 0 || !this._raeuberPfad || !this._raeuberPfad.length) {
+          this._raeuberPfad = this.npcPfad(this._raeuberX, this._raeuberY, z.cx, z.cy) || [];
+          this._raeuberRepath = 0.6;
+        }
+        if (this._raeuberPfad.length) {
+          const np = this.folgePfad(this._raeuberX, this._raeuberY, this._raeuberPfad, 70, dt);
+          if (this.imRevier(np.x, np.y) && this.weltBegehbar(np.x, np.y)) {
+            if (Math.abs(np.x - this._raeuberX) > 0.05) this._raeuberDX = np.x - this._raeuberX;
+            this._raeuberX = np.x; this._raeuberY = np.y;
+          } else { this._raeuberPfad = []; }
+        }
+      } else {
+        this._raeuberPfad = [];   // schon im Revier → stehen/warten
+      }
     } else {
-      this._raeuberPfad = [];   // erreicht oder außer Revier → nicht verfolgen
+      this._raeuberPfad = [];   // erreicht → nicht verfolgen
     }
     // Sprechblase „Geld oder Leben!" wenn er sich nähert
     if (this.raeuberBubble) {
