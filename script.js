@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v103 – Raeuber-Blase schwarz/weiss';
+const BUILD_MARKE = 'v104 – Schuldenerlass raus';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -451,8 +451,7 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: '💰  Kredit 1.000 € aufnehmen (Risiko +15, Zins 10%/Monat)',  id: 'kredit_klein' },
       { label: '💰  Kredit 3.000 € aufnehmen (Risiko +25, Zins 10%/Monat)',  id: 'kredit_gross' },
-      { label: '💸  Schulden zurückzahlen (aktuell: 0 €)',                    id: 'schulden_zahlen' },
-      { label: '🤝  Schuldenerlass verhandeln (Risiko +20, 50/50)',           id: 'schulden_verhandeln' }
+      { label: '💸  Schulden zurückzahlen (aktuell: 0 €)',                    id: 'schulden_zahlen' }
     ]
   },
   {
@@ -3597,18 +3596,6 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.loanSharkSchuld -= zahlung;
       gs.risikoRaster     = clamp(gs.risikoRaster - 10, 0, 100);
       logEvent('💸 ' + formatEuro(zahlung) + ' Schulden zurückgezahlt. Risiko -10.', 'good');
-    }
-    if (aktionsId === 'schulden_verhandeln') {
-      if (gs.loanSharkSchuld <= 0) { logEvent('ℹ️ Keine Schulden.', ''); return; }
-      gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100);
-      if (Math.random() < 0.5) {
-        const erlass = Math.floor(gs.loanSharkSchuld * 0.5);
-        gs.loanSharkSchuld -= erlass;
-        logEvent('🤝 Erlass von ' + formatEuro(erlass) + '! Verbleibend: ' + formatEuro(gs.loanSharkSchuld) + '.', 'good');
-      } else {
-        gs.loanSharkSchuld = Math.floor(gs.loanSharkSchuld * 1.3);
-        logEvent('😡 Verhandlung gescheitert! Schulden jetzt: ' + formatEuro(gs.loanSharkSchuld) + '.', 'danger');
-      }
     }
   }
 
