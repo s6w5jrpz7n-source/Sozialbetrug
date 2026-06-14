@@ -6,9 +6,13 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v105 – Einkauf pro Tag';
+const BUILD_MARKE = 'v106 – Laufweg um Diamant';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
+
+// Begehbares Gitter: Spieldiamant 0..15 + ein Ring (−1 und 16) rundherum, damit
+// man um den Diamanten herumlaufen kann (außen auf dem gemalten Gehsteig).
+const GEH_MIN = -1, GEH_MAX = 16;
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -7464,7 +7468,7 @@ class SpielSzene extends Phaser.Scene {
 
   // Begehbar = im Feld und kein Gebäude-Feld (Straße/Bürgersteig/Lücken frei)
   begehbar(c, r) {
-    return c >= 0 && c <= 15 && r >= 0 && r <= 15 && !this.blockierteFelder.has(c + ',' + r);
+    return c >= GEH_MIN && c <= GEH_MAX && r >= GEH_MIN && r <= GEH_MAX && !this.blockierteFelder.has(c + ',' + r);
   }
 
   // Bildschirm-/Weltkoordinate → Kachel (col,row)
@@ -7473,7 +7477,7 @@ class SpielSzene extends Phaser.Scene {
     const scr = (Y - this.offsetY) / (this.tileH / 2) - 1; // c + r
     const c = Math.round((scr + dcr) / 2);
     const r = Math.round((scr - dcr) / 2);
-    if (c < 0 || c > 15 || r < 0 || r > 15) return null;
+    if (c < GEH_MIN || c > GEH_MAX || r < GEH_MIN || r > GEH_MAX) return null;
     return { col: c, row: r };
   }
 
@@ -7489,7 +7493,7 @@ class SpielSzene extends Phaser.Scene {
       if (istZiel(cur.col, cur.row) && !(cur.col === startC && cur.row === startR)) { ziel = cur; break; }
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nc = cur.col + dx, nr = cur.row + dy;
-        if (nc < 0 || nc > 15 || nr < 0 || nr > 15) continue;
+        if (nc < GEH_MIN || nc > GEH_MAX || nr < GEH_MIN || nr > GEH_MAX) continue;
         const k = key(nc, nr);
         if (k in prev) continue;
         if (!this.begehbar(nc, nr)) continue;
