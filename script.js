@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v108 – Zoom-Out geraeteabhaengig';
+const BUILD_MARKE = 'v109 – Ring unten/Villa-Schlafen/Text';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2877,7 +2877,7 @@ function interact(ortId) {
   // Nach Einzug in die Villa ist die alte Wohnung verlassen
   if (ortId === 'wohnung' && villaBewohnt) {
     oeffneModal('🏠 Hier wohnst du nicht mehr',
-      'Du bist in deine <strong>Villa</strong> gezogen (unten Mitte).<br><br>'
+      'Du bist in deine <strong>Villa</strong> gezogen.<br><br>'
       + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Sozialbetrug – ist jetzt dort.', []);
     return;
   }
@@ -3100,7 +3100,9 @@ function aktionAusfuehren(ortId, aktionsId) {
   const gs = gameState;
 
   // ---- ENERGIE-CHECK: Bei 0 Energie nur Schlafen erlaubt ----
-  if (gs.energie <= 0 && !(ortId === 'wohnung' && aktionsId === 'schlafen')) {
+  const istSchlafen = (ortId === 'wohnung' && aktionsId === 'schlafen')
+                   || (ortId === 'villa'   && aktionsId === 'villa_schlafen');
+  if (gs.energie <= 0 && !istSchlafen) {
     oeffneModal('😴 Völlig erschöpft!',
       'Du hast <strong>0 Energie</strong> und kannst nichts mehr tun.<br><br>' +
       'Geh nach Hause und schlafe, um wieder handlungsfähig zu sein!',
@@ -7467,7 +7469,13 @@ class SpielSzene extends Phaser.Scene {
 
   // Begehbar = im Feld und kein Gebäude-Feld (Straße/Bürgersteig/Lücken frei)
   begehbar(c, r) {
-    return c >= GEH_MIN && c <= GEH_MAX && r >= GEH_MIN && r <= GEH_MAX && !this.blockierteFelder.has(c + ',' + r);
+    if (this.blockierteFelder.has(c + ',' + r)) return false;
+    if (c >= 0 && c <= 15 && r >= 0 && r <= 15) return true;     // Spieldiamant
+    // Laufweg-Ring NUR an den hinteren (oberen) Kanten – nicht unten, da läuft
+    // man sonst auf den gemalten Häusern (c=16 / r=16 = vordere Kanten = tabu).
+    if (c === -1 && r >= -1 && r <= 15) return true;
+    if (r === -1 && c >= -1 && c <= 15) return true;
+    return false;
   }
 
   // Bildschirm-/Weltkoordinate → Kachel (col,row)
