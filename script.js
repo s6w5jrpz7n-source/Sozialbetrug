@@ -301,7 +301,7 @@ function minijobFreibetrag(lohn) {
 // ================================================================
 const ORTE_CONFIG = [
   {
-    id: 'wohnung', name: '🏠 Wohnung', col: 2, row: 2,
+    id: 'wohnung', name: T('🏠 Wohnung', '🏠 Apartment'), col: 2, row: 2,
     farbe: 0x3a5a8c, dachFarbe: 0x5a8abd,
     beschreibung: 'Dein Zuhause. Hier schläfst du, versteckst Bargeld und planst Cheats.',
     aktionen: [
@@ -315,7 +315,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'arbeitsamt', name: '🏛️  Arbeitsamt', col: 6, row: 2,
+    id: 'arbeitsamt', name: T('🏛️  Arbeitsamt', '🏛️ Job Center'), col: 6, row: 2,
     farbe: 0x5a3a8c, dachFarbe: 0x8a6abf,
     beschreibung: 'Pflichtbesuche alle 14 Tage. Hier beantragst du legale Mehrbedarfe & Förderungen.',
     aktionen: [
@@ -334,7 +334,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'baustelle', name: '🏗️  Baustelle', col: 2, row: 10,
+    id: 'baustelle', name: T('🏗️  Baustelle', '🏗️ Construction Site'), col: 2, row: 10,
     farbe: 0x8c5a1a, dachFarbe: 0xbb8a40,
     beschreibung: 'Schwarzarbeit. Einnahmen landen als LOSES BARGELD – Transport-Risiko!',
     aktionen: [
@@ -343,7 +343,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'bank', name: '🏦  Bank', col: 2, row: 6,
+    id: 'bank', name: T('🏦  Bank', '🏦 Bank'), col: 2, row: 6,
     farbe: 0x2a7a4a, dachFarbe: 0x45aa6e,
     beschreibung: 'Loses Bargeld offiziell aufs Konto einzahlen (max. 200 €/Woche) oder Geld abheben. Aktiendepot.',
     aktionen: [
@@ -354,7 +354,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'pawn', name: '💍  Pfandleiher', col: 6, row: 6,
+    id: 'pawn', name: T('💍  Pfandleiher', '💍 Pawnshop'), col: 6, row: 6,
     farbe: 0x8c1a1a, dachFarbe: 0xbf4545,
     beschreibung: 'Goldbarren kaufen (im Garten vergraben) oder Gegenstände verpfänden. Auslösen kostet 25% Zins.',
     aktionen: [
@@ -368,7 +368,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'amuesier', name: '🍸  Amüsierbetrieb', col: 6, row: 10,
+    id: 'amuesier', name: T('🍸  Amüsierbetrieb', '🍸 Nightclub'), col: 6, row: 10,
     farbe: 0x1a6c4a, dachFarbe: 0x2aaa72,
     beschreibung: 'Kostet 200 €. Hebt die Stimmung – 25 % Chance, erwischt zu werden!',
     aktionen: [
@@ -376,7 +376,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'sportverein', name: '⚽  Sportverein', col: 10, row: 2,
+    id: 'sportverein', name: T('⚽  Sportverein', '⚽ Sports Club'), col: 10, row: 2,
     farbe: 0x2a6a3a, dachFarbe: 0x3a9a52,
     beschreibung: 'Ehrenamtliche Tätigkeit. Kostet Energie, gibt kein Geld – senkt aber Risiko.',
     aktionen: [
@@ -386,7 +386,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'supermarkt', name: '🛒  Supermarkt', col: 14, row: 2,
+    id: 'supermarkt', name: T('🛒  Supermarkt', '🛒 Supermarket'), col: 14, row: 2,
     farbe: 0x2a6a8a, dachFarbe: 0x3a9aba,
     beschreibung: 'Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.',
     aktionen: [
@@ -398,7 +398,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'kiosk', name: '🏪  Kiosk', col: 2, row: 14,
+    id: 'kiosk', name: T('🏪  Kiosk', '🏪 Kiosk'), col: 2, row: 14,
     farbe: 0xc23a3a, dachFarbe: 0x8a2020,
     beschreibung: 'Späti um die Ecke: Rubbellose, Alkohol & Zigaretten. Vorsicht – macht süchtig.',
     aktionen: [
@@ -408,7 +408,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'arztpraxis', name: '⚕️  Arztpraxis', col: 14, row: 10,
+    id: 'arztpraxis', name: T('⚕️  Arztpraxis', '⚕️ Medical Practice'), col: 14, row: 10,
     farbe: 0xcfd8e0, dachFarbe: 0x9aa6b4,
     beschreibung: 'Behandlung, Krankschreibung und Entzug. Hält dich auf den Beinen.',
     aktionen: [
@@ -420,7 +420,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'villa', name: '🏖️  Villa', col: 10, row: 14,
+    id: 'villa', name: T('🏖️  Villa', '🏖️ Villa'), col: 10, row: 14,
     farbe: 0xf0e6d0, dachFarbe: 0xd8b070,
     beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt. Hier wohnst du jetzt.',
     aktionen: [
@@ -430,7 +430,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'kirche', name: '⛪  Kirche', col: 6, row: 14,
+    id: 'kirche', name: T('⛪  Kirche', '⛪ Church'), col: 6, row: 14,
     farbe: 0xd8d0c0, dachFarbe: 0x8a7a5a,
     beschreibung: 'Sündenerlass (Risiko halbieren) und Beichte (Trost) – jeweils alle 3 Monate.',
     aktionen: [
@@ -439,7 +439,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'kasino', name: '🎰  Kasino', col: 10, row: 6,
+    id: 'kasino', name: T('🎰  Kasino', '🎰 Casino'), col: 10, row: 6,
     farbe: 0x6a1a6a, dachFarbe: 0x9a2a9a,
     beschreibung: 'Spiele mit losem Bargeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Das Kasino behält im Schnitt 15%.',
     aktionen: [
@@ -450,7 +450,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'schattenbank', name: '🏴  Schattenbank', col: 14, row: 6,
+    id: 'schattenbank', name: T('🏴  Schattenbank', '🏴 Shadow Bank'), col: 14, row: 6,
     farbe: 0x1a1a2a, dachFarbe: 0x0a0a18,
     beschreibung: 'Wandle Loses Bargeld in sichere Schwarzkasse um. Kostet 5%/Monat Verwaltungsgebühr.',
     aktionen: [
@@ -466,7 +466,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'loanshark', name: '🦈  Kredithai', col: 10, row: 10,
+    id: 'loanshark', name: T('🦈  Kredithai', '🦈 Loan Shark'), col: 10, row: 10,
     farbe: 0x5a1a1a, dachFarbe: 0x8a2a2a,
     beschreibung: 'Schnelles Geld, hohe Risiken. Schulden wachsen monatlich.',
     aktionen: [
@@ -476,7 +476,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'dealer', name: '🌳  Park', col: 1, row: 11,
+    id: 'dealer', name: T('🌳  Park', '🌳 Park'), col: 1, row: 11,
     farbe: 0x3a6a2a, dachFarbe: 0x2a4a1a,
     beschreibung: 'Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.',
     aktionen: [
@@ -3120,9 +3120,9 @@ function aktionAusfuehren(ortId, aktionsId) {
   const istSchlafen = (ortId === 'wohnung' && aktionsId === 'schlafen')
                    || (ortId === 'villa'   && aktionsId === 'villa_schlafen');
   if (gs.energie <= 0 && !istSchlafen) {
-    oeffneModal('😴 Völlig erschöpft!',
-      'Du hast <strong>0 Energie</strong> und kannst nichts mehr tun.<br><br>' +
-      'Geh nach Hause und schlafe, um wieder handlungsfähig zu sein!',
+    oeffneModal(T('😴 Völlig erschöpft!', '😴 Completely exhausted!'),
+      T('Du hast <strong>0 Energie</strong> und kannst nichts mehr tun.<br><br>', 'You have <strong>0 energy</strong> and cannot do anything.<br><br>') +
+      T('Geh nach Hause und schlafe, um wieder handlungsfähig zu sein!', 'Go home and sleep to get back on your feet!'),
       []
     );
     soundAlarm && soundAlarm();
