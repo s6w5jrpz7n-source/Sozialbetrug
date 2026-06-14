@@ -6,9 +6,26 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v110 – Voller Ring';
+const BUILD_MARKE = 'v111 – Zweisprachig (Start)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
+
+// ===== Mehrsprachigkeit (DE/EN) =================================================
+// T('deutsch','english') liefert je nach Sprache den Text. Noch nicht übersetzte
+// Stellen (ohne 2. Argument) bleiben automatisch Deutsch → nichts kaputt.
+// Sprachwechsel speichert + lädt neu (damit auch fest definierte Texte greifen).
+let SPRACHE = 'de';
+try {
+  const gespeichert = localStorage.getItem('lang');
+  SPRACHE = gespeichert || ((navigator.language || 'de').toLowerCase().startsWith('en') ? 'en' : 'de');
+} catch (e) {}
+function T(de, en) { return (SPRACHE === 'en' && en != null) ? en : de; }
+function setSprache(l) {
+  try { localStorage.setItem('lang', l); } catch (e) {}
+  location.reload();   // Neustart in der neuen Sprache (am Startbildschirm geht nichts verloren)
+}
+window.T = T; window.setSprache = setSprache;
+// ===============================================================================
 
 // Begehbares Gitter: Spieldiamant 0..15 + ein Ring (−1 und 16) rundherum, damit
 // man um den Diamanten herumlaufen kann (außen auf dem gemalten Gehsteig).
@@ -819,7 +836,7 @@ function oeffneInfo(tab) {
     `<div style="text-align:center;margin-top:10px;font-size:11px;color:#7f8db5;">` +
     `Version ${APP_VERSION} · © 2026 Andreas Lang</div>`;
   const close = document.createElement('button');
-  close.className = 'action-btn'; close.textContent = '✕ Schließen';
+  close.className = 'action-btn'; close.textContent = T('✕ Schließen', '✕ Close');
   close.onclick = () => schliesseModal();
   body.appendChild(close);
   const overlay = document.getElementById('modal-overlay');
@@ -2742,7 +2759,7 @@ function _renderStdModal(item) {
   });
   const closeBtn = document.createElement('button');
   closeBtn.id          = 'modal-close-btn';
-  closeBtn.textContent = '✕ Schließen (ESC)';
+  closeBtn.textContent = T('✕ Schließen (ESC)', '✕ Close (ESC)');
   closeBtn.onclick = () => { if (item.schliessenCallback) item.schliessenCallback(); schliesseModal(); };
   body.appendChild(closeBtn);
   document.getElementById('modal-overlay').classList.add('active');
@@ -6327,11 +6344,11 @@ class StartSzene extends Phaser.Scene {
     // relY = vertikale Mitte des jeweiligen Buttons im Hintergrundbild
     // (an startbg.png exakt ausgemessen, 1264×843).
     this._menuItems = [
-      { icon: '👑', label: 'NEUES SPIEL',   relY: 0.548, aktion: () => this._neuesSpiel()    },
-      { icon: '📁', label: 'SPIEL LADEN',   relY: 0.611, aktion: () => this._spielLaden()    },
-      { icon: 'ℹ️', label: 'INFO & ANLEITUNG', relY: 0.679, aktion: () => oeffneInfo('story') },
-      { icon: '🏆', label: 'BESTENLISTE',   relY: 0.747, aktion: () => this._bestenliste()   },
-      { icon: '🚪', label: 'BEENDEN',       relY: 0.810, aktion: () => this._beenden()        },
+      { icon: '👑', label: T('NEUES SPIEL', 'NEW GAME'),      relY: 0.548, aktion: () => this._neuesSpiel()    },
+      { icon: '📁', label: T('SPIEL LADEN', 'LOAD GAME'),     relY: 0.611, aktion: () => this._spielLaden()    },
+      { icon: 'ℹ️', label: T('INFO & ANLEITUNG', 'INFO & GUIDE'), relY: 0.679, aktion: () => oeffneInfo('story') },
+      { icon: '🏆', label: T('BESTENLISTE', 'HIGHSCORES'),    relY: 0.747, aktion: () => this._bestenliste()   },
+      { icon: '🚪', label: T('BEENDEN', 'QUIT'),              relY: 0.810, aktion: () => this._beenden()        },
     ];
 
     this._startObjekte = [];   // alle aufgebauten Objekte (zum Neuaufbau bei Resize)
@@ -6363,7 +6380,7 @@ class StartSzene extends Phaser.Scene {
 
     // Fußzeile: Copyright + Datenschutz (beide Layouts), zentriert. Tippen öffnet
     // die mitgelieferte privacy.html (offline). Copyright ist Pflicht/üblich.
-    const foot = this.add.text(W / 2, H - 8, '© 2026 Andreas Lang   ·   v' + APP_VERSION + '   ·   Datenschutz', {
+    const foot = this.add.text(W / 2, H - 8, '© 2026 Andreas Lang   ·   v' + APP_VERSION + '   ·   ' + T('Datenschutz', 'Privacy'), {
       fontFamily: '"Courier New", monospace', fontSize: '13px',
       color: '#9fb0d8', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5, 1).setDepth(9999).setInteractive({ useHandCursor: true });
@@ -6371,6 +6388,15 @@ class StartSzene extends Phaser.Scene {
     foot.on('pointerout',  () => foot.setColor('#9fb0d8'));
     foot.on('pointerdown', () => { try { window.location.assign('privacy.html'); } catch (e) {} });
     this._startObjekte.push(foot);
+
+    // Sprachumschalter (oben rechts) – zeigt die jeweils ANDERE Sprache an.
+    const langTxt = this.add.text(W - 10, 8, SPRACHE === 'en' ? '🇩🇪 Deutsch' : '🇬🇧 English', {
+      fontFamily: '"Courier New", monospace', fontSize: '15px', fontStyle: 'bold',
+      color: '#ffe9b0', backgroundColor: 'rgba(10,14,26,0.7)', padding: { x: 8, y: 5 },
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(1, 0).setDepth(10000).setInteractive({ useHandCursor: true });
+    langTxt.on('pointerdown', () => setSprache(SPRACHE === 'en' ? 'de' : 'en'));
+    this._startObjekte.push(langTxt);
 
     // ===== HOCHFORMAT (Handy): Titelbild oben + große Tipp-Buttons darunter =====
     if (H > W * 1.05 && this.textures.exists('startbg')) {

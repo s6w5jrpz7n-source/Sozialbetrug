@@ -1151,12 +1151,12 @@
     // Zahnrad-Menü (oben rechts): Speichern / Laden / Hauptmenü / Musik / Tests
     function openGearMenu() {
       if (typeof oeffneModal !== 'function') return;
-      oeffneModal('⚙️ Menü', 'Spielstand verwalten. (Zeit-Tempo: unten links 1×/2×/4×)', [
-        { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
-        { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
-        { label: '🏠 Hauptmenü / Neues Spiel', callback: () => hauptmenueBtn() },
-        { label: '❤️ Spenden / Unterstützen', callback: () => { if (typeof oeffneSpendenModal === 'function') oeffneSpendenModal(); } },
-        { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
+      oeffneModal(T('⚙️ Menü', '⚙️ Menu'), T('Spielstand verwalten. (Zeit-Tempo: unten links 1×/2×/4×)', 'Manage your game. (Speed: bottom-left 1×/2×/4×)'), [
+        { label: T('💾 Speichern', '💾 Save'),           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
+        { label: T('📂 Laden', '📂 Load'),               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
+        { label: T('🏠 Hauptmenü / Neues Spiel', '🏠 Main menu / New game'), callback: () => hauptmenueBtn() },
+        { label: T('❤️ Spenden / Unterstützen', '❤️ Donate / Support'), callback: () => { if (typeof oeffneSpendenModal === 'function') oeffneSpendenModal(); } },
+        { label: (_musikAn ? T('🔊 Musik aus', '🔊 Music off') : T('🔇 Musik an', '🔇 Music on')), callback: () => toggleMusik() },
       ]);
     }
 
