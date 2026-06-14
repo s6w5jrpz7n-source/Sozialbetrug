@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v107 – Geschenk 1000';
+const BUILD_MARKE = 'v108 – Zoom-Out geraeteabhaengig';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6927,19 +6927,18 @@ class SpielSzene extends Phaser.Scene {
     this.time.delayedCall(60,  () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
     this.time.delayedCall(300, () => this.cameras.main.centerOn(this.spielerX, this.spielerY));
 
-    // ---- Zoom: adaptiver Startwert, rein bis ZOOM_MAX, raus bis ZOOM_MIN ----
-    // ZOOM_MIN = 0.7: etwas Rauszoomen erlaubt, aber nicht so weit, dass die
-    // leere Umgebung jenseits der bebauten Reihen sichtbar wird (+ größerer Nebel).
-    const ZOOM_MIN = 0.7, ZOOM_MAX = 1.8;
-    this._zoom = Phaser.Math.Clamp(this.scale.width / 500, ZOOM_MIN, 1.0);   // Startwert adaptiv
-    // roundPixels nur bei exaktem 1× (pixelgenau, kein Vibrieren). Bei gebrochenem
-    // Zoom (z. B. 0,7×) würde das Pixel-Runden die Gebäude flimmern lassen → dort aus.
+    // ---- Zoom: adaptiver Startwert, rein bis ZOOM_MAX, raus bis _zoomMin ----
+    // Untergrenze geräteabhängig: kleine Displays (Handy) dürfen weiter rauszoomen
+    // (mehr Übersicht), große (Tablet) bleiben bei ~0,7 (sonst sieht man ins Leere).
+    const ZOOM_MAX = 1.8;
+    this._zoomMin = Phaser.Math.Clamp(this.scale.width / 1700, 0.45, 0.7);
+    this._zoom = Phaser.Math.Clamp(this.scale.width / 500, this._zoomMin, 1.0);   // Startwert adaptiv
     this._applyZoom = () => {
       this.cameras.main.setZoom(this._zoom);
       this.cameras.main.setRoundPixels(true);
     };
     this._zoomUm = (faktor) => {
-      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, ZOOM_MIN, ZOOM_MAX);
+      this._zoom = Phaser.Math.Clamp(this._zoom * faktor, this._zoomMin, ZOOM_MAX);
       this._applyZoom();
       this.cameras.main.centerOn(this.spielerX, this.spielerY);
     };
