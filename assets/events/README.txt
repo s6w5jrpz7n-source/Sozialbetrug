@@ -1,4 +1,4 @@
 Event-Bilder für die Popups.
-Dateiname = Event-ID + .png  (z. B. alltag_hund.png, shark_01.png).
-Wird im Popup oben als Banner gezeigt (volle Breite, ~170px hoch, object-fit cover).
-Fehlt ein Bild, zeigt das Popup einfach keins (Fallback) – kein Fehler.
+Quell-Dateiname = Event-ID (z. B. alltag_hund.png) – im ZIP hochladen.
+Werden zu JPG (max 760px breit) konvertiert und als <id>.jpg hier abgelegt;
+das Spiel lädt assets/events/<id>.jpg. Fehlt ein Bild -> Popup ohne Bild (Fallback).

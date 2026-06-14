@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v100 – Spendenlink';
+const BUILD_MARKE = 'v101 – Event-Bilder (20)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2365,7 +2365,7 @@ function _renderEventModal(event) {
   const body = document.getElementById('modal-body');
   const kat = { behoerde: '🏛️ Behörden', loan_shark: '🦈 Kreditgeber', beziehung: '💑 Beziehung', alltag: '🎲 Alltag' }[event.kategorie] || '📨';
   body.innerHTML = `
-    <img src="assets/events/${event.id}.png" alt=""
+    <img src="assets/events/${event.id}.jpg" alt=""
          style="display:block;width:100%;height:170px;object-fit:cover;border-radius:10px;border:1px solid var(--border-hi);margin-bottom:10px;"
          onerror="this.style.display='none'">
     <p style="color:var(--text-dim);font-size:0.6rem;margin-bottom:8px;">${kat}</p>
