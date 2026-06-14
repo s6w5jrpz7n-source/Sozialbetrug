@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v102 – Fixes (Zoom/Penner/Raeuber/Arzt)';
+const BUILD_MARKE = 'v103 – Raeuber-Blase schwarz/weiss';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -7042,10 +7042,10 @@ class SpielSzene extends Phaser.Scene {
       }
       this.raeuberSprite = this.add.sprite(-9999, -9999, 'raeuber').setOrigin(0.5, 1).setVisible(false);
     }
-    // Drohende Sprechblase über dem Räuber (wie beim Bettler, aber rot)
+    // Sprechblase über dem Räuber – schwarz auf hell, wie beim Bettler
     this.raeuberBubble = this.add.text(0, 0, 'Geld oder Leben!', {
       fontFamily: '"Share Tech Mono", "Courier New", monospace', fontSize: '18px', fontStyle: 'bold',
-      color: '#ffffff', backgroundColor: '#a01818', padding: { x: 9, y: 6 },
+      color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 9, y: 6 },
       resolution: Math.max(2, Math.min(window.devicePixelRatio || 2, 3)),
     }).setOrigin(0.5, 1).setDepth(95000).setVisible(false);
     this._raeuberExists = false;
