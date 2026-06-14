@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v106 – Laufweg um Diamant';
+const BUILD_MARKE = 'v107 – Geschenk 1000';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -106,7 +106,7 @@ const gameState = {
   // ---- Frau ausgezogen ----
   frauAusgezogen: false,    // true wenn happinessPartner < 20
   unterhaltProMonat: 0,     // 1000€/M wenn Frau weg
-  geschenkeSumme: 0,        // Zählt Geschenke bis 5000€ für Rückkehr
+  geschenkeSumme: 0,        // Zählt Geschenke bis 1000€ für Rückkehr
 
   // ---- Supermarkt ----
   lebensmittelDiesenMonat: null, // zuletzt gekaufte Qualität 'gut'|'normal'|'billig'|null (für Anzeige)
@@ -376,7 +376,7 @@ const ORTE_CONFIG = [
       { label: '🥗  Bio-Qualität  (57€/Tag, Gesundheit & Laune +)',           id: 'einkauf_gut'    },
       { label: '🥙  Normal       (36€/Tag)',                                   id: 'einkauf_normal' },
       { label: '🍟  Billig       (18€/Tag, Gesundheit/Laune -)',              id: 'einkauf_billig' },
-      { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 5.000€)', id: 'geschenk'  },
+      { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 1.000€)', id: 'geschenk'  },
       { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
     ]
   },
@@ -2900,7 +2900,7 @@ function interact(ortId) {
     }
     if (ortId === 'supermarkt' && a.id === 'geschenk') {
       const bereits = gs.geschenkeSumme || 0;
-      label = `🎁  Geschenk kaufen (500€ · bereits: ${formatEuro(bereits)} / 5.000€)`;
+      label = `🎁  Geschenk kaufen (500€ · bereits: ${formatEuro(bereits)} / 1.000€)`;
     }
     if (ortId === 'bank' && a.id === 'einzahlen') {
       const limit  = 200;
@@ -3777,8 +3777,8 @@ function aktionAusfuehren(ortId, aktionsId) {
       if (gs.kontostand < 500) { logEvent('⚠️ Nicht genug Geld (500€).', 'warn'); return; }
       gs.kontostand    -= 500;
       gs.geschenkeSumme += 500;
-      logEvent(`🎁 Geschenk 500€. Gesamt: ${formatEuro(gs.geschenkeSumme)} / 5.000€.`, 'good');
-      if (gs.geschenkeSumme >= 5000 && gs.frauAusgezogen) {
+      logEvent(`🎁 Geschenk 500€. Gesamt: ${formatEuro(gs.geschenkeSumme)} / 1.000€.`, 'good');
+      if (gs.geschenkeSumme >= 1000 && gs.frauAusgezogen) {
         gs.frauAusgezogen      = false;
         gs.unterhaltProMonat   = 0;
         gs.geschenkeSumme      = 0;
@@ -3788,7 +3788,7 @@ function aktionAusfuehren(ortId, aktionsId) {
         gs.eheKriseGescheitert = false;
         logEvent('💑 Frau ist zurückgekommen! Unterhalt entfällt.', 'good');
         oeffneModal('💑 Sie ist zurück!',
-          'Du hast genug Geschenke gemacht (5.000 €).<br><br>'
+          'Du hast genug Geschenke gemacht (1.000 €).<br><br>'
           + 'Deine Partnerin zieht wieder ein. Partnerlaune: <strong>70</strong>.<br>'
           + 'Der monatliche Unterhalt von 1.000 € entfällt.', []);
       }
@@ -4718,7 +4718,7 @@ function monatsAbschluss() {
   if (!gs.frauAusgezogen && gs.happinessPartner < 20) {
     gs.frauAusgezogen    = true;
     gs.unterhaltProMonat = 1000;
-    meldungen.push('💔 Deine Partnerin ist ausgezogen! Unterhalt: 1.000 €/Monat. Kaufe Geschenke für 5.000 € für ihre Rückkehr.');
+    meldungen.push('💔 Deine Partnerin ist ausgezogen! Unterhalt: 1.000 €/Monat. Kaufe Geschenke für 1.000 € für ihre Rückkehr.');
     logEvent('💔 Frau ausgezogen! Unterhalt 1.000€/M.', 'danger');
     soundAlarm && soundAlarm();
   }
