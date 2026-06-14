@@ -1123,22 +1123,6 @@
       }
     }
 
-    // Test: Bettler sofort spawnen (statt 10 Min warten)
-    function spawnBettlerBtn() {
-      const game = window._phaserGameRef;
-      if (game) {
-        const szene = game.scene.getScene('SpielSzene');
-        if (szene && szene.spawnBettler) szene.spawnBettler();
-      }
-    }
-    // Test: Räuber sofort spawnen
-    function spawnRaeuberBtn() {
-      const game = window._phaserGameRef;
-      if (game) {
-        const szene = game.scene.getScene('SpielSzene');
-        if (szene && szene.spawnRaeuberTest) szene.spawnRaeuberTest();
-      }
-    }
     // Zeitraffer setzen (1× / 2× / 4×)
     function setTempo(x) {
       const game = window._phaserGameRef;
@@ -1171,8 +1155,6 @@
         { label: '💾 Speichern',           callback: () => { if (typeof saveSpiel === 'function') saveSpiel(1); } },
         { label: '📂 Laden',               callback: () => { if (typeof oeffneLadeMenu === 'function') oeffneLadeMenu(); } },
         { label: '🏠 Hauptmenü / Neues Spiel', callback: () => hauptmenueBtn() },
-        { label: '🧎 Bettler testen',       callback: () => spawnBettlerBtn() },
-        { label: '🔫 Räuber testen',        callback: () => spawnRaeuberBtn() },
         { label: (_musikAn ? '🔊 Musik aus' : '🔇 Musik an'), callback: () => toggleMusik() },
       ]);
     }
