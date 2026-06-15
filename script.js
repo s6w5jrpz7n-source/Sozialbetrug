@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v111 – Zweisprachig (Start)';
+const BUILD_MARKE = 'v112 – EN Gebaeude-Aktionen';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -303,184 +303,184 @@ const ORTE_CONFIG = [
   {
     id: 'wohnung', name: T('🏠 Wohnung', '🏠 Apartment'), col: 2, row: 2,
     farbe: 0x3a5a8c, dachFarbe: 0x5a8abd,
-    beschreibung: 'Dein Zuhause. Hier schläfst du, versteckst Bargeld und planst Cheats.',
+    beschreibung: T('Dein Zuhause. Hier schläfst du, versteckst Bargeld und planst Cheats.', 'Your home. Sleep, hide cash and plan your schemes here.'),
     aktionen: [
-      { label: '🛏️  Schlafen (Energie +25)',                    id: 'schlafen' },
-      { label: '🎭  Sozialbetrug...',                          id: 'cheats_menu' },
-      { label: '🛒  Kaufen …',                                  id: 'kaufen_menu' },
-      { label: '🏠  Schein-WG deklarieren (+200 €/M, riskant)', id: 'scheinwg' },
-      { label: '📦  Umzug in größere Wohnung',                  id: 'umzug' },
-      { label: '⚖️  Anwalt anrufen (Strafe anfechten)',         id: 'anwalt' },
-      { label: '✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)',    id: 'auswandern' }
+      { label: T('🛏️  Schlafen (Energie +25)', '🛏️ Sleep (Energy +25)'),                    id: 'schlafen' },
+      { label: T('🎭  Sozialbetrug...', '🎭 Welfare fraud...'),                          id: 'cheats_menu' },
+      { label: T('🛒  Kaufen …', '🛒 Buy …'),                                  id: 'kaufen_menu' },
+      { label: T('🏠  Schein-WG deklarieren (+200 €/M, riskant)', '🏠 Declare fake flatshare (+200 €/mo, risky)'), id: 'scheinwg' },
+      { label: T('📦  Umzug in größere Wohnung', '📦 Move to a bigger apartment'),                  id: 'umzug' },
+      { label: T('⚖️  Anwalt anrufen (Strafe anfechten)', '⚖️ Call a lawyer (contest penalty)'),         id: 'anwalt' },
+      { label: T('✈️  Ins Ausland absetzen (Sieg ab 1 Mio €)', '✈️ Flee abroad (win at 1M €)'),    id: 'auswandern' }
     ]
   },
   {
     id: 'arbeitsamt', name: T('🏛️  Arbeitsamt', '🏛️ Job Center'), col: 6, row: 2,
     farbe: 0x5a3a8c, dachFarbe: 0x8a6abf,
-    beschreibung: 'Pflichtbesuche alle 14 Tage. Hier beantragst du legale Mehrbedarfe & Förderungen.',
+    beschreibung: T('Pflichtbesuche alle 14 Tage. Hier beantragst du legale Mehrbedarfe & Förderungen.', 'Mandatory visits every 14 days. Apply for legal extra benefits & subsidies here.'),
     aktionen: [
-      { label: '📋  Pflichttermin wahrnehmen',               id: 'pflichttermin' },
-      { label: '📝  Scheinbewerbung einreichen (Risiko -5)', id: 'scheinbewerbung' },
-      { label: '🏖️  Kur beantragen (volle Erholung)',         id: 'kur' },
-      { label: '🚿  Mehrbedarf Warmwasser (+15 €/M)',         id: 'mb_warmwasser' },
-      { label: '👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)',    id: 'mb_alleinerziehend' },
-      { label: '🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', id: 'mb_ernaehrung' },
-      { label: '🎒  Bildung & Teilhabe (+40 €/M)',            id: 'mb_but' },
-      { label: '🚀  Einstiegsgeld (Gründerbonus) beantragen', id: 'einstiegsgeld' },
-      { label: '🛋️  Erstausstattung Wohnung (einmalig +1.200 €)', id: 'pausch_erstausstattung' },
-      { label: '🪑  Möbel/Schreibtisch fürs Kind (+250 €)',       id: 'pausch_moebel' },
-      { label: '👕  Kinder-Bekleidung (+150 €, alle 6 Monate)',    id: 'pausch_bekleidung' },
-      { label: '🤝  Sachbearbeiter schmieren (150 €/M, weniger Prüfungen)', id: 'sachbearbeiter' }
+      { label: T('📋  Pflichttermin wahrnehmen', '📋 Attend mandatory appointment'),               id: 'pflichttermin' },
+      { label: T('📝  Scheinbewerbung einreichen (Risiko -5)', '📝 Submit fake application (Risk -5)'), id: 'scheinbewerbung' },
+      { label: T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)'),         id: 'kur' },
+      { label: T('🚿  Mehrbedarf Warmwasser (+15 €/M)', '🚿 Hot-water extra benefit (+15 €/mo)'),         id: 'mb_warmwasser' },
+      { label: T('👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)', '👨‍👧 Single-parent extra benefit (+70 €/mo)'),    id: 'mb_alleinerziehend' },
+      { label: T('🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', '🥗 Dietary extra benefit / certificate (+110 €/mo)'), id: 'mb_ernaehrung' },
+      { label: T('🎒  Bildung & Teilhabe (+40 €/M)', '🎒 Education & participation (+40 €/mo)'),            id: 'mb_but' },
+      { label: T('🚀  Einstiegsgeld (Gründerbonus) beantragen', '🚀 Apply for start-up grant'), id: 'einstiegsgeld' },
+      { label: T('🛋️  Erstausstattung Wohnung (einmalig +1.200 €)', '🛋️ Home starter grant (one-time +1,200 €)'), id: 'pausch_erstausstattung' },
+      { label: T('🪑  Möbel/Schreibtisch fürs Kind (+250 €)', '🪑 Furniture/desk for the kid (+250 €)'),       id: 'pausch_moebel' },
+      { label: T('👕  Kinder-Bekleidung (+150 €, alle 6 Monate)', '👕 Kids clothing (+150 €, every 6 months)'),    id: 'pausch_bekleidung' },
+      { label: T('🤝  Sachbearbeiter schmieren (150 €/M, weniger Prüfungen)', '🤝 Bribe caseworker (150 €/mo, fewer audits)'), id: 'sachbearbeiter' }
     ]
   },
   {
     id: 'baustelle', name: T('🏗️  Baustelle', '🏗️ Construction Site'), col: 2, row: 10,
     farbe: 0x8c5a1a, dachFarbe: 0xbb8a40,
-    beschreibung: 'Schwarzarbeit. Einnahmen landen als LOSES BARGELD – Transport-Risiko!',
+    beschreibung: T('Schwarzarbeit. Einnahmen landen als LOSES BARGELD – Transport-Risiko!', 'Off-the-books work. Earnings come as LOOSE CASH – risky to carry!'),
     aktionen: [
-      { label: '⛏️  Ganzer Tag  (Loses Bargeld +300, Risiko +12, E -20)', id: 'schwarzarbeit' },
-      { label: '🔧  Halber Tag  (Loses Bargeld +120, Risiko  +5, E  -8)', id: 'halbertag' }
+      { label: T('⛏️  Ganzer Tag  (Loses Bargeld +300, Risiko +12, E -20)', '⛏️ Full day (Loose cash +300, Risk +12, E -20)'), id: 'schwarzarbeit' },
+      { label: T('🔧  Halber Tag  (Loses Bargeld +120, Risiko  +5, E  -8)', '🔧 Half day (Loose cash +120, Risk +5, E -8)'), id: 'halbertag' }
     ]
   },
   {
     id: 'bank', name: T('🏦  Bank', '🏦 Bank'), col: 2, row: 6,
     farbe: 0x2a7a4a, dachFarbe: 0x45aa6e,
-    beschreibung: 'Loses Bargeld offiziell aufs Konto einzahlen (max. 200 €/Woche) oder Geld abheben. Aktiendepot.',
+    beschreibung: T('Loses Bargeld offiziell aufs Konto einzahlen (max. 200 €/Woche) oder Geld abheben. Aktiendepot.', 'Deposit loose cash into your account (max. 200 €/week) or withdraw. Stock portfolio.'),
     aktionen: [
-      { label: '💳  → KONTO einzahlen (Loses Bargeld → Bankkonto)',         id: 'einzahlen' },
-      { label: '💵  500 € abheben (Bankkonto → Loses Bargeld)',              id: 'abheben' },
-      { label: '📈  Aktiendepot – Kaufen (MSCI World / Spekulation)',        id: 'depot_kaufen' },
-      { label: '📉  Aktiendepot – Verkaufen / Übersicht',                   id: 'depot_verkaufen' }
+      { label: T('💳  → KONTO einzahlen (Loses Bargeld → Bankkonto)', '💳 → Deposit to ACCOUNT (Loose cash → bank account)'),         id: 'einzahlen' },
+      { label: T('💵  500 € abheben (Bankkonto → Loses Bargeld)', '💵 Withdraw 500 € (Bank account → Loose cash)'),              id: 'abheben' },
+      { label: T('📈  Aktiendepot – Kaufen (MSCI World / Spekulation)', '📈 Stock portfolio – Buy (MSCI World / speculation)'),        id: 'depot_kaufen' },
+      { label: T('📉  Aktiendepot – Verkaufen / Übersicht', '📉 Stock portfolio – Sell / overview'),                   id: 'depot_verkaufen' }
     ]
   },
   {
     id: 'pawn', name: T('💍  Pfandleiher', '💍 Pawnshop'), col: 6, row: 6,
     farbe: 0x8c1a1a, dachFarbe: 0xbf4545,
-    beschreibung: 'Goldbarren kaufen (im Garten vergraben) oder Gegenstände verpfänden. Auslösen kostet 25% Zins.',
+    beschreibung: T('Goldbarren kaufen (im Garten vergraben) oder Gegenstände verpfänden. Auslösen kostet 25% Zins.', 'Buy gold bars (buried in the garden) or pawn items. Redeeming costs 25% interest.'),
     aktionen: [
-      { label: '🥇  Goldbarren kaufen (500 € · Bargeld/Konto → im Garten vergraben)', id: 'gold_kaufen' },
-      { label: '🥇  Gold ausgraben & verkaufen',                                       id: 'gold_verkaufen' },
-      { label: '📱  Handy verpfänden',                                                  id: 'pfand_handy' },
-      { label: '💎  Schmuck verpfänden',                                                id: 'pfand_schmuck' },
-      { label: '📺  Fernseher verpfänden',                                              id: 'pfand_fernseher' },
-      { label: '🎮  Spielekonsole verpfänden',                                          id: 'pfand_konsole' },
-      { label: '🚗  Auto verpfänden',                                                   id: 'pfand_auto' }
+      { label: T('🥇  Goldbarren kaufen (500 € · Bargeld/Konto → im Garten vergraben)', '🥇 Buy gold bar (500 € · cash/account → buried in garden)'), id: 'gold_kaufen' },
+      { label: T('🥇  Gold ausgraben & verkaufen', '🥇 Dig up & sell gold'),                                       id: 'gold_verkaufen' },
+      { label: T('📱  Handy verpfänden', '📱 Pawn phone'),                                                  id: 'pfand_handy' },
+      { label: T('💎  Schmuck verpfänden', '💎 Pawn jewelry'),                                                id: 'pfand_schmuck' },
+      { label: T('📺  Fernseher verpfänden', '📺 Pawn TV'),                                              id: 'pfand_fernseher' },
+      { label: T('🎮  Spielekonsole verpfänden', '🎮 Pawn game console'),                                          id: 'pfand_konsole' },
+      { label: T('🚗  Auto verpfänden', '🚗 Pawn car'),                                                   id: 'pfand_auto' }
     ]
   },
   {
     id: 'amuesier', name: T('🍸  Amüsierbetrieb', '🍸 Nightclub'), col: 6, row: 10,
     farbe: 0x1a6c4a, dachFarbe: 0x2aaa72,
-    beschreibung: 'Kostet 200 €. Hebt die Stimmung – 25 % Chance, erwischt zu werden!',
+    beschreibung: T('Kostet 200 €. Hebt die Stimmung – 25 % Chance, erwischt zu werden!', 'Costs 200 €. Boosts your mood – 25% chance of getting caught!'),
     aktionen: [
-      { label: '🥂  Abend genießen (-200 €, Laune +30)', id: 'amuesieren' }
+      { label: T('🥂  Abend genießen (-200 €, Laune +30)', '🥂 Enjoy the evening (-200 €, Mood +30)'), id: 'amuesieren' }
     ]
   },
   {
     id: 'sportverein', name: T('⚽  Sportverein', '⚽ Sports Club'), col: 10, row: 2,
     farbe: 0x2a6a3a, dachFarbe: 0x3a9a52,
-    beschreibung: 'Ehrenamtliche Tätigkeit. Kostet Energie, gibt kein Geld – senkt aber Risiko.',
+    beschreibung: T('Ehrenamtliche Tätigkeit. Kostet Energie, gibt kein Geld – senkt aber Risiko.', 'Volunteer work. Costs energy, no money – but lowers your risk.'),
     aktionen: [
-      { label: '🏃  Soziale Tätigkeit (1 Tag, E -20, Risiko -23, Laune +10)', id: 'sozial' },
-      { label: '⚽  Training leiten  (1 Tag, E -15, Risiko -15, Laune +5)',   id: 'training' },
-      { label: '🥊  Kampfsport lernen (300 €, einmalig)',                    id: 'kampfsport' }
+      { label: T('🏃  Soziale Tätigkeit (1 Tag, E -20, Risiko -23, Laune +10)', '🏃 Community work (1 day, E -20, Risk -23, Mood +10)'), id: 'sozial' },
+      { label: T('⚽  Training leiten  (1 Tag, E -15, Risiko -15, Laune +5)', '⚽ Lead training (1 day, E -15, Risk -15, Mood +5)'),   id: 'training' },
+      { label: T('🥊  Kampfsport lernen (300 €, einmalig)', '🥊 Learn martial arts (300 €, one-time)'),                    id: 'kampfsport' }
     ]
   },
   {
     id: 'supermarkt', name: T('🛒  Supermarkt', '🛒 Supermarket'), col: 14, row: 2,
     farbe: 0x2a6a8a, dachFarbe: 0x3a9aba,
-    beschreibung: 'Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.',
+    beschreibung: T('Kaufe Lebensmittel für den Monat. Beeinflusst Gesundheit und Stimmung.', 'Buy groceries. Affects your health and mood.'),
     aktionen: [
-      { label: '🥗  Bio-Qualität  (57€/Tag, Gesundheit & Laune +)',           id: 'einkauf_gut'    },
-      { label: '🥙  Normal       (36€/Tag)',                                   id: 'einkauf_normal' },
-      { label: '🍟  Billig       (18€/Tag, Gesundheit/Laune -)',              id: 'einkauf_billig' },
-      { label: '🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 1.000€)', id: 'geschenk'  },
-      { label: '💼  Minijob (Aushilfe) – legales Einkommen',                       id: 'minijob'   }
+      { label: T('🥗  Bio-Qualität  (57€/Tag, Gesundheit & Laune +)', '🥗 Organic (57€/day, Health & Mood +)'),           id: 'einkauf_gut'    },
+      { label: T('🥙  Normal       (36€/Tag)', '🥙 Normal (36€/day)'),                                   id: 'einkauf_normal' },
+      { label: T('🍟  Billig       (18€/Tag, Gesundheit/Laune -)', '🍟 Cheap (18€/day, Health/Mood -)'),              id: 'einkauf_billig' },
+      { label: T('🎁  Geschenk kaufen (500€ → Frau-Geschenke, Rückkehr ab 1.000€)', '🎁 Buy a gift (500€ → for your wife, return at 1,000€)'), id: 'geschenk'  },
+      { label: T('💼  Minijob (Aushilfe) – legales Einkommen', '💼 Mini-job (part-time) – legal income'),                       id: 'minijob'   }
     ]
   },
   {
     id: 'kiosk', name: T('🏪  Kiosk', '🏪 Kiosk'), col: 2, row: 14,
     farbe: 0xc23a3a, dachFarbe: 0x8a2020,
-    beschreibung: 'Späti um die Ecke: Rubbellose, Alkohol & Zigaretten. Vorsicht – macht süchtig.',
+    beschreibung: T('Späti um die Ecke: Rubbellose, Alkohol & Zigaretten. Vorsicht – macht süchtig.', 'Corner shop: scratch cards, alcohol & cigarettes. Careful – addictive.'),
     aktionen: [
-      { label: '🎟️  Rubbellos kaufen (5€ · Glück?)',                       id: 'rubbellos' },
-      { label: '🎟️  5 Rubbellose kaufen (25€ · mehr Chancen)',            id: 'rubbellos_5' },
-      { label: '🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)',  id: 'genussmittel' }
+      { label: T('🎟️  Rubbellos kaufen (5€ · Glück?)', '🎟️ Buy scratch card (5€ · luck?)'),                       id: 'rubbellos' },
+      { label: T('🎟️  5 Rubbellose kaufen (25€ · mehr Chancen)', '🎟️ Buy 5 scratch cards (25€ · more chances)'),            id: 'rubbellos_5' },
+      { label: T('🍺  Alkohol & Zigaretten (15€, Laune +8, Gesundheit -3)', '🍺 Alcohol & cigarettes (15€, Mood +8, Health -3)'),  id: 'genussmittel' }
     ]
   },
   {
     id: 'arztpraxis', name: T('⚕️  Arztpraxis', '⚕️ Medical Practice'), col: 14, row: 10,
     farbe: 0xcfd8e0, dachFarbe: 0x9aa6b4,
-    beschreibung: 'Behandlung, Krankschreibung und Entzug. Hält dich auf den Beinen.',
+    beschreibung: T('Behandlung, Krankschreibung und Entzug. Hält dich auf den Beinen.', 'Treatment, sick notes and rehab. Keeps you on your feet.'),
     aktionen: [
-      { label: '🩺  Behandlung (Gesundheit +30, 500€)',                  id: 'arzt_behandlung' },
-      { label: '🤒  Krankmeldung 1 Woche (50€ Bestechung)',              id: 'arzt_krank1' },
-      { label: '🤒  Krankmeldung 2 Wochen (100€ Bestechung)',            id: 'arzt_krank2' },
-      { label: '🥗  Ernährungs-Attest ausstellen (50€, fürs Amt)',       id: 'arzt_attest' },
-      { label: '💉  Entzug / Therapie (Sucht heilen, 800€)',             id: 'arzt_entzug' }
+      { label: T('🩺  Behandlung (Gesundheit +30, 500€)', '🩺 Treatment (Health +30, 500€)'),                  id: 'arzt_behandlung' },
+      { label: T('🤒  Krankmeldung 1 Woche (50€ Bestechung)', '🤒 Sick note 1 week (50€ bribe)'),              id: 'arzt_krank1' },
+      { label: T('🤒  Krankmeldung 2 Wochen (100€ Bestechung)', '🤒 Sick note 2 weeks (100€ bribe)'),            id: 'arzt_krank2' },
+      { label: T('🥗  Ernährungs-Attest ausstellen (50€, fürs Amt)', '🥗 Issue dietary certificate (50€, for the office)'),       id: 'arzt_attest' },
+      { label: T('💉  Entzug / Therapie (Sucht heilen, 800€)', '💉 Rehab / therapy (cure addiction, 800€)'),             id: 'arzt_entzug' }
     ]
   },
   {
     id: 'villa', name: T('🏖️  Villa', '🏖️ Villa'), col: 10, row: 14,
     farbe: 0xf0e6d0, dachFarbe: 0xd8b070,
-    beschreibung: 'Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt. Hier wohnst du jetzt.',
+    beschreibung: T('Dein Luxus-Domizil – nur bewohnbar, wenn du die Immobilie selbst nutzt. Hier wohnst du jetzt.', 'Your luxury home – only livable if you use the property yourself. You live here now.'),
     aktionen: [
-      { label: '🏊  Pool & Sauna (Laune +20)',                 id: 'villa_pool' },
-      { label: '🍸  Gäste empfangen (Laune +10, Partner +10)', id: 'villa_gaeste' },
-      { label: '🚪  Einliegerwohnung schwarz vermieten',        id: 'villa_einlieger' }
+      { label: T('🏊  Pool & Sauna (Laune +20)', '🏊 Pool & sauna (Mood +20)'),                 id: 'villa_pool' },
+      { label: T('🍸  Gäste empfangen (Laune +10, Partner +10)', '🍸 Host guests (Mood +10, Partner +10)'), id: 'villa_gaeste' },
+      { label: T('🚪  Einliegerwohnung schwarz vermieten', '🚪 Rent out granny flat off the books'),        id: 'villa_einlieger' }
     ]
   },
   {
     id: 'kirche', name: T('⛪  Kirche', '⛪ Church'), col: 6, row: 14,
     farbe: 0xd8d0c0, dachFarbe: 0x8a7a5a,
-    beschreibung: 'Sündenerlass (Risiko halbieren) und Beichte (Trost) – jeweils alle 3 Monate.',
+    beschreibung: T('Sündenerlass (Risiko halbieren) und Beichte (Trost) – jeweils alle 3 Monate.', 'Absolution (halve risk) and confession (comfort) – each every 3 months.'),
     aktionen: [
-      { label: '🙏  Sündenerlass (150 €, Risiko halbiert)', id: 'suendenerlass' },
-      { label: '🕯️  Beichte (Energie -15, Laune +10)',      id: 'beichte' }
+      { label: T('🙏  Sündenerlass (150 €, Risiko halbiert)', '🙏 Absolution (150 €, risk halved)'), id: 'suendenerlass' },
+      { label: T('🕯️  Beichte (Energie -15, Laune +10)', '🕯️ Confession (Energy -15, Mood +10)'),      id: 'beichte' }
     ]
   },
   {
     id: 'kasino', name: T('🎰  Kasino', '🎰 Casino'), col: 10, row: 6,
     farbe: 0x6a1a6a, dachFarbe: 0x9a2a9a,
-    beschreibung: 'Spiele mit losem Bargeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Das Kasino behält im Schnitt 15%.',
+    beschreibung: T('Spiele mit losem Bargeld. Rückzahlung 50–120% des Einsatzes aufs Konto (legal). Das Kasino behält im Schnitt 15%.', 'Gamble with loose cash. Payout 50–120% of the stake to your account (legal). The casino keeps ~15% on average.'),
     aktionen: [
-      { label: '🎰  100 € setzen  → 50–120% aufs Konto (legal)',  id: 'waschen_100'  },
-      { label: '🎰  500 € setzen  → 50–120% aufs Konto (legal)',  id: 'waschen_500'  },
-      { label: '🎰  1.000 € setzen → 50–120% aufs Konto (legal)', id: 'waschen_1000' },
-      { label: '🎰  Alles setzen   → 50–120% des Bargelds aufs Konto', id: 'waschen_alles'}
+      { label: T('🎰  100 € setzen  → 50–120% aufs Konto (legal)', '🎰 Bet 100 € → 50–120% to account (legal)'),  id: 'waschen_100'  },
+      { label: T('🎰  500 € setzen  → 50–120% aufs Konto (legal)', '🎰 Bet 500 € → 50–120% to account (legal)'),  id: 'waschen_500'  },
+      { label: T('🎰  1.000 € setzen → 50–120% aufs Konto (legal)', '🎰 Bet 1,000 € → 50–120% to account (legal)'), id: 'waschen_1000' },
+      { label: T('🎰  Alles setzen   → 50–120% des Bargelds aufs Konto', '🎰 Bet everything → 50–120% of cash to account'), id: 'waschen_alles'}
     ]
   },
   {
     id: 'schattenbank', name: T('🏴  Schattenbank', '🏴 Shadow Bank'), col: 14, row: 6,
     farbe: 0x1a1a2a, dachFarbe: 0x0a0a18,
-    beschreibung: 'Wandle Loses Bargeld in sichere Schwarzkasse um. Kostet 5%/Monat Verwaltungsgebühr.',
+    beschreibung: T('Wandle Loses Bargeld in sichere Schwarzkasse um. Kostet 5%/Monat Verwaltungsgebühr.', 'Convert loose cash into a safe slush fund. Costs 5%/month admin fee.'),
     aktionen: [
-      { label: '🔒  Alles Bargeld sichern (→ Schwarzkasse, 5%/Monat Gebühr)', id: 'alles_sichern'  },
-      { label: '🔒  500 € sichern (→ Schwarzkasse)',                           id: 'sichern_500'   },
-      { label: '🔒  Schwarzkasse abheben (→ Loses Bargeld)',                    id: 'sk_abheben'    },
-      { label: '🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)',        id: 'unterhalts_tarnung' },
-      { label: '🏘️  Immobilie kaufen (40.000 € EK + Rate)',                    id: 'immo_kaufen'   },
-      { label: '🔑  Immobilie: Eigennutzung ⇄ Vermieten',                      id: 'immo_modus'    },
-      { label: '🏦  Immobilie sofort abbezahlen (Restschuld tilgen)',          id: 'immo_tilgen'   },
-      { label: '💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)',   id: 'immo_verkaufen'},
-      { label: '📈  Depot verschleiern (für Amt unsichtbar, 5%/Monat)',        id: 'depot_verschleiern' }
+      { label: T('🔒  Alles Bargeld sichern (→ Schwarzkasse, 5%/Monat Gebühr)', '🔒 Secure all cash (→ slush fund, 5%/mo fee)'), id: 'alles_sichern'  },
+      { label: T('🔒  500 € sichern (→ Schwarzkasse)', '🔒 Secure 500 € (→ slush fund)'),                           id: 'sichern_500'   },
+      { label: T('🔒  Schwarzkasse abheben (→ Loses Bargeld)', '🔒 Withdraw slush fund (→ loose cash)'),                    id: 'sk_abheben'    },
+      { label: T('🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)', '🌍 Support cover-up (keep foreign child benefit)'),        id: 'unterhalts_tarnung' },
+      { label: T('🏘️  Immobilie kaufen (40.000 € EK + Rate)', '🏘️ Buy property (40,000 € down + installments)'),                    id: 'immo_kaufen'   },
+      { label: T('🔑  Immobilie: Eigennutzung ⇄ Vermieten', '🔑 Property: own use ⇄ rent out'),                      id: 'immo_modus'    },
+      { label: T('🏦  Immobilie sofort abbezahlen (Restschuld tilgen)', '🏦 Pay off property now (clear balance)'),          id: 'immo_tilgen'   },
+      { label: T('💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)', '💰 Sell property (value − balance → slush fund)'),   id: 'immo_verkaufen'},
+      { label: T('📈  Depot verschleiern (für Amt unsichtbar, 5%/Monat)', '📈 Hide portfolio (invisible to office, 5%/mo)'),        id: 'depot_verschleiern' }
     ]
   },
   {
     id: 'loanshark', name: T('🦈  Kredithai', '🦈 Loan Shark'), col: 10, row: 10,
     farbe: 0x5a1a1a, dachFarbe: 0x8a2a2a,
-    beschreibung: 'Schnelles Geld, hohe Risiken. Schulden wachsen monatlich.',
+    beschreibung: T('Schnelles Geld, hohe Risiken. Schulden wachsen monatlich.', 'Fast money, high risk. Debt grows every month.'),
     aktionen: [
-      { label: '💰  Kredit 1.000 € aufnehmen (Risiko +15, Zins 10%/Monat)',  id: 'kredit_klein' },
-      { label: '💰  Kredit 3.000 € aufnehmen (Risiko +25, Zins 10%/Monat)',  id: 'kredit_gross' },
-      { label: '💸  Schulden zurückzahlen (aktuell: 0 €)',                    id: 'schulden_zahlen' }
+      { label: T('💰  Kredit 1.000 € aufnehmen (Risiko +15, Zins 10%/Monat)', '💰 Take 1,000 € loan (Risk +15, 10%/mo interest)'),  id: 'kredit_klein' },
+      { label: T('💰  Kredit 3.000 € aufnehmen (Risiko +25, Zins 10%/Monat)', '💰 Take 3,000 € loan (Risk +25, 10%/mo interest)'),  id: 'kredit_gross' },
+      { label: T('💸  Schulden zurückzahlen (aktuell: 0 €)', '💸 Repay debt (currently: 0 €)'),                    id: 'schulden_zahlen' }
     ]
   },
   {
     id: 'dealer', name: T('🌳  Park', '🌳 Park'), col: 1, row: 11,
     farbe: 0x3a6a2a, dachFarbe: 0x2a4a1a,
-    beschreibung: 'Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.',
+    beschreibung: T('Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.', 'A park with benches and trees – and a shady figure in the bushes.'),
     aktionen: [
-      { label: '💊  Beim Dealer was holen (80 € Bargeld)', id: 'stoff_kaufen' }
+      { label: T('💊  Beim Dealer was holen (80 € Bargeld)', '💊 Score from the dealer (80 € cash)'), id: 'stoff_kaufen' }
     ]
   }
 ];
