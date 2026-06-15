@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v113 – EN dyn. Labels';
+const BUILD_MARKE = 'v114 – EN Aktions-Ergebnisse';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3256,23 +3256,24 @@ function aktionAusfuehren(ortId, aktionsId) {
     // ---- Anwalt / Strafverteidiger: Strafstufe anfechten ----
     if (aktionsId === 'anwalt') {
       if ((gs.strafStufe || 0) === 0) {
-        oeffneModal('⚖️ Strafverteidiger', 'Du hast aktuell keine juristischen Probleme. Melde dich, wenn gegen dich ermittelt wird.', []);
+        oeffneModal(T('⚖️ Strafverteidiger', '⚖️ Defense lawyer'), T('Du hast aktuell keine juristischen Probleme. Melde dich, wenn gegen dich ermittelt wird.', 'You currently have no legal problems. Come back when there is an investigation against you.'), []);
         return;
       }
       const gebuehr = 2000 + 1500 * gs.strafStufe;
-      oeffneModal('⚖️ Strafverteidiger',
-        `Aktueller Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.<br><br>`
-        + `Ein guter Anwalt kann die Stufe um eine senken – Honorar <strong>${formatEuro(gebuehr)}</strong>, Erfolgschance <strong>65 %</strong> (bei Misserfolg ist das Honorar weg).`,
-        [{ label: `⚖️ Beauftragen (${formatEuro(gebuehr)})`, primary: true, callback: () => {
-            if (gs.kontostand < gebuehr) { logEvent('⚠️ Nicht genug Geld fürs Anwaltshonorar.', 'warn'); return; }
+      oeffneModal(T('⚖️ Strafverteidiger', '⚖️ Defense lawyer'),
+        T(`Aktueller Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.<br><br>`
+        + `Ein guter Anwalt kann die Stufe um eine senken – Honorar <strong>${formatEuro(gebuehr)}</strong>, Erfolgschance <strong>65 %</strong> (bei Misserfolg ist das Honorar weg).`, `Current status: <strong>${strafStufeName(gs.strafStufe)}</strong>.<br><br>`
+        + `A good lawyer can lower the level by one – fee <strong>${formatEuro(gebuehr)}</strong>, success chance <strong>65 %</strong> (if it fails the fee is gone).`),
+        [{ label: T(`⚖️ Beauftragen (${formatEuro(gebuehr)})`, `⚖️ Hire (${formatEuro(gebuehr)})`), primary: true, callback: () => {
+            if (gs.kontostand < gebuehr) { logEvent(T('⚠️ Nicht genug Geld fürs Anwaltshonorar.', '⚠️ Not enough money for the lawyer fee.'), 'warn'); return; }
             gs.kontostand -= gebuehr;
             if (Math.random() < 0.65) {
               gs.strafStufe = Math.max(0, gs.strafStufe - 1);
-              logEvent('⚖️ Anwalt erfolgreich – Strafe gemildert.', 'good');
-              oeffneModal('⚖️ Erfolg!', `Dein Anwalt hat ganze Arbeit geleistet.<br><br>Neuer Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.`, []);
+              logEvent(T('⚖️ Anwalt erfolgreich – Strafe gemildert.', '⚖️ Lawyer succeeded – penalty reduced.'), 'good');
+              oeffneModal(T('⚖️ Erfolg!', '⚖️ Success!'), T(`Dein Anwalt hat ganze Arbeit geleistet.<br><br>Neuer Status: <strong>${strafStufeName(gs.strafStufe)}</strong>.`, `Your lawyer did a thorough job.<br><br>New status: <strong>${strafStufeName(gs.strafStufe)}</strong>.`), []);
             } else {
-              logEvent('⚖️ Anwalt gescheitert – Honorar futsch.', 'danger');
-              oeffneModal('⚖️ Entscheidung zu deinen Ungunsten', `Das Gericht hat <strong>gegen dich</strong> entschieden. Das Honorar (${formatEuro(gebuehr)}) ist weg, der Status bleibt unverändert.`, []);
+              logEvent(T('⚖️ Anwalt gescheitert – Honorar futsch.', '⚖️ Lawyer failed – fee gone.'), 'danger');
+              oeffneModal(T('⚖️ Entscheidung zu deinen Ungunsten', '⚖️ Decision against you'), T(`Das Gericht hat <strong>gegen dich</strong> entschieden. Das Honorar (${formatEuro(gebuehr)}) ist weg, der Status bleibt unverändert.`, `The court decided <strong>against you</strong>. The fee (${formatEuro(gebuehr)}) is gone, the status stays unchanged.`), []);
             }
             updateHUD();
           }}]);
@@ -3282,14 +3283,15 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'auswandern') {
       const v = gesamtVermoegen();
       if (v < AUSWANDERN_GRENZE) {
-        oeffneModal('✈️ Auswandern',
-          `Um dich endgültig abzusetzen, brauchst du <strong>${formatEuro(AUSWANDERN_GRENZE)}</strong> Gesamtvermögen (inkl. Gold, Schwarzkasse, Depot, Immobilie).<br><br>`
-          + `Aktuell: <strong>${formatEuro(v)}</strong> – es fehlen noch <strong>${formatEuro(AUSWANDERN_GRENZE - v)}</strong>.`, []);
+        oeffneModal(T('✈️ Auswandern', '✈️ Emigrate'),
+          T(`Um dich endgültig abzusetzen, brauchst du <strong>${formatEuro(AUSWANDERN_GRENZE)}</strong> Gesamtvermögen (inkl. Gold, Schwarzkasse, Depot, Immobilie).<br><br>`
+          + `Aktuell: <strong>${formatEuro(v)}</strong> – es fehlen noch <strong>${formatEuro(AUSWANDERN_GRENZE - v)}</strong>.`, `To disappear for good, you need <strong>${formatEuro(AUSWANDERN_GRENZE)}</strong> total wealth (incl. gold, slush fund, portfolio, property).<br><br>`
+          + `Currently: <strong>${formatEuro(v)}</strong> – still missing <strong>${formatEuro(AUSWANDERN_GRENZE - v)}</strong>.`), []);
         return;
       }
       gs.gameOver = true;
       soundGut && soundGut();
-      logEvent(`🏆 Ausgewandert mit ${formatEuro(v)} – gewonnen!`, 'good');
+      logEvent(T(`🏆 Ausgewandert mit ${formatEuro(v)} – gewonnen!`, `🏆 Emigrated with ${formatEuro(v)} – you won!`), 'good');
       zeigeGewonnen(v);
       return;
     }
@@ -3301,9 +3303,10 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'pflichttermin') {
       const tageRest = Math.max(0, gs.naechsterAmtsBesuch * 7 - (gs.tag - 1));
       if (!gs.algGesperrt && tageRest > 5) {
-        oeffneModal('📋 Termin noch nicht fällig',
-          `Dein Pflichttermin ist erst in <strong>${tageRest} Tagen</strong>. `
-          + 'Komm in den letzten 5 Tagen vor dem Termin vorbei – dann zählt er und die 14 Tage starten neu.', []);
+        oeffneModal(T('📋 Termin noch nicht fällig', '📋 Appointment not due yet'),
+          T(`Dein Pflichttermin ist erst in <strong>${tageRest} Tagen</strong>. `
+          + 'Komm in den letzten 5 Tagen vor dem Termin vorbei – dann zählt er und die 14 Tage starten neu.', `Your mandatory appointment is only in <strong>${tageRest} days</strong>. `
+          + 'Come in during the last 5 days before the appointment – then it counts and the 14 days restart.'), []);
         return;
       }
       // Termin wahrgenommen → ab HEUTE wieder volle 14 Tage.
@@ -3315,85 +3318,87 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100);
       if (gs.algGesperrt) {
         gs.algGesperrt = false;
-        logEvent('✅ ALG-Sperre aufgehoben! Ab nächstem Monat wieder normale Zahlung. Risiko -5.', 'good');
-        oeffneModal('✅ Sperre aufgehoben!',
-          'Du hast das Amt besucht. Die ALG-Sperre ist aufgehoben.<br><br>'
-          + 'Ab nächstem Monat erhältst du wieder normale Zahlungen.', []);
+        logEvent(T('✅ ALG-Sperre aufgehoben! Ab nächstem Monat wieder normale Zahlung. Risiko -5.', '✅ Benefit suspension lifted! Normal payment again from next month. Risk -5.'), 'good');
+        oeffneModal(T('✅ Sperre aufgehoben!', '✅ Suspension lifted!'),
+          T('Du hast das Amt besucht. Die ALG-Sperre ist aufgehoben.<br><br>'
+          + 'Ab nächstem Monat erhältst du wieder normale Zahlungen.', 'You visited the office. The benefit suspension is lifted.<br><br>'
+          + 'From next month you receive normal payments again.'), []);
       } else {
-        logEvent('📋 Pflichttermin erledigt. Risiko -5.', 'good');
+        logEvent(T('📋 Pflichttermin erledigt. Risiko -5.', '📋 Mandatory appointment done. Risk -5.'), 'good');
       }
     }
     if (aktionsId === 'scheinbewerbung') {
       gs.scheinbewerbungen++;
       gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100);
-      logEvent(`📝 Scheinbewerbung Nr.${gs.scheinbewerbungen}. Risiko -5.`, 'good');
+      logEvent(T(`📝 Scheinbewerbung Nr.${gs.scheinbewerbungen}. Risiko -5.`, `📝 Sham application no.${gs.scheinbewerbungen}. Risk -5.`), 'good');
     }
 
     // ---- Mehrbedarf: Warmwasser (legal, ohne Bedingung) ----
     if (aktionsId === 'mb_warmwasser') {
-      if (gs.mehrbedarf.warmwasser) { logEvent('ℹ️ Warmwasser-Mehrbedarf läuft bereits.', ''); return; }
+      if (gs.mehrbedarf.warmwasser) { logEvent(T('ℹ️ Warmwasser-Mehrbedarf läuft bereits.', 'ℹ️ Hot water extra benefit is already running.'), ''); return; }
       gs.mehrbedarf.warmwasser = true;
-      logEvent(`🚿 Warmwasser-Mehrbedarf bewilligt: +${MEHRBEDARF_BETRAG.warmwasser} €/Monat.`, 'good');
+      logEvent(T(`🚿 Warmwasser-Mehrbedarf bewilligt: +${MEHRBEDARF_BETRAG.warmwasser} €/Monat.`, `🚿 Hot water extra benefit approved: +${MEHRBEDARF_BETRAG.warmwasser} €/mo.`), 'good');
     }
     // ---- Mehrbedarf: Alleinerziehend (braucht ≥1 Kind) ----
     if (aktionsId === 'mb_alleinerziehend') {
-      if (gs.mehrbedarf.alleinerziehend) { logEvent('ℹ️ Mehrbedarf Alleinerziehend läuft bereits.', ''); return; }
+      if (gs.mehrbedarf.alleinerziehend) { logEvent(T('ℹ️ Mehrbedarf Alleinerziehend läuft bereits.', 'ℹ️ Single parent extra benefit is already running.'), ''); return; }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('👨‍👧 Kein Kind gemeldet', 'Den Mehrbedarf für Alleinerziehende gibt es nur mit mindestens einem Kind. Hol dir erst über den Kindergeld-Trick (Wohnung → Sozialbetrug) ein Kind.', []);
+        oeffneModal(T('👨‍👧 Kein Kind gemeldet', '👨‍👧 No child registered'), T('Den Mehrbedarf für Alleinerziehende gibt es nur mit mindestens einem Kind. Hol dir erst über den Kindergeld-Trick (Wohnung → Sozialbetrug) ein Kind.', 'The single parent extra benefit is only available with at least one child. Get a child first via the child benefit trick (Home → Welfare fraud).'), []);
         return;
       }
       gs.mehrbedarf.alleinerziehend = true;
-      logEvent(`👨‍👧 Mehrbedarf Alleinerziehend bewilligt: +${MEHRBEDARF_BETRAG.alleinerziehend} €/Monat.`, 'good');
+      logEvent(T(`👨‍👧 Mehrbedarf Alleinerziehend bewilligt: +${MEHRBEDARF_BETRAG.alleinerziehend} €/Monat.`, `👨‍👧 Single parent extra benefit approved: +${MEHRBEDARF_BETRAG.alleinerziehend} €/mo.`), 'good');
     }
     // ---- Bildung & Teilhabe (braucht ≥1 Kind) ----
     if (aktionsId === 'mb_but') {
-      if (gs.mehrbedarf.but) { logEvent('ℹ️ Bildung & Teilhabe läuft bereits.', ''); return; }
+      if (gs.mehrbedarf.but) { logEvent(T('ℹ️ Bildung & Teilhabe läuft bereits.', 'ℹ️ Education and participation is already running.'), ''); return; }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('🎒 Kein Kind gemeldet', 'Bildung & Teilhabe gibt es nur für gemeldete Kinder.', []);
+        oeffneModal(T('🎒 Kein Kind gemeldet', '🎒 No child registered'), T('Bildung & Teilhabe gibt es nur für gemeldete Kinder.', 'Education and participation is only available for registered children.'), []);
         return;
       }
       gs.mehrbedarf.but = true;
-      logEvent(`🎒 Bildung & Teilhabe bewilligt: +${MEHRBEDARF_BETRAG.but} €/Monat.`, 'good');
+      logEvent(T(`🎒 Bildung & Teilhabe bewilligt: +${MEHRBEDARF_BETRAG.but} €/Monat.`, `🎒 Education and participation approved: +${MEHRBEDARF_BETRAG.but} €/mo.`), 'good');
     }
     // ---- Ernährungs-Mehrbedarf: echtes oder gefälschtes Attest ----
     if (aktionsId === 'mb_ernaehrung') {
-      if (gs.mehrbedarf.ernaehrung) { logEvent('ℹ️ Ernährungs-Mehrbedarf läuft bereits.', ''); return; }
+      if (gs.mehrbedarf.ernaehrung) { logEvent(T('ℹ️ Ernährungs-Mehrbedarf läuft bereits.', 'ℹ️ Dietary extra benefit is already running.'), ''); return; }
       const aktionen = [];
       if (gs.ernaehrungAttest) {
-        aktionen.push({ label: '🩺 Attest einreichen (legal)', primary: true, callback: () => {
+        aktionen.push({ label: T('🩺 Attest einreichen (legal)', '🩺 Submit certificate (legal)'), primary: true, callback: () => {
           gs.mehrbedarf.ernaehrung = true;
           gs.ernaehrungFake = false;
           gs.ernaehrungAttest = false;   // Attest verbraucht
-          logEvent(`🥗 Ernährungs-Mehrbedarf (echtes Attest): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat.`, 'good');
+          logEvent(T(`🥗 Ernährungs-Mehrbedarf (echtes Attest): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat.`, `🥗 Dietary extra benefit (real certificate): +${MEHRBEDARF_BETRAG.ernaehrung} €/mo.`), 'good');
           updateHUD();
         } });
       }
-      aktionen.push({ label: '🖊️ Attest fälschen (gratis, Prüf-Risiko!)', danger: true, callback: () => {
+      aktionen.push({ label: T('🖊️ Attest fälschen (gratis, Prüf-Risiko!)', '🖊️ Forge certificate (free, audit risk!)'), danger: true, callback: () => {
         gs.mehrbedarf.ernaehrung = true;
         gs.ernaehrungFake = true;
-        logEvent(`🥗 Ernährungs-Mehrbedarf (gefälscht): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat – riskant!`, 'warn');
+        logEvent(T(`🥗 Ernährungs-Mehrbedarf (gefälscht): +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat – riskant!`, `🥗 Dietary extra benefit (forged): +${MEHRBEDARF_BETRAG.ernaehrung} €/mo – risky!`), 'warn');
         updateHUD();
       } });
       const hinweis = gs.ernaehrungAttest
-        ? 'Du hast ein gültiges <strong>Attest</strong> dabei – jetzt einreichen.'
-        : '⚠️ Du brauchst zuerst ein <strong>ärztliches Attest</strong>! Hol es bei der <strong>Arztpraxis</strong> – oder fälsche es (riskant).';
-      oeffneModal('🥗 Ernährungs-Mehrbedarf',
-        `Für +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat (z. B. Zöliakie).<br><br>${hinweis}`, aktionen);
+        ? T('Du hast ein gültiges <strong>Attest</strong> dabei – jetzt einreichen.', 'You have a valid <strong>certificate</strong> with you – submit it now.')
+        : T('⚠️ Du brauchst zuerst ein <strong>ärztliches Attest</strong>! Hol es bei der <strong>Arztpraxis</strong> – oder fälsche es (riskant).', '⚠️ You first need a <strong>medical certificate</strong>! Get it at the <strong>doctor practice</strong> – or forge it (risky).');
+      oeffneModal(T('🥗 Ernährungs-Mehrbedarf', '🥗 Dietary extra benefit'),
+        T(`Für +${MEHRBEDARF_BETRAG.ernaehrung} €/Monat (z. B. Zöliakie).<br><br>${hinweis}`, `For +${MEHRBEDARF_BETRAG.ernaehrung} €/mo (e.g. coeliac disease).<br><br>${hinweis}`), aktionen);
       return;
     }
     // ---- Einstiegsgeld / Gründerbonus ----
     if (aktionsId === 'einstiegsgeld') {
-      if (gs.einstiegsgeldMonate > 0) { logEvent(`ℹ️ Einstiegsgeld läuft noch ${gs.einstiegsgeldMonate} Monate.`, ''); return; }
-      oeffneModal('🚀 Einstiegsgeld (Gründerbonus)',
-        `Gründe eine Selbstständigkeit. Kostet einmalig <strong>${formatEuro(EINSTIEGSGELD_KOSTEN)}</strong> (Steuerberater + Businessplan).<br><br>`
-        + `Dann: <strong>+${EINSTIEGSGELD_BETRAG} €/Monat</strong> für ${EINSTIEGSGELD_DAUER} Monate (anrechnungsfrei) + einmaliger Investitions-Zuschuss von <strong>${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}</strong>.`,
+      if (gs.einstiegsgeldMonate > 0) { logEvent(T(`ℹ️ Einstiegsgeld läuft noch ${gs.einstiegsgeldMonate} Monate.`, `ℹ️ Start-up grant still runs for ${gs.einstiegsgeldMonate} months.`), ''); return; }
+      oeffneModal(T('🚀 Einstiegsgeld (Gründerbonus)', '🚀 Start-up grant (founder bonus)'),
+        T(`Gründe eine Selbstständigkeit. Kostet einmalig <strong>${formatEuro(EINSTIEGSGELD_KOSTEN)}</strong> (Steuerberater + Businessplan).<br><br>`
+        + `Dann: <strong>+${EINSTIEGSGELD_BETRAG} €/Monat</strong> für ${EINSTIEGSGELD_DAUER} Monate (anrechnungsfrei) + einmaliger Investitions-Zuschuss von <strong>${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}</strong>.`, `Start a self-employed business. Costs a one-time <strong>${formatEuro(EINSTIEGSGELD_KOSTEN)}</strong> (tax advisor + business plan).<br><br>`
+        + `Then: <strong>+${EINSTIEGSGELD_BETRAG} €/mo</strong> for ${EINSTIEGSGELD_DAUER} months (not counted against benefits) + a one-time investment grant of <strong>${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}</strong>.`),
         [
-          { label: `🚀 Gründen (${formatEuro(EINSTIEGSGELD_KOSTEN)})`, primary: true, callback: () => {
-              if (gs.kontostand < EINSTIEGSGELD_KOSTEN) { logEvent('⚠️ Nicht genug Geld zum Gründen (800 €).', 'warn'); return; }
+          { label: T(`🚀 Gründen (${formatEuro(EINSTIEGSGELD_KOSTEN)})`, `🚀 Found (${formatEuro(EINSTIEGSGELD_KOSTEN)})`), primary: true, callback: () => {
+              if (gs.kontostand < EINSTIEGSGELD_KOSTEN) { logEvent(T('⚠️ Nicht genug Geld zum Gründen (800 €).', '⚠️ Not enough money to found (800 €).'), 'warn'); return; }
               gs.kontostand -= EINSTIEGSGELD_KOSTEN;
               gs.kontostand += EINSTIEGSGELD_ZUSCHUSS; staatGibt(EINSTIEGSGELD_ZUSCHUSS);
               gs.einstiegsgeldMonate = EINSTIEGSGELD_DAUER;
-              logEvent(`🚀 Einstiegsgeld bewilligt! Zuschuss +${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}, dann +${EINSTIEGSGELD_BETRAG} €/M für ${EINSTIEGSGELD_DAUER} Monate.`, 'good');
+              logEvent(T(`🚀 Einstiegsgeld bewilligt! Zuschuss +${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}, dann +${EINSTIEGSGELD_BETRAG} €/M für ${EINSTIEGSGELD_DAUER} Monate.`, `🚀 Start-up grant approved! Grant +${formatEuro(EINSTIEGSGELD_ZUSCHUSS)}, then +${EINSTIEGSGELD_BETRAG} €/mo for ${EINSTIEGSGELD_DAUER} months.`), 'good');
               updateHUD();
             } },
         ]);
@@ -3401,52 +3406,53 @@ function aktionAusfuehren(ortId, aktionsId) {
     }
     // ---- Einmalige Pauschalen ----
     if (aktionsId === 'pausch_erstausstattung') {
-      if (gs.pauschalen.erstausstattung) { logEvent('ℹ️ Erstausstattung wurde bereits bezogen.', ''); return; }
+      if (gs.pauschalen.erstausstattung) { logEvent(T('ℹ️ Erstausstattung wurde bereits bezogen.', 'ℹ️ Home starter package was already claimed.'), ''); return; }
       if (!gs.umzugGemacht) {
-        oeffneModal('🛋️ Kein Anspruch', 'Die Wohnungs-Erstausstattung gibt es nur nach einem Umzug / Erstbezug (Wohnung → Umzug).', []);
+        oeffneModal(T('🛋️ Kein Anspruch', '🛋️ No entitlement'), T('Die Wohnungs-Erstausstattung gibt es nur nach einem Umzug / Erstbezug (Wohnung → Umzug).', 'The home starter package is only available after a move / first occupancy (Home → Move).'), []);
         return;
       }
       gs.kontostand += 1200; staatGibt(1200);
       gs.pauschalen.erstausstattung = true;
-      logEvent('🛋️ Erstausstattung Wohnung bewilligt: +1.200 €.', 'good');
+      logEvent(T('🛋️ Erstausstattung Wohnung bewilligt: +1.200 €.', '🛋️ Home starter package approved: +1,200 €.'), 'good');
     }
     if (aktionsId === 'pausch_moebel') {
-      if (gs.pauschalen.moebel) { logEvent('ℹ️ Möbel-Zuschuss wurde bereits bezogen.', ''); return; }
+      if (gs.pauschalen.moebel) { logEvent(T('ℹ️ Möbel-Zuschuss wurde bereits bezogen.', 'ℹ️ Furniture grant was already claimed.'), ''); return; }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('🪑 Kein Kind gemeldet', 'Den Möbel-Zuschuss (Jugendbett/Schreibtisch) gibt es nur fürs Kind.', []);
+        oeffneModal(T('🪑 Kein Kind gemeldet', '🪑 No child registered'), T('Den Möbel-Zuschuss (Jugendbett/Schreibtisch) gibt es nur fürs Kind.', 'The furniture grant (youth bed/desk) is only available for a child.'), []);
         return;
       }
       const moebelBetrag = 250 * (gs.kindergeldKinder || []).length;
       gs.kontostand += moebelBetrag; staatGibt(moebelBetrag);
       gs.pauschalen.moebel = true;
-      logEvent(`🪑 Möbel/Schreibtisch (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(moebelBetrag)}.`, 'good');
+      logEvent(T(`🪑 Möbel/Schreibtisch (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(moebelBetrag)}.`, `🪑 Furniture/desk (${(gs.kindergeldKinder || []).length} child(ren)): +${formatEuro(moebelBetrag)}.`), 'good');
     }
     if (aktionsId === 'pausch_bekleidung') {
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('👕 Kein Kind gemeldet', 'Die Kinder-Bekleidungspauschale gibt es nur fürs Kind.', []);
+        oeffneModal(T('👕 Kein Kind gemeldet', '👕 No child registered'), T('Die Kinder-Bekleidungspauschale gibt es nur fürs Kind.', 'The child clothing allowance is only available for a child.'), []);
         return;
       }
       if (gs.monat < gs.bekleidungCooldownMonat) {
-        oeffneModal('👕 Noch zu früh', `Die Bekleidungspauschale gibt es nur alle 6 Monate – wieder ab Monat ${gs.bekleidungCooldownMonat}.`, []);
+        oeffneModal(T('👕 Noch zu früh', '👕 Too early'), T(`Die Bekleidungspauschale gibt es nur alle 6 Monate – wieder ab Monat ${gs.bekleidungCooldownMonat}.`, `The clothing allowance is only available every 6 months – again from month ${gs.bekleidungCooldownMonat}.`), []);
         return;
       }
       const bekleidungBetrag = 150 * (gs.kindergeldKinder || []).length;
       gs.kontostand += bekleidungBetrag; staatGibt(bekleidungBetrag);
       gs.bekleidungCooldownMonat = gs.monat + 6;
-      logEvent(`👕 Kinder-Bekleidung (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(bekleidungBetrag)}.`, 'good');
+      logEvent(T(`👕 Kinder-Bekleidung (${(gs.kindergeldKinder || []).length} Kind(er)): +${formatEuro(bekleidungBetrag)}.`, `👕 Child clothing (${(gs.kindergeldKinder || []).length} child(ren)): +${formatEuro(bekleidungBetrag)}.`), 'good');
     }
     // ---- Korrupter Sachbearbeiter schmieren ----
     if (aktionsId === 'sachbearbeiter') {
       if (gs.sachbearbeiterBestochen) {
         gs.sachbearbeiterBestochen = false;
-        logEvent('🤝 Schmiergeld eingestellt.', '');
+        logEvent(T('🤝 Schmiergeld eingestellt.', '🤝 Bribe stopped.'), '');
         return;
       }
       gs.sachbearbeiterBestochen = true;
-      oeffneModal('🤝 Sachbearbeiter geschmiert',
-        `Dein Sachbearbeiter drückt künftig beide Augen zu: <strong>halbe Entdeckungschance</strong> bei der Jobcenter-Prüfung.<br><br>`
-        + `Kostet <strong>${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat</strong>. Kannst du mal nicht zahlen, ist der Deal sofort geplatzt.`, []);
-      logEvent(`🤝 Sachbearbeiter bestochen (${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat).`, 'warn');
+      oeffneModal(T('🤝 Sachbearbeiter geschmiert', '🤝 Caseworker bribed'),
+        T(`Dein Sachbearbeiter drückt künftig beide Augen zu: <strong>halbe Entdeckungschance</strong> bei der Jobcenter-Prüfung.<br><br>`
+        + `Kostet <strong>${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat</strong>. Kannst du mal nicht zahlen, ist der Deal sofort geplatzt.`, `Your caseworker will turn a blind eye from now on: <strong>half the detection chance</strong> during the Job Center audit.<br><br>`
+        + `Costs <strong>${formatEuro(SACHBEARBEITER_KOSTEN)}/mo</strong>. If you ever fail to pay, the deal collapses immediately.`), []);
+      logEvent(T(`🤝 Sachbearbeiter bestochen (${formatEuro(SACHBEARBEITER_KOSTEN)}/Monat).`, `🤝 Caseworker bribed (${formatEuro(SACHBEARBEITER_KOSTEN)}/mo).`), 'warn');
       return;
     }
   }
@@ -3459,7 +3465,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.energie       = clamp(gs.energie - 20, 0, 100);
       gs.hatSchwarzgearbeitet = true;
       verbraucheTag(1);
-      logEvent('⛏️ +300 € loses Bargeld. Risiko +12, E -20. 1 Tag vergangen.', 'warn');
+      logEvent(T('⛏️ +300 € loses Bargeld. Risiko +12, E -20. 1 Tag vergangen.', '⛏️ +300 € loose cash. Risk +12, E -20. 1 day passed.'), 'warn');
     }
     if (aktionsId === 'halbertag') {
       gs.losesBargeld += 120;
@@ -3467,21 +3473,22 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.energie       = clamp(gs.energie - 8, 0, 100);
       gs.hatSchwarzgearbeitet = true;
       // Halber Tag = kein ganzer Tagesverbrauch
-      logEvent('🔧 +120 € loses Bargeld. Risiko +5, E -8.', 'warn');
+      logEvent(T('🔧 +120 € loses Bargeld. Risiko +5, E -8.', '🔧 +120 € loose cash. Risk +5, E -8.'), 'warn');
     }
   }
 
   // --- BANK ---
   if (ortId === 'bank') {
     if (aktionsId === 'einzahlen') {
-      if (gs.losesBargeld <= 0) { logEvent('⚠️ Kein loses Bargeld vorhanden.', 'warn'); return; }
+      if (gs.losesBargeld <= 0) { logEvent(T('⚠️ Kein loses Bargeld vorhanden.', '⚠️ No loose cash available.'), 'warn'); return; }
       if (!gs.bankEinzahlungDieseWoche) gs.bankEinzahlungDieseWoche = 0;
       const wochenLimit = 200;
       const restLimit = wochenLimit - gs.bankEinzahlungDieseWoche;
       if (restLimit <= 0) {
-        oeffneModal('⚠️ Wochenlimit erreicht',
-          `Max. <strong>200 €/Woche</strong> Bargeld-Einzahlung – sonst werden Behörden misstrauisch.<br><br>
-           Bereits diese Woche: <strong>${formatEuro(gs.bankEinzahlungDieseWoche)}</strong>`, []);
+        oeffneModal(T('⚠️ Wochenlimit erreicht', '⚠️ Weekly limit reached'),
+          T(`Max. <strong>200 €/Woche</strong> Bargeld-Einzahlung – sonst werden Behörden misstrauisch.<br><br>
+           Bereits diese Woche: <strong>${formatEuro(gs.bankEinzahlungDieseWoche)}</strong>`, `Max. <strong>200 €/week</strong> cash deposit – otherwise the authorities get suspicious.<br><br>
+           Already this week: <strong>${formatEuro(gs.bankEinzahlungDieseWoche)}</strong>`), []);
         return;
       }
       const betrag = Math.min(gs.losesBargeld, restLimit);
@@ -3491,15 +3498,15 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.bankEinzahlungDieseWoche += betrag;
       gs.risikoRaster  = clamp(gs.risikoRaster + transportRisiko, 0, 100);
       const uebrig = wochenLimit - gs.bankEinzahlungDieseWoche;
-      logEvent(`💳 ${formatEuro(betrag)} auf Konto. Wochenlimit noch: ${formatEuro(uebrig)}. Risiko +${transportRisiko}.`, 'good');
+      logEvent(T(`💳 ${formatEuro(betrag)} auf Konto. Wochenlimit noch: ${formatEuro(uebrig)}. Risiko +${transportRisiko}.`, `💳 ${formatEuro(betrag)} to the account. Weekly limit left: ${formatEuro(uebrig)}. Risk +${transportRisiko}.`), 'good');
       soundGeld && soundGeld();
     }
     if (aktionsId === 'abheben') {
       const b = Math.min(500, gs.kontostand);
-      if (b <= 0) { logEvent('⚠️ Konto leer.', 'warn'); return; }
+      if (b <= 0) { logEvent(T('⚠️ Konto leer.', '⚠️ Account empty.'), 'warn'); return; }
       gs.kontostand   -= b;
       gs.losesBargeld += b;
-      logEvent(`💵 ${formatEuro(b)} abgehoben.`, 'warn');
+      logEvent(T(`💵 ${formatEuro(b)} abgehoben.`, `💵 ${formatEuro(b)} withdrawn.`), 'warn');
     }
     if (aktionsId === 'depot_kaufen') {
       oeffneDepotKaufMenu();
@@ -3527,21 +3534,21 @@ function aktionAusfuehren(ortId, aktionsId) {
         // AUSLÖSEN: Pfandwert × 1.25 (Konto zuerst, dann loses Bargeld)
         const kosten = Math.round(item.wert * PFAND_ZINS);
         if (gs.kontostand + gs.losesBargeld < kosten) {
-          logEvent(`⚠️ Nicht genug Geld zum Auslösen von ${item.name} (${formatEuro(kosten)}).`, 'warn'); return;
+          logEvent(T(`⚠️ Nicht genug Geld zum Auslösen von ${item.name} (${formatEuro(kosten)}).`, `⚠️ Not enough money to redeem ${item.name} (${formatEuro(kosten)}).`), 'warn'); return;
         }
         let rest = kosten;
         const ausKonto = Math.min(rest, gs.kontostand); gs.kontostand -= ausKonto; rest -= ausKonto;
         gs.losesBargeld -= rest;
         gs.verpfaendet[itemId] = false;
         gs[launeFeld] = clamp(gs[launeFeld] + item.laune, 0, 100);
-        logEvent(`${item.name} ausgelöst: −${formatEuro(kosten)} (inkl. 25% Zins). Laune +${item.laune}.`, 'good');
+        logEvent(T(`${item.name} ausgelöst: −${formatEuro(kosten)} (inkl. 25% Zins). Laune +${item.laune}.`, `${item.name} redeemed: −${formatEuro(kosten)} (incl. 25% interest). Mood +${item.laune}.`), 'good');
         soundGeld && soundGeld();
       } else {
         // VERPFÄNDEN: Pfandwert aufs Konto, Laune sinkt
         gs.kontostand += item.wert;
         gs.verpfaendet[itemId] = true;
         gs[launeFeld] = clamp(gs[launeFeld] - item.laune, 0, 100);
-        logEvent(`${item.name} verpfändet: +${formatEuro(item.wert)} aufs Konto. Laune −${item.laune}.`, 'warn');
+        logEvent(T(`${item.name} verpfändet: +${formatEuro(item.wert)} aufs Konto. Laune −${item.laune}.`, `${item.name} pawned: +${formatEuro(item.wert)} to the account. Mood −${item.laune}.`), 'warn');
         soundGeld && soundGeld();
       }
     }
@@ -3551,20 +3558,20 @@ function aktionAusfuehren(ortId, aktionsId) {
   if (ortId === 'amuesier') {
     if (aktionsId === 'amuesieren') {
       const gesamt = gs.kontostand + gs.schwarzeKasse;
-      if (gesamt < 200) { logEvent('⚠️ Nicht genug Geld.', 'warn'); return; }
+      if (gesamt < 200) { logEvent(T('⚠️ Nicht genug Geld.', '⚠️ Not enough money.'), 'warn'); return; }
       if (gs.schwarzeKasse >= 200) gs.schwarzeKasse -= 200;
       else gs.kontostand -= 200;
       gs.happinessSpieler = clamp(gs.happinessSpieler + 30, 0, 100);
-      logEvent('🍸 Schöner Abend! Laune +30. -200 €.', 'good');
+      logEvent(T('🍸 Schöner Abend! Laune +30. -200 €.', '🍸 Nice evening! Mood +30. -200 €.'), 'good');
       if (Math.random() < 0.20 && gs.suchtStufe < 3) {
         gs.suchtStufe++;
-        logEvent(`🍸 Das Nachtleben zieht dich rein… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+        logEvent(T(`🍸 Das Nachtleben zieht dich rein… Sucht-Stufe ${gs.suchtStufe}.`, `🍸 Nightlife is pulling you in… Addiction level ${gs.suchtStufe}.`), 'danger');
       }
       if (Math.random() < 0.25) {
         gs.happinessPartner = clamp(gs.happinessPartner - 20, 0, 100);
         setTimeout(() => {
-          oeffneModal('😬 Ertappt!', 'Partner hat herausgefunden, wo du warst!<br><br><strong>Partnerlaune -20</strong>', []);
-          logEvent('😬 Ertappt! Partnerlaune -20.', 'danger');
+          oeffneModal(T('😬 Ertappt!', '😬 Caught!'), T('Partner hat herausgefunden, wo du warst!<br><br><strong>Partnerlaune -20</strong>', 'Your partner found out where you were!<br><br><strong>Partner -20</strong>'), []);
+          logEvent(T('😬 Ertappt! Partnerlaune -20.', '😬 Caught! Partner -20.'), 'danger');
           pruefeEheKrise();
         }, 300);
         return;
@@ -3575,28 +3582,28 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- SPORTVEREIN ---
   if (ortId === 'sportverein') {
     if (aktionsId === 'sozial') {
-      if (gs.energie < 20) { oeffneModal('😴 Zu erschöpft', 'Du hast <strong>zu wenig Energie</strong> für eine soziale Tätigkeit.<br><br>Schlafe zuerst (Wohnung).', []); return; }
+      if (gs.energie < 20) { oeffneModal(T('😴 Zu erschöpft', '😴 Too exhausted'), T('Du hast <strong>zu wenig Energie</strong> für eine soziale Tätigkeit.<br><br>Schlafe zuerst (Wohnung).', 'You have <strong>too little energy</strong> for a social activity.<br><br>Sleep first (Home).'), []); return; }
       gs.energie         = clamp(gs.energie - 20, 0, 100);
       gs.risikoRaster    = clamp(gs.risikoRaster - 23, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
       verbraucheTag(1);
-      logEvent('⚽ Soziale Tätigkeit: E -20, Risiko -23, Laune +10. 1 Tag vergangen.', 'good');
+      logEvent(T('⚽ Soziale Tätigkeit: E -20, Risiko -23, Laune +10. 1 Tag vergangen.', '⚽ Social activity: E -20, Risk -23, Mood +10. 1 day passed.'), 'good');
     }
     if (aktionsId === 'training') {
-      if (gs.energie < 15) { oeffneModal('😴 Zu erschöpft', 'Du hast <strong>zu wenig Energie</strong> fürs Training.<br><br>Schlafe zuerst (Wohnung).', []); return; }
+      if (gs.energie < 15) { oeffneModal(T('😴 Zu erschöpft', '😴 Too exhausted'), T('Du hast <strong>zu wenig Energie</strong> fürs Training.<br><br>Schlafe zuerst (Wohnung).', 'You have <strong>too little energy</strong> for training.<br><br>Sleep first (Home).'), []); return; }
       gs.energie         = clamp(gs.energie - 15, 0, 100);
       gs.risikoRaster    = clamp(gs.risikoRaster - 15, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100);
       verbraucheTag(1);
-      logEvent('🏃 Training geleitet: E -15, Risiko -15, Laune +5. 1 Tag vergangen.', 'good');
+      logEvent(T('🏃 Training geleitet: E -15, Risiko -15, Laune +5. 1 Tag vergangen.', '🏃 Training led: E -15, Risk -15, Mood +5. 1 day passed.'), 'good');
     }
     if (aktionsId === 'kampfsport') {
-      if (gs.kampfsportGelernt) { oeffneModal('🥊 Bereits gelernt', 'Du beherrschst Kampfsport schon – deine Chance gegen den Räuber liegt bei <strong>75 %</strong>.', []); return; }
-      if (gs.kontostand < 300) { oeffneModal('💸 Zu wenig Geld', 'Der Kampfsport-Kurs kostet <strong>300 €</strong> (vom Konto).', []); return; }
+      if (gs.kampfsportGelernt) { oeffneModal(T('🥊 Bereits gelernt', '🥊 Already learned'), T('Du beherrschst Kampfsport schon – deine Chance gegen den Räuber liegt bei <strong>75 %</strong>.', 'You already know martial arts – your chance against the robber is <strong>75 %</strong>.'), []); return; }
+      if (gs.kontostand < 300) { oeffneModal(T('💸 Zu wenig Geld', '💸 Not enough money'), T('Der Kampfsport-Kurs kostet <strong>300 €</strong> (vom Konto).', 'The martial arts course costs <strong>300 €</strong> (from your account).'), []); return; }
       gs.kontostand -= 300;
       gs.kampfsportGelernt = true;
-      logEvent('🥊 Kampfsport gelernt – Chance gegen den Räuber jetzt 75 %.', 'good');
-      oeffneModal('🥊 Kampfsport gelernt', 'Du hast Nahkampf trainiert. Bei einem Überfall gewinnst du jetzt mit <strong>75 %</strong> statt 50 %.', []);
+      logEvent(T('🥊 Kampfsport gelernt – Chance gegen den Räuber jetzt 75 %.', '🥊 Martial arts learned – chance against the robber now 75 %.'), 'good');
+      oeffneModal(T('🥊 Kampfsport gelernt', '🥊 Martial arts learned'), T('Du hast Nahkampf trainiert. Bei einem Überfall gewinnst du jetzt mit <strong>75 %</strong> statt 50 %.', 'You trained close combat. In a mugging you now win with <strong>75 %</strong> instead of 50 %.'), []);
     }
   }
 
@@ -3606,18 +3613,18 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.losesBargeld   += 1000;
       gs.loanSharkSchuld += 1000;
       gs.risikoRaster    = clamp(gs.risikoRaster + 15, 0, 100);
-      logEvent('🦈 Kredit 1.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +15.', 'danger');
+      logEvent(T('🦈 Kredit 1.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +15.', '🦈 Loan 1,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +15.'), 'danger');
     }
     if (aktionsId === 'kredit_gross') {
       gs.losesBargeld   += 3000;
       gs.loanSharkSchuld += 3000;
       gs.risikoRaster    = clamp(gs.risikoRaster + 25, 0, 100);
-      logEvent('🦈 Kredit 3.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +25.', 'danger');
+      logEvent(T('🦈 Kredit 3.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +25.', '🦈 Loan 3,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +25.'), 'danger');
     }
     if (aktionsId === 'schulden_zahlen') {
-      if (gs.loanSharkSchuld <= 0) { logEvent('ℹ️ Keine Schulden beim Kredithai.', ''); return; }
+      if (gs.loanSharkSchuld <= 0) { logEvent(T('ℹ️ Keine Schulden beim Kredithai.', 'ℹ️ No debt with the loan shark.'), ''); return; }
       const zahlung = Math.min(gs.loanSharkSchuld, gs.kontostand + gs.schwarzeKasse + gs.losesBargeld);
-      if (zahlung <= 0) { logEvent('⚠️ Kein Geld zum Zurückzahlen.', 'warn'); return; }
+      if (zahlung <= 0) { logEvent(T('⚠️ Kein Geld zum Zurückzahlen.', '⚠️ No money to repay.'), 'warn'); return; }
       // Erst loses Bargeld verwenden, dann Schwarzkasse, dann Konto
       let rest = zahlung;
       const ausLose   = Math.min(rest, gs.losesBargeld);  rest -= ausLose; gs.losesBargeld   -= ausLose;
@@ -3625,120 +3632,126 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.kontostand = Math.max(0, gs.kontostand - rest);
       gs.loanSharkSchuld -= zahlung;
       gs.risikoRaster     = clamp(gs.risikoRaster - 10, 0, 100);
-      logEvent('💸 ' + formatEuro(zahlung) + ' Schulden zurückgezahlt. Risiko -10.', 'good');
+      logEvent(T('💸 ' + formatEuro(zahlung) + ' Schulden zurückgezahlt. Risiko -10.', '💸 ' + formatEuro(zahlung) + ' debt repaid. Risk -10.'), 'good');
     }
   }
 
   // --- SCHATTENBANK ---
   if (ortId === 'schattenbank') {
     if (aktionsId === 'alles_sichern') {
-      if (gs.losesBargeld <= 0) { logEvent('⚠️ Kein Bargeld zum Sichern.', 'warn'); return; }
+      if (gs.losesBargeld <= 0) { logEvent(T('⚠️ Kein Bargeld zum Sichern.', '⚠️ No cash to secure.'), 'warn'); return; }
       const betrag = gs.losesBargeld;
       gs.schwarzeKasse  += betrag;
       gs.losesBargeld    = 0;
       gs.schattenbankAktiv = true;
-      logEvent(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert. 5%/Monat Gebühr.`, 'good');
+      logEvent(T(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert. 5%/Monat Gebühr.`, `🏴 Shadow bank: ${formatEuro(betrag)} secured. 5%/month fee.`), 'good');
     }
     if (aktionsId === 'sichern_500') {
       const betrag = Math.min(500, gs.losesBargeld);
-      if (betrag <= 0) { logEvent('⚠️ Kein Bargeld.', 'warn'); return; }
+      if (betrag <= 0) { logEvent(T('⚠️ Kein Bargeld.', '⚠️ No cash.'), 'warn'); return; }
       gs.schwarzeKasse  += betrag;
       gs.losesBargeld   -= betrag;
       gs.schattenbankAktiv = true;
-      logEvent(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert.`, 'good');
+      logEvent(T(`🏴 Schattenbank: ${formatEuro(betrag)} gesichert.`, `🏴 Shadow bank: ${formatEuro(betrag)} secured.`), 'good');
     }
     if (aktionsId === 'sk_abheben') {
-      if (gs.schwarzeKasse <= 0) { logEvent('⚠️ Schwarzkasse leer.', 'warn'); return; }
+      if (gs.schwarzeKasse <= 0) { logEvent(T('⚠️ Schwarzkasse leer.', '⚠️ Slush fund empty.'), 'warn'); return; }
       gs.losesBargeld  += gs.schwarzeKasse;
       gs.schwarzeKasse  = 0;
       gs.schattenbankAktiv = false;
-      logEvent(`🏴 Schwarzkasse abgehoben → loses Bargeld.`, 'warn');
+      logEvent(T(`🏴 Schwarzkasse abgehoben → loses Bargeld.`, `🏴 Slush fund withdrawn → loose cash.`), 'warn');
     }
     // ---- Unterhalts-Tarnung: Auslands-Kindergeld behalten statt anrechnen ----
     if (aktionsId === 'unterhalts_tarnung') {
       if (gs.unterhaltsTarnung) {
         gs.unterhaltsTarnung = false;
-        logEvent('🌍 Unterhalts-Tarnung abgeschaltet. Auslands-Kindergeld wird wieder angerechnet (netto 0).', '');
+        logEvent(T('🌍 Unterhalts-Tarnung abgeschaltet. Auslands-Kindergeld wird wieder angerechnet (netto 0).', '🌍 Maintenance cover switched off. Foreign child benefit is counted again (net 0).'), '');
         return;
       }
       if ((gs.kindergeldKinder || []).length < 1) {
-        oeffneModal('🌍 Keine Auslandskinder', 'Die Unterhalts-Tarnung lohnt sich nur mit Kindergeld für Kinder im Ausland (Wohnung → Sozialbetrug → Kindergeld-Trick).', []);
+        oeffneModal(T('🌍 Keine Auslandskinder', '🌍 No children abroad'), T('Die Unterhalts-Tarnung lohnt sich nur mit Kindergeld für Kinder im Ausland (Wohnung → Sozialbetrug → Kindergeld-Trick).', 'The maintenance cover only pays off with child benefit for children abroad (Home → Welfare fraud → child benefit trick).'), []);
         return;
       }
       gs.unterhaltsTarnung = true;
-      oeffneModal('🌍 Unterhalts-Tarnung aktiviert',
-        'Du reichst gefälschte Belege ein, dass du das Kindergeld als Unterhalt ins Ausland überweist.<br><br>'
+      oeffneModal(T('🌍 Unterhalts-Tarnung aktiviert', '🌍 Maintenance cover activated'),
+        T('Du reichst gefälschte Belege ein, dass du das Kindergeld als Unterhalt ins Ausland überweist.<br><br>'
         + 'Das Amt rechnet es nicht mehr an – du <strong>behältst</strong> das Auslands-Kindergeld.<br><br>'
-        + '⚠️ Aber: Bei der <strong>Jobcenter-Prüfung</strong> (alle paar Monate) steigt das Entdeckungsrisiko mit jedem Auslandskind!', []);
-      logEvent('🌍 Unterhalts-Tarnung aktiv – Auslands-Kindergeld wird behalten (riskant!).', 'warn');
+        + '⚠️ Aber: Bei der <strong>Jobcenter-Prüfung</strong> (alle paar Monate) steigt das Entdeckungsrisiko mit jedem Auslandskind!', 'You submit forged receipts that you transfer the child benefit abroad as maintenance.<br><br>'
+        + 'The office no longer counts it – you <strong>keep</strong> the foreign child benefit.<br><br>'
+        + '⚠️ But: during the <strong>Job Center audit</strong> (every few months) the detection risk rises with each child abroad!'), []);
+      logEvent(T('🌍 Unterhalts-Tarnung aktiv – Auslands-Kindergeld wird behalten (riskant!).', '🌍 Maintenance cover active – foreign child benefit is kept (risky!).'), 'warn');
       return;
     }
     // ---- Immobilie kaufen (40.000 € EK aus Schwarzkasse, Rest in Raten) ----
     if (aktionsId === 'immo_kaufen') {
-      if (gs.immobilie) { oeffneModal('🏘️ Schon im Besitz', 'Du besitzt bereits eine Immobilie.', []); return; }
+      if (gs.immobilie) { oeffneModal(T('🏘️ Schon im Besitz', '🏘️ Already owned'), T('Du besitzt bereits eine Immobilie.', 'You already own a property.'), []); return; }
       if (gs.schwarzeKasse < IMMO_EIGENKAPITAL) {
-        oeffneModal('🏘️ Zu wenig Eigenkapital', `Für die Anzahlung brauchst du <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong> in der Schwarzkasse.<br><br>Vorhanden: ${formatEuro(gs.schwarzeKasse)}.`, []);
+        oeffneModal(T('🏘️ Zu wenig Eigenkapital', '🏘️ Not enough equity'), T(`Für die Anzahlung brauchst du <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong> in der Schwarzkasse.<br><br>Vorhanden: ${formatEuro(gs.schwarzeKasse)}.`, `For the down payment you need <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong> in the slush fund.<br><br>Available: ${formatEuro(gs.schwarzeKasse)}.`), []);
         return;
       }
       gs.schwarzeKasse -= IMMO_EIGENKAPITAL;
       const restSchuld = IMMO_KAUFPREIS - IMMO_EIGENKAPITAL;
       gs.immobilie = { wert: IMMO_KAUFPREIS, miete: IMMO_MIETE, modus: 'eigen', restSchuld };
-      oeffneModal('🏘️ Immobilie gekauft!',
-        `Über einen Strohmann erworben. Anzahlung: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
+      oeffneModal(T('🏘️ Immobilie gekauft!', '🏘️ Property bought!'),
+        T(`Über einen Strohmann erworben. Anzahlung: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
         + `Restschuld <strong>${formatEuro(restSchuld)}</strong> → Rate <strong>${formatEuro(IMMO_RATE)}/Monat</strong> über ${IMMO_LAUFZEIT} Monate (jederzeit sofort tilgbar).<br><br>`
         + `Modus: <strong>Eigennutzung</strong> – im Bürgergeld zahlt das Amt die Miete (${formatEuro(IMMO_MIETE)}/M) in deine Schwarzkasse. Wert +2 %/Monat.<br><br>`
-        + '⚠️ Eigennutzung ist Leistungsbetrug → erhöhtes Risiko + Jobcenter-Prüfung.', []);
-      logEvent(`🏘️ Immobilie gekauft. EK ${formatEuro(IMMO_EIGENKAPITAL)}, Restschuld ${formatEuro(restSchuld)}.`, 'warn');
+        + '⚠️ Eigennutzung ist Leistungsbetrug → erhöhtes Risiko + Jobcenter-Prüfung.', `Acquired through a straw man. Down payment: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
+        + `Balance <strong>${formatEuro(restSchuld)}</strong> → instalment <strong>${formatEuro(IMMO_RATE)}/mo</strong> over ${IMMO_LAUFZEIT} months (can be paid off in full any time).<br><br>`
+        + `Mode: <strong>Own use</strong> – on welfare the office pays the rent (${formatEuro(IMMO_MIETE)}/mo) into your slush fund. Value +2 %/month.<br><br>`
+        + '⚠️ Own use is benefit fraud → increased risk + Job Center audit.'), []);
+      logEvent(T(`🏘️ Immobilie gekauft. EK ${formatEuro(IMMO_EIGENKAPITAL)}, Restschuld ${formatEuro(restSchuld)}.`, `🏘️ Property bought. Equity ${formatEuro(IMMO_EIGENKAPITAL)}, balance ${formatEuro(restSchuld)}.`), 'warn');
       return;
     }
     if (aktionsId === 'immo_modus') {
-      if (!gs.immobilie) { oeffneModal('🏘️ Keine Immobilie', 'Kaufe zuerst eine Immobilie.', []); return; }
+      if (!gs.immobilie) { oeffneModal(T('🏘️ Keine Immobilie', '🏘️ No property'), T('Kaufe zuerst eine Immobilie.', 'Buy a property first.'), []); return; }
       gs.immobilie.modus = gs.immobilie.modus === 'eigen' ? 'vermietet' : 'eigen';
-      logEvent(`🔑 Immobilie: ${gs.immobilie.modus === 'eigen' ? 'Eigennutzung – Amt zahlt Miete' : 'Vermietet – Mieteinnahmen'}.`, '');
+      logEvent(T(`🔑 Immobilie: ${gs.immobilie.modus === 'eigen' ? 'Eigennutzung – Amt zahlt Miete' : 'Vermietet – Mieteinnahmen'}.`, `🔑 Property: ${gs.immobilie.modus === 'eigen' ? 'Own use – office pays rent' : 'Rented out – rental income'}.`), '');
       return;
     }
     if (aktionsId === 'immo_tilgen') {
-      if (!gs.immobilie || gs.immobilie.restSchuld <= 0) { oeffneModal('🏦 Nichts zu tilgen', 'Es besteht keine Restschuld.', []); return; }
+      if (!gs.immobilie || gs.immobilie.restSchuld <= 0) { oeffneModal(T('🏦 Nichts zu tilgen', '🏦 Nothing to pay off'), T('Es besteht keine Restschuld.', 'There is no remaining balance.'), []); return; }
       const rest = gs.immobilie.restSchuld;
       if (gs.schwarzeKasse + gs.kontostand < rest) {
-        oeffneModal('🏦 Zu wenig Geld', `Zum Abbezahlen der Restschuld brauchst du <strong>${formatEuro(rest)}</strong> (Schwarzkasse + Konto).`, []);
+        oeffneModal(T('🏦 Zu wenig Geld', '🏦 Not enough money'), T(`Zum Abbezahlen der Restschuld brauchst du <strong>${formatEuro(rest)}</strong> (Schwarzkasse + Konto).`, `To pay off the balance you need <strong>${formatEuro(rest)}</strong> (slush fund + account).`), []);
         return;
       }
       let r = rest;
       const ausSK = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= ausSK; r -= ausSK;
       gs.kontostand -= r;
       gs.immobilie.restSchuld = 0;
-      oeffneModal('🏦 Abbezahlt!', `Restschuld von ${formatEuro(rest)} sofort getilgt. Die Immobilie gehört dir schuldenfrei.`, []);
-      logEvent(`🏦 Immobilie abbezahlt: -${formatEuro(rest)}.`, 'good');
+      oeffneModal(T('🏦 Abbezahlt!', '🏦 Paid off!'), T(`Restschuld von ${formatEuro(rest)} sofort getilgt. Die Immobilie gehört dir schuldenfrei.`, `Balance of ${formatEuro(rest)} paid off immediately. The property is yours free of debt.`), []);
+      logEvent(T(`🏦 Immobilie abbezahlt: -${formatEuro(rest)}.`, `🏦 Property paid off: -${formatEuro(rest)}.`), 'good');
       return;
     }
     if (aktionsId === 'immo_verkaufen') {
-      if (!gs.immobilie) { oeffneModal('🏘️ Keine Immobilie', 'Du besitzt keine Immobilie.', []); return; }
+      if (!gs.immobilie) { oeffneModal(T('🏘️ Keine Immobilie', '🏘️ No property'), T('Du besitzt keine Immobilie.', 'You do not own a property.'), []); return; }
       const erloes = Math.max(0, Math.round(gs.immobilie.wert) - (gs.immobilie.restSchuld || 0));
       gs.schwarzeKasse += erloes;
       const rs = gs.immobilie.restSchuld || 0;
       gs.immobilie = null;
-      oeffneModal('💰 Immobilie verkauft', `Verkauft. Wert minus Restschuld (${formatEuro(rs)}) = <strong>${formatEuro(erloes)}</strong> → Schwarzkasse.`, []);
-      logEvent(`💰 Immobilie verkauft: +${formatEuro(erloes)} Schwarzkasse.`, 'good');
+      oeffneModal(T('💰 Immobilie verkauft', '💰 Property sold'), T(`Verkauft. Wert minus Restschuld (${formatEuro(rs)}) = <strong>${formatEuro(erloes)}</strong> → Schwarzkasse.`, `Sold. Value minus balance (${formatEuro(rs)}) = <strong>${formatEuro(erloes)}</strong> → slush fund.`), []);
+      logEvent(T(`💰 Immobilie verkauft: +${formatEuro(erloes)} Schwarzkasse.`, `💰 Property sold: +${formatEuro(erloes)} slush fund.`), 'good');
       return;
     }
     // ---- Depot verschleiern (vor dem Amt verstecken) ----
     if (aktionsId === 'depot_verschleiern') {
       if (gs.depotVerschleiert) {
         gs.depotVerschleiert = false;
-        oeffneModal('📈 Depot wieder offiziell', 'Dein Depot läuft wieder auf deinen Namen – es zählt damit wieder zur Vermögensprüfung, kostet aber keine Gebühr mehr.', []);
-        logEvent('📈 Depot nicht mehr verschleiert.', '');
+        oeffneModal(T('📈 Depot wieder offiziell', '📈 Portfolio official again'), T('Dein Depot läuft wieder auf deinen Namen – es zählt damit wieder zur Vermögensprüfung, kostet aber keine Gebühr mehr.', 'Your portfolio runs under your name again – it counts towards the assets check again, but no longer costs a fee.'), []);
+        logEvent(T('📈 Depot nicht mehr verschleiert.', '📈 Portfolio no longer concealed.'), '');
         return;
       }
       if ((gs.depot || []).length === 0) {
-        oeffneModal('📈 Kein Depot', 'Du hast keine Wertpapiere, die du verschleiern könntest. Kaufe erst welche bei der Bank.', []);
+        oeffneModal(T('📈 Kein Depot', '📈 No portfolio'), T('Du hast keine Wertpapiere, die du verschleiern könntest. Kaufe erst welche bei der Bank.', 'You have no securities to conceal. Buy some at the bank first.'), []);
         return;
       }
       gs.depotVerschleiert = true;
-      oeffneModal('📈 Depot verschleiert',
-        'Deine Wertpapiere laufen jetzt über einen Strohmann der Schattenbank.<br><br>'
-        + 'Das Depot zählt <strong>nicht mehr zur Vermögensprüfung</strong> – die Schattenbank nimmt dafür <strong>5 % des Depotwerts pro Monat</strong>.', []);
-      logEvent('📈 Depot verschleiert (5%/Monat, Amt-unsichtbar).', 'warn');
+      oeffneModal(T('📈 Depot verschleiert', '📈 Portfolio concealed'),
+        T('Deine Wertpapiere laufen jetzt über einen Strohmann der Schattenbank.<br><br>'
+        + 'Das Depot zählt <strong>nicht mehr zur Vermögensprüfung</strong> – die Schattenbank nimmt dafür <strong>5 % des Depotwerts pro Monat</strong>.', 'Your securities now run through a straw man of the shadow bank.<br><br>'
+        + 'The portfolio <strong>no longer counts towards the assets check</strong> – in return the shadow bank takes <strong>5 % of the portfolio value per month</strong>.'), []);
+      logEvent(T('📈 Depot verschleiert (5%/Monat, Amt-unsichtbar).', '📈 Portfolio concealed (5%/month, invisible to the office).'), 'warn');
       return;
     }
   }
@@ -3753,13 +3766,13 @@ function aktionAusfuehren(ortId, aktionsId) {
       const haben = gs.lebensmittelTageRest || 0;
       const tageKauf = kapazitaet - haben;
       if (tageKauf <= 0) {
-        oeffneModal('🧊 Vorrat voll', `Dein Vorrat ist schon voll (<strong>${haben}/${kapazitaet} Tage</strong>). Erst etwas aufbrauchen, dann wieder einkaufen.`, []);
+        oeffneModal(T('🧊 Vorrat voll', '🧊 Stock full'), T(`Dein Vorrat ist schon voll (<strong>${haben}/${kapazitaet} Tage</strong>). Erst etwas aufbrauchen, dann wieder einkaufen.`, `Your stock is already full (<strong>${haben}/${kapazitaet} days</strong>). Use some up first, then shop again.`), []);
         return;
       }
       const kosten = Math.round(proTag[typ] * tageKauf);
       // Bezahlung: erst loses Bargeld, Rest vom Konto
       if (gs.kontostand + gs.losesBargeld < kosten) {
-        oeffneModal('💸 Zu wenig Geld', `Einkauf für <strong>${tageKauf} Tage</strong> kostet <strong>${formatEuro(kosten)}</strong> (Konto + Bargeld reichen nicht).`, []);
+        oeffneModal(T('💸 Zu wenig Geld', '💸 Not enough money'), T(`Einkauf für <strong>${tageKauf} Tage</strong> kostet <strong>${formatEuro(kosten)}</strong> (Konto + Bargeld reichen nicht).`, `Shopping for <strong>${tageKauf} days</strong> costs <strong>${formatEuro(kosten)}</strong> (account + cash are not enough).`), []);
         return;
       }
       let rest = kosten;
@@ -3776,32 +3789,33 @@ function aktionAusfuehren(ortId, aktionsId) {
         gs.happinessSpieler = clamp(gs.happinessSpieler + Math.round(10 * f), 0, 100);
         gs.happinessPartner = clamp(gs.happinessPartner + Math.round(10 * f), 0, 100);
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥗 Bio-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit & Laune +.`, 'good');
+        logEvent(T(`🥗 Bio-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit & Laune +.`, `🥗 Organic shopping: ${tageKauf} days, -${formatEuro(kosten)}. Health and Mood +.`), 'good');
       } else if (typ === 'normal') {
         gs.billigKaeufeInFolge = 0;
-        logEvent(`🥙 Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}.`, 'good');
+        logEvent(T(`🥙 Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}.`, `🥙 Shopping: ${tageKauf} days, -${formatEuro(kosten)}.`), 'good');
       } else if (typ === 'billig') {
         gs.gesundheit = clamp(gs.gesundheit - Math.round(5 * f), 0, 100);
         gs.billigKaeufeInFolge++;
-        logEvent(`🍟 Billig-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit -.`, 'warn');
+        logEvent(T(`🍟 Billig-Einkauf: ${tageKauf} Tage, -${formatEuro(kosten)}. Gesundheit -.`, `🍟 Cheap shopping: ${tageKauf} days, -${formatEuro(kosten)}. Health -.`), 'warn');
         if (gs.billigKaeufeInFolge >= 2) {
-          setTimeout(() => oeffneModal('😤 Deine Frau beschwert sich!',
-            'Zwei Monate hintereinander Billig-Essen! Deine Partnerin ist sauer.<br><br>'
-            + '<strong>Partnerlaune −15</strong>',
+          setTimeout(() => oeffneModal(T('😤 Deine Frau beschwert sich!', '😤 Your wife is complaining!'),
+            T('Zwei Monate hintereinander Billig-Essen! Deine Partnerin ist sauer.<br><br>'
+            + '<strong>Partnerlaune −15</strong>', 'Two months of cheap food in a row! Your partner is upset.<br><br>'
+            + '<strong>Partner −15</strong>'),
             []
           ), 300);
           gs.happinessPartner = clamp(gs.happinessPartner - 15, 0, 100);
-          logEvent('😤 Frau beschwert sich über Billig-Essen!', 'danger');
+          logEvent(T('😤 Frau beschwert sich über Billig-Essen!', '😤 Wife complains about cheap food!'), 'danger');
         }
       }
       soundGeld && soundGeld();
     }
 
     if (aktionsId === 'geschenk') {
-      if (gs.kontostand < 500) { logEvent('⚠️ Nicht genug Geld (500€).', 'warn'); return; }
+      if (gs.kontostand < 500) { logEvent(T('⚠️ Nicht genug Geld (500€).', '⚠️ Not enough money (500€).'), 'warn'); return; }
       gs.kontostand    -= 500;
       gs.geschenkeSumme += 500;
-      logEvent(`🎁 Geschenk 500€. Gesamt: ${formatEuro(gs.geschenkeSumme)} / 1.000€.`, 'good');
+      logEvent(T(`🎁 Geschenk 500€. Gesamt: ${formatEuro(gs.geschenkeSumme)} / 1.000€.`, `🎁 Gift 500€. Total: ${formatEuro(gs.geschenkeSumme)} / 1,000€.`), 'good');
       if (gs.geschenkeSumme >= 1000 && gs.frauAusgezogen) {
         gs.frauAusgezogen      = false;
         gs.unterhaltProMonat   = 0;
@@ -3810,11 +3824,13 @@ function aktionAusfuehren(ortId, aktionsId) {
         gs.eheKriseAktiv       = false;   // Ehe-Krise beendet
         gs.eheKriseSchritt     = 0;
         gs.eheKriseGescheitert = false;
-        logEvent('💑 Frau ist zurückgekommen! Unterhalt entfällt.', 'good');
-        oeffneModal('💑 Sie ist zurück!',
-          'Du hast genug Geschenke gemacht (1.000 €).<br><br>'
+        logEvent(T('💑 Frau ist zurückgekommen! Unterhalt entfällt.', '💑 Wife came back! Maintenance no longer applies.'), 'good');
+        oeffneModal(T('💑 Sie ist zurück!', '💑 She is back!'),
+          T('Du hast genug Geschenke gemacht (1.000 €).<br><br>'
           + 'Deine Partnerin zieht wieder ein. Partnerlaune: <strong>70</strong>.<br>'
-          + 'Der monatliche Unterhalt von 1.000 € entfällt.', []);
+          + 'Der monatliche Unterhalt von 1.000 € entfällt.', 'You gave enough gifts (1,000 €).<br><br>'
+          + 'Your partner moves back in. Partner: <strong>70</strong>.<br>'
+          + 'The monthly maintenance of 1,000 € no longer applies.'), []);
       }
     }
 
@@ -3824,21 +3840,22 @@ function aktionAusfuehren(ortId, aktionsId) {
         gs.minijobLohn = lohn;
         if (lohn > 0) {
           const fb = minijobFreibetrag(lohn);
-          logEvent(`💼 Minijob angenommen: ${formatEuro(lohn)}/Monat brutto. Davon anrechnungsfrei: ${formatEuro(fb)}.`, 'good');
+          logEvent(T(`💼 Minijob angenommen: ${formatEuro(lohn)}/Monat brutto. Davon anrechnungsfrei: ${formatEuro(fb)}.`, `💼 Mini-job taken: ${formatEuro(lohn)}/month gross. Of that not counted: ${formatEuro(fb)}.`), 'good');
         } else {
-          logEvent('💼 Minijob gekündigt.', '');
+          logEvent(T('💼 Minijob gekündigt.', '💼 Mini-job quit.'), '');
         }
         updateHUD();
       };
       const fb538 = minijobFreibetrag(538);
       const fb250 = minijobFreibetrag(250);
-      oeffneModal('💼 Minijob (Aushilfe)',
-        'Legales Einkommen – aber das Amt rechnet an. Du behältst nur den <strong>Freibetrag</strong> (erste 100 € + 20 % vom Rest).<br><br>'
-        + `Kostet jeden Monat etwas Energie.`,
+      oeffneModal(T('💼 Minijob (Aushilfe)', '💼 Mini-job (helper)'),
+        T('Legales Einkommen – aber das Amt rechnet an. Du behältst nur den <strong>Freibetrag</strong> (erste 100 € + 20 % vom Rest).<br><br>'
+        + `Kostet jeden Monat etwas Energie.`, 'Legal income – but the office counts it. You keep only the <strong>allowance</strong> (first 100 € + 20 % of the rest).<br><br>'
+        + `Costs a bit of energy each month.`),
         [
-          { label: `🧹 250 €/Monat (netto +${formatEuro(fb250)})`, callback: () => setze(250) },
-          { label: `🛒 538 €/Monat (netto +${formatEuro(fb538)})`, primary: true, callback: () => setze(538) },
-          { label: '🚪 Minijob kündigen', danger: true, callback: () => setze(0) },
+          { label: T(`🧹 250 €/Monat (netto +${formatEuro(fb250)})`, `🧹 250 €/month (net +${formatEuro(fb250)})`), callback: () => setze(250) },
+          { label: T(`🛒 538 €/Monat (netto +${formatEuro(fb538)})`, `🛒 538 €/month (net +${formatEuro(fb538)})`), primary: true, callback: () => setze(538) },
+          { label: T('🚪 Minijob kündigen', '🚪 Quit mini-job'), danger: true, callback: () => setze(0) },
         ]);
       return;
     }
@@ -3852,14 +3869,14 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'rubbellos_5') { kaufeRubbellose(5); return; }
     // ---- Alkohol & Zigaretten ----
     if (aktionsId === 'genussmittel') {
-      if (gs.kontostand < 15) { logEvent('⚠️ Kein Geld für Genussmittel.', 'warn'); return; }
+      if (gs.kontostand < 15) { logEvent(T('⚠️ Kein Geld für Genussmittel.', '⚠️ No money for indulgences.'), 'warn'); return; }
       gs.kontostand      -= 15;
       gs.happinessSpieler = clamp(gs.happinessSpieler + 8, 0, 100);
       gs.gesundheit       = clamp(gs.gesundheit - 3, 0, 100);
-      logEvent('🍺 Alkohol & Zigaretten: Laune +8, Gesundheit -3.', 'warn');
+      logEvent(T('🍺 Alkohol & Zigaretten: Laune +8, Gesundheit -3.', '🍺 Alcohol and cigarettes: Mood +8, Health -3.'), 'warn');
       if (Math.random() < 0.20 && gs.suchtStufe < 3) {
         gs.suchtStufe++;
-        logEvent(`🍺 Es wird zur Gewohnheit… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+        logEvent(T(`🍺 Es wird zur Gewohnheit… Sucht-Stufe ${gs.suchtStufe}.`, `🍺 It is becoming a habit… Addiction level ${gs.suchtStufe}.`), 'danger');
       }
       return;
     }
@@ -3870,9 +3887,10 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'stoff_kaufen') {
       const preis = 80;
       if (gs.losesBargeld < preis) {
-        oeffneModal('💊 Dealer will Bargeld',
-          `Der Typ im Gebüsch nimmt nur <strong>${formatEuro(preis)}</strong> in bar – keine Karte. `
-          + 'Besorg dir loses Bargeld (z. B. Schwarzarbeit auf der Baustelle).', []);
+        oeffneModal(T('💊 Dealer will Bargeld', '💊 Dealer wants cash'),
+          T(`Der Typ im Gebüsch nimmt nur <strong>${formatEuro(preis)}</strong> in bar – keine Karte. `
+          + 'Besorg dir loses Bargeld (z. B. Schwarzarbeit auf der Baustelle).', `The guy in the bushes only takes <strong>${formatEuro(preis)}</strong> in cash – no card. `
+          + 'Get some loose cash (e.g. off-the-books work at the construction site).'), []);
         return;
       }
       gs.losesBargeld     -= preis;
@@ -3880,10 +3898,10 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.gesundheit        = clamp(gs.gesundheit - 12, 0, 100);
       gs.happinessPartner  = clamp(gs.happinessPartner - 5, 0, 100);
       gs.risikoRaster      = clamp(gs.risikoRaster + 6, 0, 100);
-      logEvent('💊 Was beim Dealer geholt: Laune +25, aber Gesundheit -12, Partner -5, Risiko +6.', 'warn');
+      logEvent(T('💊 Was beim Dealer geholt: Laune +25, aber Gesundheit -12, Partner -5, Risiko +6.', '💊 Got something from the dealer: Mood +25, but Health -12, Partner -5, Risk +6.'), 'warn');
       if (Math.random() < 0.35 && gs.suchtStufe < 3) {
         gs.suchtStufe++;
-        logEvent(`💊 Das zieht dich runter… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+        logEvent(T(`💊 Das zieht dich runter… Sucht-Stufe ${gs.suchtStufe}.`, `💊 This is dragging you down… Addiction level ${gs.suchtStufe}.`), 'danger');
       }
       if (gs.gesundheit <= 0) triggerGameOver('gesundheit');
       return;
@@ -3893,55 +3911,61 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- ARZTPRAXIS ---
   if (ortId === 'arztpraxis') {
     if (aktionsId === 'arzt_behandlung') {
-      if (gs.kontostand + gs.losesBargeld < 500) { logEvent('⚠️ Nicht genug Geld für die Behandlung (500€).', 'warn'); return; }
+      if (gs.kontostand + gs.losesBargeld < 500) { logEvent(T('⚠️ Nicht genug Geld für die Behandlung (500€).', '⚠️ Not enough money for the treatment (500€).'), 'warn'); return; }
       let rest = 500; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
       gs.gesundheit  = clamp(gs.gesundheit + 30, 0, 100);
-      logEvent('🩺 Behandlung: Gesundheit +30 (-500€).', 'good');
+      logEvent(T('🩺 Behandlung: Gesundheit +30 (-500€).', '🩺 Treatment: Health +30 (-500€).'), 'good');
     }
     if (aktionsId === 'arzt_krank1' || aktionsId === 'arzt_krank2') {
       const wochen = aktionsId === 'arzt_krank2' ? 2 : 1;
       const preis  = wochen === 2 ? 100 : 50;
       if ((gs.krankmeldungCooldownWochen || 0) > 0) {
-        oeffneModal('🤒 Geht gerade nicht',
-          `Der Arzt schöpft Verdacht – eine neue Krankmeldung gibt es erst in ` +
-          `<strong>${gs.krankmeldungCooldownWochen} Woche(n)</strong> wieder (max. alle 6 Wochen).`, []);
+        oeffneModal(T('🤒 Geht gerade nicht', '🤒 Not possible right now'),
+          T(`Der Arzt schöpft Verdacht – eine neue Krankmeldung gibt es erst in ` +
+          `<strong>${gs.krankmeldungCooldownWochen} Woche(n)</strong> wieder (max. alle 6 Wochen).`, `The doctor is getting suspicious – a new sick note is only available in ` +
+          `<strong>${gs.krankmeldungCooldownWochen} week(s)</strong> (max. every 6 weeks).`), []);
         return;
       }
       if (gs.kontostand + gs.losesBargeld < preis) {
-        logEvent(`⚠️ Nicht genug Geld fürs Bestechen (${preis}€).`, 'warn'); return;
+        logEvent(T(`⚠️ Nicht genug Geld fürs Bestechen (${preis}€).`, `⚠️ Not enough money for the bribe (${preis}€).`), 'warn'); return;
       }
       let rest = preis;
       const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l;
       gs.kontostand -= rest;
       gs.krankmeldungWochenRest    = wochen;
       gs.krankmeldungCooldownWochen = 6;
-      logEvent(`🤒 Krankmeldung für ${wochen} Woche(n) erkauft (${preis}€).`, 'good');
-      oeffneModal('🤒 Krankgeschrieben',
-        `Der Arzt lässt sich für <strong>${preis} €</strong> überzeugen.<br><br>` +
+      logEvent(T(`🤒 Krankmeldung für ${wochen} Woche(n) erkauft (${preis}€).`, `🤒 Sick note for ${wochen} week(s) bought (${preis}€).`), 'good');
+      oeffneModal(T('🤒 Krankgeschrieben', '🤒 On sick leave'),
+        T(`Der Arzt lässt sich für <strong>${preis} €</strong> überzeugen.<br><br>` +
         `Du bist <strong>${wochen} Woche(n)</strong> krankgeschrieben:<br>` +
         `• <strong>keine Pflichttermine</strong> beim Arbeitsamt<br>` +
         `• <strong>keine Razzia/Prüfung</strong> in dieser Zeit<br><br>` +
-        `Nächste Krankmeldung erst in <strong>6 Wochen</strong> möglich.`, []);
+        `Nächste Krankmeldung erst in <strong>6 Wochen</strong> möglich.`, `The doctor is convinced for <strong>${preis} €</strong>.<br><br>` +
+        `You are on sick leave for <strong>${wochen} week(s)</strong>:<br>` +
+        `• <strong>no mandatory appointments</strong> at the Job Center<br>` +
+        `• <strong>no raid/audit</strong> during this time<br><br>` +
+        `Next sick note only possible in <strong>6 weeks</strong>.`), []);
     }
     if (aktionsId === 'arzt_attest') {
-      if (gs.ernaehrungAttest) { oeffneModal('🥗 Attest', 'Du hast bereits ein gültiges Ernährungs-Attest. Bring es beim <strong>Arbeitsamt</strong> ein (Anträge → Ernährung).', []); return; }
-      if (gs.kontostand + gs.losesBargeld < 50) { logEvent('⚠️ Nicht genug Geld fürs Attest (50€).', 'warn'); return; }
+      if (gs.ernaehrungAttest) { oeffneModal(T('🥗 Attest', '🥗 Certificate'), T('Du hast bereits ein gültiges Ernährungs-Attest. Bring es beim <strong>Arbeitsamt</strong> ein (Anträge → Ernährung).', 'You already have a valid dietary certificate. Submit it at the <strong>Job Center</strong> (Applications → Diet).'), []); return; }
+      if (gs.kontostand + gs.losesBargeld < 50) { logEvent(T('⚠️ Nicht genug Geld fürs Attest (50€).', '⚠️ Not enough money for the certificate (50€).'), 'warn'); return; }
       let rest = 50; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
       gs.ernaehrungAttest = true;
-      logEvent('🥗 Ernährungs-Attest erhalten (50€). Jetzt beim Amt einreichen.', 'good');
-      oeffneModal('🥗 Attest ausgestellt',
-        'Der Arzt stellt dir ein <strong>Ernährungs-Attest</strong> aus (z. B. Zöliakie).<br><br>' +
-        'Bring es zum <strong>Arbeitsamt → Anträge → Ernährung</strong>, um den Mehrbedarf zu beantragen.', []);
+      logEvent(T('🥗 Ernährungs-Attest erhalten (50€). Jetzt beim Amt einreichen.', '🥗 Dietary certificate received (50€). Now submit it at the office.'), 'good');
+      oeffneModal(T('🥗 Attest ausgestellt', '🥗 Certificate issued'),
+        T('Der Arzt stellt dir ein <strong>Ernährungs-Attest</strong> aus (z. B. Zöliakie).<br><br>' +
+        'Bring es zum <strong>Arbeitsamt → Anträge → Ernährung</strong>, um den Mehrbedarf zu beantragen.', 'The doctor issues you a <strong>dietary certificate</strong> (e.g. coeliac disease).<br><br>' +
+        'Bring it to the <strong>Job Center → Applications → Diet</strong> to apply for the extra benefit.'), []);
       return;
     }
     if (aktionsId === 'arzt_entzug') {
-      if ((gs.suchtStufe || 0) === 0) { oeffneModal('💉 Entzug', 'Du hast (noch) keine Sucht. Bleib so!', []); return; }
-      if (gs.kontostand + gs.losesBargeld < 800) { logEvent('⚠️ Nicht genug Geld für die Therapie (800€).', 'warn'); return; }
+      if ((gs.suchtStufe || 0) === 0) { oeffneModal(T('💉 Entzug', '💉 Rehab'), T('Du hast (noch) keine Sucht. Bleib so!', 'You have no addiction (yet). Keep it that way!'), []); return; }
+      if (gs.kontostand + gs.losesBargeld < 800) { logEvent(T('⚠️ Nicht genug Geld für die Therapie (800€).', '⚠️ Not enough money for the therapy (800€).'), 'warn'); return; }
       let rest = 800; const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l; gs.kontostand -= rest;
       gs.suchtStufe  = 0;
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
-      logEvent('💉 Entzug erfolgreich – Sucht überwunden!', 'good');
-      oeffneModal('💉 Clean!', 'Die Therapie hat angeschlagen. Deine Sucht ist überwunden, Laune +10.', []);
+      logEvent(T('💉 Entzug erfolgreich – Sucht überwunden!', '💉 Rehab successful – addiction overcome!'), 'good');
+      oeffneModal(T('💉 Clean!', '💉 Clean!'), T('Die Therapie hat angeschlagen. Deine Sucht ist überwunden, Laune +10.', 'The therapy worked. Your addiction is overcome, Mood +10.'), []);
       return;
     }
   }
@@ -3951,34 +3975,39 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'villa_schlafen') {
       gs.energie = clamp(gs.energie + 40, 0, 100);
       verbraucheTag(1);
-      logEvent('🛌 Luxuriös geschlafen: Energie +40. 1 Tag vergangen.', 'good');
+      logEvent(T('🛌 Luxuriös geschlafen: Energie +40. 1 Tag vergangen.', '🛌 Slept in luxury: Energy +40. 1 day passed.'), 'good');
     }
     if (aktionsId === 'villa_pool') {
       gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
-      logEvent('🏊 Pool & Sauna: Laune +20.', 'good');
+      logEvent(T('🏊 Pool & Sauna: Laune +20.', '🏊 Pool and sauna: Mood +20.'), 'good');
     }
     if (aktionsId === 'villa_gaeste') {
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
       gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
-      logEvent('🍸 Gäste in der Villa empfangen: Laune +10, Partner +10.', 'good');
+      logEvent(T('🍸 Gäste in der Villa empfangen: Laune +10, Partner +10.', '🍸 Received guests at the villa: Mood +10, Partner +10.'), 'good');
     }
     if (aktionsId === 'villa_einlieger') {
       if (gs.einliegerVermietet) {
         gs.einliegerVermietet = false;
-        oeffneModal('🚪 Einliegerwohnung gekündigt',
-          'Du vermietest die Einliegerwohnung nicht mehr schwarz. '
-          + 'Kein Zusatz-Cash, aber auch kein Risiko mehr aus dieser Masche.', []);
-        logEvent('🚪 Einliegerwohnung-Masche beendet.', '');
+        oeffneModal(T('🚪 Einliegerwohnung gekündigt', '🚪 Granny flat lease ended'),
+          T('Du vermietest die Einliegerwohnung nicht mehr schwarz. '
+          + 'Kein Zusatz-Cash, aber auch kein Risiko mehr aus dieser Masche.', 'You no longer rent out the granny flat off the books. '
+          + 'No extra cash, but also no more risk from this scheme.'), []);
+        logEvent(T('🚪 Einliegerwohnung-Masche beendet.', '🚪 Granny flat scheme ended.'), '');
       } else {
         gs.einliegerVermietet = true;
         gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
-        oeffneModal('🚪 Einliegerwohnung schwarz vermietet',
-          'Offiziell bist du in die <strong>Einliegerwohnung</strong> der Villa gezogen – '
+        oeffneModal(T('🚪 Einliegerwohnung schwarz vermietet', '🚪 Granny flat rented off the books'),
+          T('Offiziell bist du in die <strong>Einliegerwohnung</strong> der Villa gezogen – '
           + 'so wirkt die Amt-Miete plausibel. In Wahrheit vermietest du sie für '
           + `<strong>${formatEuro(EINLIEGER_MIETE)}/Monat</strong> in bar weiter und lebst `
           + 'selbst luxuriös in der Villa.<br><br>Die Miete fließt monatlich in die '
-          + 'schwarze Kasse. Risiko +5 – fällt bei der Jobcenter-Prüfung auf, wenn du Pech hast.', []);
-        logEvent(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)}/M. Risiko +5.`, 'warn');
+          + 'schwarze Kasse. Risiko +5 – fällt bei der Jobcenter-Prüfung auf, wenn du Pech hast.', 'Officially you moved into the villa’s <strong>granny flat</strong> – '
+          + 'so the office rent looks plausible. In reality you rent it out for '
+          + `<strong>${formatEuro(EINLIEGER_MIETE)}/mo</strong> in cash and live `
+          + 'in luxury in the villa yourself.<br><br>The rent flows monthly into the '
+          + 'slush fund. Risk +5 – it can be exposed during the Job Center audit if you are unlucky.'), []);
+        logEvent(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)}/M. Risiko +5.`, `🚪 Granny flat rented off the books: +${formatEuro(EINLIEGER_MIETE)}/mo. Risk +5.`), 'warn');
       }
     }
   }
@@ -3987,27 +4016,27 @@ function aktionAusfuehren(ortId, aktionsId) {
   if (ortId === 'kirche') {
     if (aktionsId === 'suendenerlass') {
       if (gs.monat < gs.suendenerlassCooldownMonat) {
-        oeffneModal('🙏 Noch kein Erlass', `Der Pfarrer gewährt erst ab Monat ${gs.suendenerlassCooldownMonat} wieder einen Sündenerlass (alle 3 Monate).`, []);
+        oeffneModal(T('🙏 Noch kein Erlass', '🙏 No absolution yet'), T(`Der Pfarrer gewährt erst ab Monat ${gs.suendenerlassCooldownMonat} wieder einen Sündenerlass (alle 3 Monate).`, `The priest only grants another absolution from month ${gs.suendenerlassCooldownMonat} (every 3 months).`), []);
         return;
       }
-      if (gs.kontostand < 150) { logEvent('⚠️ Nicht genug Geld für die Spende (150€).', 'warn'); return; }
+      if (gs.kontostand < 150) { logEvent(T('⚠️ Nicht genug Geld für die Spende (150€).', '⚠️ Not enough money for the donation (150€).'), 'warn'); return; }
       gs.kontostand  -= 150;
       gs.risikoRaster = Math.floor(gs.risikoRaster * 0.5);
       gs.suendenerlassCooldownMonat = gs.monat + 3;
-      logEvent(`🙏 Sündenerlass: Risiko halbiert auf ${gs.risikoRaster}%. -150 €.`, 'good');
-      oeffneModal('🙏 Sündenerlass', `Eine großzügige Spende, ein Vaterunser – der Pfarrer drückt beide Augen zu.<br><br><strong>Risiko halbiert auf ${gs.risikoRaster}%.</strong>`, []);
+      logEvent(T(`🙏 Sündenerlass: Risiko halbiert auf ${gs.risikoRaster}%. -150 €.`, `🙏 Absolution: Risk halved to ${gs.risikoRaster}%. -150 €.`), 'good');
+      oeffneModal(T('🙏 Sündenerlass', '🙏 Absolution'), T(`Eine großzügige Spende, ein Vaterunser – der Pfarrer drückt beide Augen zu.<br><br><strong>Risiko halbiert auf ${gs.risikoRaster}%.</strong>`, `A generous donation, an Our Father – the priest turns a blind eye.<br><br><strong>Risk halved to ${gs.risikoRaster}%.</strong>`), []);
       return;
     }
     if (aktionsId === 'beichte') {
       if (gs.monat < gs.beichteCooldownMonat) {
-        oeffneModal('🕯️ Noch keine Beichte', `Beichten kannst du erst wieder ab Monat ${gs.beichteCooldownMonat} (alle 3 Monate).`, []);
+        oeffneModal(T('🕯️ Noch keine Beichte', '🕯️ No confession yet'), T(`Beichten kannst du erst wieder ab Monat ${gs.beichteCooldownMonat} (alle 3 Monate).`, `You can confess again only from month ${gs.beichteCooldownMonat} (every 3 months).`), []);
         return;
       }
-      if (gs.energie < 15) { logEvent('⚠️ Zu wenig Energie für die Beichte.', 'warn'); return; }
+      if (gs.energie < 15) { logEvent(T('⚠️ Zu wenig Energie für die Beichte.', '⚠️ Too little energy for the confession.'), 'warn'); return; }
       gs.energie          = clamp(gs.energie - 15, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100);
       gs.beichteCooldownMonat = gs.monat + 3;
-      logEvent('🕯️ Gebeichtet: Energie -15, Laune +10.', 'good');
+      logEvent(T('🕯️ Gebeichtet: Energie -15, Laune +10.', '🕯️ Confessed: Energy -15, Mood +10.'), 'good');
       return;
     }
   }
@@ -4019,12 +4048,12 @@ function aktionAusfuehren(ortId, aktionsId) {
 
     if (aktionsId === 'waschen_alles') {
       betrag = gs.losesBargeld;
-      if (betrag <= 0) { logEvent('⚠️ Kein loses Bargeld zum Setzen.', 'warn'); return; }
+      if (betrag <= 0) { logEvent(T('⚠️ Kein loses Bargeld zum Setzen.', '⚠️ No loose cash to bet.'), 'warn'); return; }
     }
 
     if (betrag !== undefined) {
       if (gs.losesBargeld < betrag) {
-        logEvent(`⚠️ Nicht genug loses Bargeld. Vorhanden: ${formatEuro(gs.losesBargeld)}`, 'warn');
+        logEvent(T(`⚠️ Nicht genug loses Bargeld. Vorhanden: ${formatEuro(gs.losesBargeld)}`, `⚠️ Not enough loose cash. Available: ${formatEuro(gs.losesBargeld)}`), 'warn');
         return;
       }
       // Rückzahlung: gleichmäßig verteilt zwischen 50% und 120%
@@ -4042,22 +4071,28 @@ function aktionAusfuehren(ortId, aktionsId) {
 
       if (diff >= 0) {
         soundGut && soundGut();
-        logEvent(`🎰 Gewaschen: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (+${pct - 100}% Bonus). Konto +${formatEuro(rueckgabe)}.`, 'good');
-        oeffneModal('🎰 Gewaschen!',
-          `Einsatz: <strong>${formatEuro(betrag)}</strong><br>
+        logEvent(T(`🎰 Gewaschen: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (+${pct - 100}% Bonus). Konto +${formatEuro(rueckgabe)}.`, `🎰 Laundered: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (+${pct - 100}% bonus). Account +${formatEuro(rueckgabe)}.`), 'good');
+        oeffneModal(T('🎰 Gewaschen!', '🎰 Laundered!'),
+          T(`Einsatz: <strong>${formatEuro(betrag)}</strong><br>
            Rückzahlung: <strong>${formatEuro(rueckgabe)}</strong> (${pct}%)<br>
            Ergebnis: <strong style="color:var(--accent2);">${diffStr}</strong><br><br>
-           Das Geld ist legal auf deinem Bankkonto – als Spielgewinn verbucht.`,
+           Das Geld ist legal auf deinem Bankkonto – als Spielgewinn verbucht.`, `Stake: <strong>${formatEuro(betrag)}</strong><br>
+           Payout: <strong>${formatEuro(rueckgabe)}</strong> (${pct}%)<br>
+           Result: <strong style="color:var(--accent2);">${diffStr}</strong><br><br>
+           The money is legally in your bank account – booked as a gambling win.`),
           []
         );
       } else {
         soundNeutral && soundNeutral();
-        logEvent(`🎰 Gewaschen: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (${pct}%, Provision ${formatEuro(-diff)}). Konto +${formatEuro(rueckgabe)}.`, 'warn');
-        oeffneModal('🎰 Gewaschen (mit Abzug)',
-          `Einsatz: <strong>${formatEuro(betrag)}</strong><br>
+        logEvent(T(`🎰 Gewaschen: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (${pct}%, Provision ${formatEuro(-diff)}). Konto +${formatEuro(rueckgabe)}.`, `🎰 Laundered: ${formatEuro(betrag)} → ${formatEuro(rueckgabe)} (${pct}%, commission ${formatEuro(-diff)}). Account +${formatEuro(rueckgabe)}.`), 'warn');
+        oeffneModal(T('🎰 Gewaschen (mit Abzug)', '🎰 Laundered (with deduction)'),
+          T(`Einsatz: <strong>${formatEuro(betrag)}</strong><br>
            Rückzahlung: <strong>${formatEuro(rueckgabe)}</strong> (${pct}%)<br>
            Kasino-Provision: <strong style="color:var(--danger);">${formatEuro(-diff)}</strong><br><br>
-           Das gereinigte Geld ist trotzdem auf deinem Konto – legal.`,
+           Das gereinigte Geld ist trotzdem auf deinem Konto – legal.`, `Stake: <strong>${formatEuro(betrag)}</strong><br>
+           Payout: <strong>${formatEuro(rueckgabe)}</strong> (${pct}%)<br>
+           Casino commission: <strong style="color:var(--danger);">${formatEuro(-diff)}</strong><br><br>
+           The laundered money is still in your account – legal.`),
           []
         );
       }
