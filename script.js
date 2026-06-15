@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v114 – EN Aktions-Ergebnisse';
+const BUILD_MARKE = 'v115 – EN Events';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -1078,7 +1078,7 @@ function verarbeiteEheKriseWahl(schritt, wahl) {
 
   const closeBtn = document.createElement('button');
   closeBtn.className   = 'action-btn primary';
-  closeBtn.textContent = '✅ Weiter';
+  closeBtn.textContent = T('✅ Weiter', '✅ Continue');
   closeBtn.onclick = () => {
     schliesseModal();
 
@@ -1512,406 +1512,406 @@ const eventDatabase = [
   // ---------- 🎲 ALLTAG / GLÜCK (kurze, witzige Mini-Effekte) ----------
   {
     id: 'alltag_hund', kategorie: 'alltag',
-    titel: '🐕 Wurst-Raub',
-    text: 'Der Hund vom Nachbarn schnappt sich deine Bratwurst vom Balkon.',
-    optionA: { label: '🤬 Schimpfen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100); return 'Der Köter rennt grinsend weg.'; }},
-    optionB: { label: '😂 Drüber lachen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return 'War eh nur die Billig-Wurst.'; }}
+    titel: T('🐕 Wurst-Raub', '🐕 Sausage Heist'),
+    text: T('Der Hund vom Nachbarn schnappt sich deine Bratwurst vom Balkon.', "The neighbour's dog snatches your bratwurst right off the balcony."),
+    optionA: { label: T('🤬 Schimpfen', '🤬 Yell at it'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100); return T('Der Köter rennt grinsend weg.', 'The mutt trots off grinning.'); }},
+    optionB: { label: T('😂 Drüber lachen', '😂 Laugh it off'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return T('War eh nur die Billig-Wurst.', 'It was just the cheap sausage anyway.'); }}
   },
   {
     id: 'alltag_automat', kategorie: 'alltag',
-    titel: '🎰 Der letzte Zehner',
-    text: 'Beim Kiosk blinkt der Geldspielautomat dich verführerisch an.',
-    optionA: { label: '🎰 Zocken (10 €)', effekt(gs) {
-      if (gs.losesBargeld + gs.kontostand < 10) return 'Nicht mal 10 € übrig. Tragisch.';
+    titel: T('🎰 Der letzte Zehner', '🎰 The Last Tenner'),
+    text: T('Beim Kiosk blinkt der Geldspielautomat dich verführerisch an.', 'The slot machine at the kiosk blinks at you seductively.'),
+    optionA: { label: T('🎰 Zocken (10 €)', '🎰 Gamble (10 €)'), effekt(gs) {
+      if (gs.losesBargeld + gs.kontostand < 10) return T('Nicht mal 10 € übrig. Tragisch.', 'Not even 10 € to spare. Tragic.');
       const ausB = Math.min(10, gs.losesBargeld); gs.losesBargeld -= ausB; gs.kontostand -= (10 - ausB);
-      if (Math.random() < 0.4) { gs.losesBargeld += 40; gs.happinessSpieler = clamp(gs.happinessSpieler + 6, 0, 100); return 'JACKPOT! +40 € und ein Adrenalinschub.'; }
-      gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return 'Verzockt. Der Automat lacht dich aus.'; }},
-    optionB: { label: '🚶 Stark bleiben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return 'Du gehst erhobenen Hauptes vorbei.'; }}
+      if (Math.random() < 0.4) { gs.losesBargeld += 40; gs.happinessSpieler = clamp(gs.happinessSpieler + 6, 0, 100); return T('JACKPOT! +40 € und ein Adrenalinschub.', 'JACKPOT! +40 € and an adrenaline rush.'); }
+      gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return T('Verzockt. Der Automat lacht dich aus.', 'Lost it all. The machine laughs at you.'); }},
+    optionB: { label: T('🚶 Stark bleiben', '🚶 Stay strong'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); return T('Du gehst erhobenen Hauptes vorbei.', 'You walk past with your head held high.'); }}
   },
   {
     id: 'alltag_falschgeld', kategorie: 'alltag',
-    titel: '💵 Falscher Fuffziger',
-    text: 'Der Späti gibt dir versehentlich einen verdächtig glänzenden 50er heraus.',
-    optionA: { label: '🤐 Behalten', effekt(gs) { gs.losesBargeld += 50; gs.risikoRaster = clamp(gs.risikoRaster + 8, 0, 100); return '+50 € Bargeld – aber Falschgeld ist heiß.'; }},
-    optionB: { label: '😇 Zurückgeben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return 'Ehrlich währt am längsten. Reines Gewissen.'; }}
+    titel: T('💵 Falscher Fuffziger', '💵 The Fake Fifty'),
+    text: T('Der Späti gibt dir versehentlich einen verdächtig glänzenden 50er heraus.', 'The corner shop accidentally gives you a suspiciously shiny 50.'),
+    optionA: { label: T('🤐 Behalten', '🤐 Keep it'), effekt(gs) { gs.losesBargeld += 50; gs.risikoRaster = clamp(gs.risikoRaster + 8, 0, 100); return T('+50 € Bargeld – aber Falschgeld ist heiß.', '+50 € cash – but counterfeit money is hot.'); }},
+    optionB: { label: T('😇 Zurückgeben', '😇 Give it back'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return T('Ehrlich währt am längsten. Reines Gewissen.', 'Honesty is the best policy. Clean conscience.'); }}
   },
   {
     id: 'alltag_grillfest', kategorie: 'alltag',
-    titel: '🌭 Gratis-Grillfest',
-    text: 'Die Kirchengemeinde grillt umsonst für alle Bedürftigen.',
-    optionA: { label: '🍖 Vollschlagen', effekt(gs) { gs.energie = clamp(gs.energie + 12, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); return 'Fünf Bratwürste später: satt, glücklich, leicht übel.'; }},
-    optionB: { label: '🥗 Nur Salat', effekt(gs) { gs.energie = clamp(gs.energie + 4, 0, 100); gs.gesundheit = clamp(gs.gesundheit + 2, 0, 100); return 'Vernünftig. Langweilig, aber vernünftig.'; }}
+    titel: T('🌭 Gratis-Grillfest', '🌭 Free Barbecue'),
+    text: T('Die Kirchengemeinde grillt umsonst für alle Bedürftigen.', 'The church congregation is grilling for free for everyone in need.'),
+    optionA: { label: T('🍖 Vollschlagen', '🍖 Stuff yourself'), effekt(gs) { gs.energie = clamp(gs.energie + 12, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); return T('Fünf Bratwürste später: satt, glücklich, leicht übel.', 'Five bratwursts later: full, happy, slightly queasy.'); }},
+    optionB: { label: T('🥗 Nur Salat', '🥗 Just salad'), effekt(gs) { gs.energie = clamp(gs.energie + 4, 0, 100); gs.gesundheit = clamp(gs.gesundheit + 2, 0, 100); return T('Vernünftig. Langweilig, aber vernünftig.', 'Sensible. Boring, but sensible.'); }}
   },
   {
     id: 'alltag_fahrrad', kategorie: 'alltag',
-    titel: '🚲 Herrenloses Fahrrad',
-    text: 'Ein fast neues Rad steht seit Tagen ohne Schloss an der Laterne.',
-    optionA: { label: '🚲 „Mitnehmen"', effekt(gs) { gs.losesBargeld += 25; gs.risikoRaster = clamp(gs.risikoRaster + 6, 0, 100); return '+25 € beim Hehler – fühlt sich trotzdem komisch an.'; }},
-    optionB: { label: '👮 Fundbüro', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.losesBargeld += 5; return 'Ehrenmann! Der Besitzer drückt dir 5 € Finderlohn in die Hand.'; }}
+    titel: T('🚲 Herrenloses Fahrrad', '🚲 Abandoned Bicycle'),
+    text: T('Ein fast neues Rad steht seit Tagen ohne Schloss an der Laterne.', 'An almost-new bike has been chained to nothing at the lamppost for days.'),
+    optionA: { label: T('🚲 „Mitnehmen"', '🚲 “Borrow” it'), effekt(gs) { gs.losesBargeld += 25; gs.risikoRaster = clamp(gs.risikoRaster + 6, 0, 100); return T('+25 € beim Hehler – fühlt sich trotzdem komisch an.', '+25 € at the fence – still feels weird though.'); }},
+    optionB: { label: T('👮 Fundbüro', '👮 Lost & found'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); gs.losesBargeld += 5; return T('Ehrenmann! Der Besitzer drückt dir 5 € Finderlohn in die Hand.', 'Stand-up citizen! The owner presses a 5 € reward into your hand.'); }}
   },
   {
     id: 'alltag_wahrsagerin', kategorie: 'alltag',
-    titel: '🔮 Wahrsagerin',
-    text: 'Am Marktstand will dir eine Wahrsagerin die Zukunft lesen.',
-    optionA: { label: '💸 5 € zahlen', effekt(gs) { if (gs.losesBargeld + gs.kontostand < 5) return 'Nicht mal 5 € für die Zukunft übrig.'; if (gs.losesBargeld >= 5) gs.losesBargeld -= 5; else gs.kontostand -= 5; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return '„Großer Reichtum steht dir bevor!" Na also.'; }},
-    optionB: { label: '🙄 Humbug', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 1, 0, 100); return 'Sie murmelt dir einen kleinen Fluch hinterher.'; }}
+    titel: T('🔮 Wahrsagerin', '🔮 Fortune Teller'),
+    text: T('Am Marktstand will dir eine Wahrsagerin die Zukunft lesen.', 'At the market stall a fortune teller wants to read your future.'),
+    optionA: { label: T('💸 5 € zahlen', '💸 Pay 5 €'), effekt(gs) { if (gs.losesBargeld + gs.kontostand < 5) return T('Nicht mal 5 € für die Zukunft übrig.', 'Not even 5 € to spare for the future.'); if (gs.losesBargeld >= 5) gs.losesBargeld -= 5; else gs.kontostand -= 5; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return T('„Großer Reichtum steht dir bevor!" Na also.', '“Great wealth lies ahead of you!” There you go.'); }},
+    optionB: { label: T('🙄 Humbug', '🙄 Hogwash'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 1, 0, 100); return T('Sie murmelt dir einen kleinen Fluch hinterher.', 'She mutters a little curse after you.'); }}
   },
   {
     id: 'alltag_pfand', kategorie: 'alltag',
-    titel: '💶 Pfandflaschen-Bonanza',
-    text: 'Im Park steht ein praller Sack voll Pfandflaschen – herrenlos.',
-    optionA: { label: '♻️ Einsammeln', effekt(gs) { gs.losesBargeld += 15; return '+15 € Pfand kassiert.'; }},
-    optionB: { label: '🚶 Zu stolz', effekt(gs) { return 'Du gehst würdevoll weiter.'; }}
+    titel: T('💶 Pfandflaschen-Bonanza', '💶 Deposit Bottle Bonanza'),
+    text: T('Im Park steht ein praller Sack voll Pfandflaschen – herrenlos.', 'In the park sits a bulging sack of deposit bottles – ownerless.'),
+    optionA: { label: T('♻️ Einsammeln', '♻️ Collect them'), effekt(gs) { gs.losesBargeld += 15; return T('+15 € Pfand kassiert.', '+15 € in deposits cashed in.'); }},
+    optionB: { label: T('🚶 Zu stolz', '🚶 Too proud'), effekt(gs) { return T('Du gehst würdevoll weiter.', 'You walk on with dignity.'); }}
   },
   {
     id: 'alltag_bonusheft', kategorie: 'alltag',
-    titel: '🛒 Bonusheft voll',
-    text: 'Dein Discounter-Bonusheft ist endlich vollgeklebt.',
-    optionA: { label: '🎁 Einlösen', effekt(gs) { gs.kontostand += 25; return '+25 € Gutschrift aufs Konto.'; }},
-    optionB: { label: '🗑️ Verlegt', effekt(gs) { return 'Wo war das Heft nochmal…?'; }}
+    titel: T('🛒 Bonusheft voll', '🛒 Loyalty Card Full'),
+    text: T('Dein Discounter-Bonusheft ist endlich vollgeklebt.', 'Your discount-store loyalty card is finally full of stamps.'),
+    optionA: { label: T('🎁 Einlösen', '🎁 Redeem'), effekt(gs) { gs.kontostand += 25; return T('+25 € Gutschrift aufs Konto.', '+25 € credited to your account.'); }},
+    optionB: { label: T('🗑️ Verlegt', '🗑️ Misplaced'), effekt(gs) { return T('Wo war das Heft nochmal…?', 'Now where did that card go…?'); }}
   },
   {
     id: 'alltag_trashtv', kategorie: 'alltag',
-    titel: '📺 Trash-TV-Marathon',
-    text: 'Deine Lieblings-Trash-Show läuft den ganzen Tag am Stück.',
-    optionA: { label: '📺 Reinziehen (1 Tag)', effekt(gs) { gs.energie = clamp(gs.energie + 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); verbraucheTag(1); return 'Herrlich vergammelt. E +10, Laune +5.'; }},
-    optionB: { label: '🙅 Produktiv bleiben', effekt(gs) { return 'Diszipliniert ausgeschaltet.'; }}
+    titel: T('📺 Trash-TV-Marathon', '📺 Trash-TV Marathon'),
+    text: T('Deine Lieblings-Trash-Show läuft den ganzen Tag am Stück.', 'Your favourite trash show is running back-to-back all day.'),
+    optionA: { label: T('📺 Reinziehen (1 Tag)', '📺 Binge it (1 day)'), effekt(gs) { gs.energie = clamp(gs.energie + 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); verbraucheTag(1); return T('Herrlich vergammelt. E +10, Laune +5.', 'Gloriously wasted day. Energy +10, Mood +5.'); }},
+    optionB: { label: T('🙅 Produktiv bleiben', '🙅 Stay productive'), effekt(gs) { return T('Diszipliniert ausgeschaltet.', 'Switched off with discipline.'); }}
   },
   {
     id: 'alltag_spielhalle', kategorie: 'alltag',
-    titel: '🎰 Spielhallen-Glück',
-    text: 'Du kommst an der Daddelhalle vorbei. Die Automaten blinken verführerisch.',
-    optionA: { label: '🎰 Zocken', effekt(gs) { gs.losesBargeld += 120; if (Math.random() < 0.25 && gs.suchtStufe < 3) { gs.suchtStufe++; return `Heute lief's! +120 €. Aber das Zocken packt dich (Sucht ${gs.suchtStufe}).`; } return "Heute lief's! +120 € Bargeld."; }},
-    optionB: { label: '🚶 Weitergehen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 2, 0, 100); return 'Diszipliniert geblieben (schade eigentlich).'; }}
+    titel: T('🎰 Spielhallen-Glück', '🎰 Arcade Luck'),
+    text: T('Du kommst an der Daddelhalle vorbei. Die Automaten blinken verführerisch.', 'You walk past the amusement arcade. The machines blink seductively.'),
+    optionA: { label: T('🎰 Zocken', '🎰 Gamble'), effekt(gs) { gs.losesBargeld += 120; if (Math.random() < 0.25 && gs.suchtStufe < 3) { gs.suchtStufe++; return T(`Heute lief's! +120 €. Aber das Zocken packt dich (Sucht ${gs.suchtStufe}).`, `Today was your day! +120 €. But the gambling grabs you (Addiction ${gs.suchtStufe}).`); } return T("Heute lief's! +120 € Bargeld.", 'Today was your day! +120 € cash.'); }},
+    optionB: { label: T('🚶 Weitergehen', '🚶 Walk on'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 2, 0, 100); return T('Diszipliniert geblieben (schade eigentlich).', 'Stayed disciplined (a shame, really).'); }}
   },
   {
     id: 'alltag_schwarzfahren', kategorie: 'alltag',
-    titel: '🚌 Kontrolle im Bus!',
-    text: 'Kontrolleure steigen ein – und du hast (mal wieder) kein Ticket.',
-    optionA: { label: '🎫 Strafe zahlen (-60 €)', effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 60); return '60 € erhöhtes Beförderungsentgelt.'; }},
-    optionB: { label: '🏃 Wegrennen', effekt(gs) { gs.energie = clamp(gs.energie - 10, 0, 100); gs.risikoRaster = clamp(gs.risikoRaster + 3, 0, 100); return 'Entkommen – aber Stress. E -10, Risiko +3.'; }}
+    titel: T('🚌 Kontrolle im Bus!', '🚌 Ticket Check on the Bus!'),
+    text: T('Kontrolleure steigen ein – und du hast (mal wieder) kein Ticket.', 'Inspectors get on – and (once again) you have no ticket.'),
+    optionA: { label: T('🎫 Strafe zahlen (-60 €)', '🎫 Pay the fine (-60 €)'), effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 60); return T('60 € erhöhtes Beförderungsentgelt.', '60 € fare-dodging penalty.'); }},
+    optionB: { label: T('🏃 Wegrennen', '🏃 Run for it'), effekt(gs) { gs.energie = clamp(gs.energie - 10, 0, 100); gs.risikoRaster = clamp(gs.risikoRaster + 3, 0, 100); return T('Entkommen – aber Stress. E -10, Risiko +3.', 'Got away – but stressful. Energy -10, Risk +3.'); }}
   },
   {
     id: 'alltag_wetter', kategorie: 'alltag',
-    titel: '🌧️ Schmuddelwetter',
-    text: 'Seit Tagen nur Regen. Die Stimmung ist im Keller.',
-    optionA: { label: '😞 Drin verkriechen', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return 'Couch-Tristesse. Laune -4.'; }},
-    optionB: { label: '☔ Trotzdem raus', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); gs.energie = clamp(gs.energie - 5, 0, 100); return 'Frische Luft tut gut. Laune +2, E -5.'; }}
+    titel: T('🌧️ Schmuddelwetter', '🌧️ Miserable Weather'),
+    text: T('Seit Tagen nur Regen. Die Stimmung ist im Keller.', 'Nothing but rain for days. Spirits are in the gutter.'),
+    optionA: { label: T('😞 Drin verkriechen', '😞 Hide indoors'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 4, 0, 100); return T('Couch-Tristesse. Laune -4.', 'Couch-bound gloom. Mood -4.'); }},
+    optionB: { label: T('☔ Trotzdem raus', '☔ Go out anyway'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 2, 0, 100); gs.energie = clamp(gs.energie - 5, 0, 100); return T('Frische Luft tut gut. Laune +2, E -5.', 'Fresh air does you good. Mood +2, Energy -5.'); }}
   },
   {
     id: 'alltag_paket', kategorie: 'alltag',
-    titel: '📦 Falsches Paket',
-    text: 'Ein Paket landet bei dir – adressiert an einen Nachbarn.',
-    optionA: { label: '📦 Behalten', effekt(gs) {
+    titel: T('📦 Falsches Paket', '📦 Wrong Parcel'),
+    text: T('Ein Paket landet bei dir – adressiert an einen Nachbarn.', 'A parcel lands at your place – addressed to a neighbour.'),
+    optionA: { label: T('📦 Behalten', '📦 Keep it'), effekt(gs) {
       const verpfaendet = Object.keys(gs.verpfaendet || {}).filter(k => gs.verpfaendet[k]);
       if (verpfaendet.length > 0) {
         const itemId = verpfaendet[Math.floor(Math.random() * verpfaendet.length)];
         gs.verpfaendet[itemId] = false;
         gs.risikoRaster = clamp(gs.risikoRaster + 2, 0, 100);
-        return `Im Paket: dein ${PFAND_ITEMS[itemId].name}! Quasi zurück (Risiko +2).`;
+        return T(`Im Paket: dein ${PFAND_ITEMS[itemId].name}! Quasi zurück (Risiko +2).`, `Inside the parcel: your ${PFAND_ITEMS[itemId].name}! Practically back (Risk +2).`);
       }
       gs.losesBargeld += 30; gs.risikoRaster = clamp(gs.risikoRaster + 2, 0, 100);
-      return 'Drin: 30 € und Krimskrams. Risiko +2.';
+      return T('Drin: 30 € und Krimskrams. Risiko +2.', 'Inside: 30 € and odds and ends. Risk +2.');
     }},
-    optionB: { label: '📮 Zurückgeben', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Ehrlich währt am längsten. Laune +3.'; }}
+    optionB: { label: T('📮 Zurückgeben', '📮 Return it'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return T('Ehrlich währt am längsten. Laune +3.', 'Honesty is the best policy. Mood +3.'); }}
   },
   {
     id: 'alltag_kleeblatt', kategorie: 'alltag',
-    titel: '🍀 Vierblättriges Kleeblatt',
-    text: 'Du entdeckst tatsächlich ein vierblättriges Kleeblatt.',
-    optionA: { label: '🍀 Aufheben', effekt(gs) { gs.kleeblatt = true; gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Glück im Anflug: nächste Razzia-Chance halbiert!'; }},
-    optionB: { label: '🌱 Stehen lassen', effekt(gs) { return 'Soll ein anderer Glück haben.'; }}
+    titel: T('🍀 Vierblättriges Kleeblatt', '🍀 Four-Leaf Clover'),
+    text: T('Du entdeckst tatsächlich ein vierblättriges Kleeblatt.', 'You actually spot a four-leaf clover.'),
+    optionA: { label: T('🍀 Aufheben', '🍀 Pick it up'), effekt(gs) { gs.kleeblatt = true; gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return T('Glück im Anflug: nächste Razzia-Chance halbiert!', 'Luck incoming: next raid chance halved!'); }},
+    optionB: { label: T('🌱 Stehen lassen', '🌱 Leave it'), effekt(gs) { return T('Soll ein anderer Glück haben.', 'Let someone else have the luck.'); }}
   },
   {
     id: 'alltag_oma', kategorie: 'alltag',
-    titel: '🧧 Post von Oma',
-    text: 'Ein Brief von Oma – mit einem Geldschein und einem gestrickten Schal.',
-    optionA: { label: '💌 Annehmen', effekt(gs) { gs.kontostand += 50; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return 'Danke, Oma! +50 €, Laune +5.'; }},
-    optionB: { label: '📞 Zurückschicken', effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return 'Zu stolz – aber nett telefoniert. Laune +3.'; }}
+    titel: T('🧧 Post von Oma', '🧧 Mail from Grandma'),
+    text: T('Ein Brief von Oma – mit einem Geldschein und einem gestrickten Schal.', 'A letter from Grandma – with a banknote and a knitted scarf.'),
+    optionA: { label: T('💌 Annehmen', '💌 Accept'), effekt(gs) { gs.kontostand += 50; gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); return T('Danke, Oma! +50 €, Laune +5.', 'Thanks, Grandma! +50 €, Mood +5.'); }},
+    optionB: { label: T('📞 Zurückschicken', '📞 Send it back'), effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler + 3, 0, 100); return T('Zu stolz – aber nett telefoniert. Laune +3.', 'Too proud – but a nice phone chat. Mood +3.'); }}
   },
   {
     id: 'alltag_erkaeltung', kategorie: 'alltag',
-    titel: '🦠 Erkältung',
-    text: 'Du wachst mit Halsschmerzen und Schnupfen auf.',
-    optionA: { label: '🛌 Schonen', effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); gs.energie = clamp(gs.energie - 10, 0, 100); return 'Auskuriert. Gesundheit -3, E -10.'; }},
-    optionB: { label: '💪 Durchziehen', effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 8, 0, 100); return 'Wird schlimmer. Gesundheit -8.'; }}
+    titel: T('🦠 Erkältung', '🦠 A Cold'),
+    text: T('Du wachst mit Halsschmerzen und Schnupfen auf.', 'You wake up with a sore throat and a runny nose.'),
+    optionA: { label: T('🛌 Schonen', '🛌 Rest up'), effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 3, 0, 100); gs.energie = clamp(gs.energie - 10, 0, 100); return T('Auskuriert. Gesundheit -3, E -10.', 'Nursed back to health. Health -3, Energy -10.'); }},
+    optionB: { label: T('💪 Durchziehen', '💪 Tough it out'), effekt(gs) { gs.gesundheit = clamp(gs.gesundheit - 8, 0, 100); return T('Wird schlimmer. Gesundheit -8.', 'It gets worse. Health -8.'); }}
   },
 
   {
     id: 'anzeige_anonym', kategorie: 'behoerde',
     bedingung: gs => gs.monat >= (gs.anzeigeCooldownMonat || 0),   // nach Schweigegeld 3 Monate Ruhe
-    titel: '📣 Anonyme Anzeige',
-    text: 'Ein Nachbar (oder dein Ex?) hat dich beim Jobcenter wegen Sozialbetrugs angeschwärzt. Eine Sonderprüfung droht.',
-    optionA: { label: '🤐 Schweigegeld zahlen (-1.500 €)',
+    titel: T('📣 Anonyme Anzeige', '📣 Anonymous Tip-Off'),
+    text: T('Ein Nachbar (oder dein Ex?) hat dich beim Jobcenter wegen Sozialbetrugs angeschwärzt. Eine Sonderprüfung droht.', 'A neighbour (or your ex?) reported you to the Job Center for welfare fraud. A special audit looms.'),
+    optionA: { label: T('🤐 Schweigegeld zahlen (-1.500 €)', '🤐 Pay hush money (-1.500 €)'),
       effekt(gs) {
         if (gs.kontostand + gs.schwarzeKasse < 1500) {
           gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100);
-          return 'Kein Geld fürs Schweigegeld – Risiko +10.';
+          return T('Kein Geld fürs Schweigegeld – Risiko +10.', 'No money for hush money – Risk +10.');
         }
         let r = 1500;
         const sk = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= sk; r -= sk;
         gs.kontostand -= r;
         gs.anzeigeCooldownMonat = gs.monat + 3;   // 3 Monate keine neue Anzeige
-        return 'Der Informant hält den Mund. 3 Monate Ruhe.';
+        return T('Der Informant hält den Mund. 3 Monate Ruhe.', 'The informant keeps quiet. 3 months of peace.');
       }},
-    optionB: { label: '😶 Aussitzen (Sonderprüfung riskieren)',
+    optionB: { label: T('😶 Aussitzen (Sonderprüfung riskieren)', '😶 Sit it out (risk a special audit)'),
       effekt(gs) {
         const maschen = gs.ernaehrungFake || gs.unterhaltsTarnung || gs.scheinWG ||
           (gs.immobilie && gs.immobilie.modus === 'eigen');
         if (maschen && Math.random() < 0.6) {
           setTimeout(() => sozialbetrugErwischt(), 400);
-          return 'Sonderprüfung! Deine Maschen sind aufgeflogen…';
+          return T('Sonderprüfung! Deine Maschen sind aufgeflogen…', 'Special audit! Your schemes have been blown wide open…');
         }
         gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100);
-        return 'Die Prüfung ergab (diesmal) nichts Konkretes. Risiko +20.';
+        return T('Die Prüfung ergab (diesmal) nichts Konkretes. Risiko +20.', 'The audit turned up nothing concrete (this time). Risk +20.');
       }}
   },
   {
     id: 'behoerde_01', kategorie: 'behoerde',
-    titel: '📬 Brief vom Jobcenter',
-    text: 'Das Jobcenter fordert Bewerbungsnachweise. Du hast 7 Tage.',
-    optionA: { label: '📝 Scheinbewerbungen einreichen (Risiko -10)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return 'Jobcenter besänftigt.'; }},
-    optionB: { label: '🚪 Brief ignorieren (Risiko +20)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); return 'Das wird Konsequenzen haben.'; }}
+    titel: T('📬 Brief vom Jobcenter', '📬 Letter from the Job Center'),
+    text: T('Das Jobcenter fordert Bewerbungsnachweise. Du hast 7 Tage.', 'The Job Center demands proof of job applications. You have 7 days.'),
+    optionA: { label: T('📝 Scheinbewerbungen einreichen (Risiko -10)', '📝 Submit sham applications (Risk -10)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return T('Jobcenter besänftigt.', 'Job Center placated.'); }},
+    optionB: { label: T('🚪 Brief ignorieren (Risiko +20)', '🚪 Ignore the letter (Risk +20)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); return T('Das wird Konsequenzen haben.', 'This will have consequences.'); }}
   },
   {
     id: 'behoerde_03', kategorie: 'behoerde',
-    titel: '📧 Einladung zur Amtsprüfung',
-    text: 'Persönliche Anhörung beim Jobcenter wegen unklarer Einkommensverhältnisse.',
-    optionA: { label: '✅ Erscheinen und lügen (Risiko -5, E -15)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.energie = clamp(gs.energie - 15, 0, 100); return 'Überstanden.'; }},
-    optionB: { label: '🏃 Termin absagen (Risiko +15)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return 'Kontrolldichte erhöht.'; }}
+    titel: T('📧 Einladung zur Amtsprüfung', '📧 Invitation to an Official Review'),
+    text: T('Persönliche Anhörung beim Jobcenter wegen unklarer Einkommensverhältnisse.', 'In-person hearing at the Job Center over unclear income circumstances.'),
+    optionA: { label: T('✅ Erscheinen und lügen (Risiko -5, E -15)', '✅ Show up and lie (Risk -5, Energy -15)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.energie = clamp(gs.energie - 15, 0, 100); return T('Überstanden.', 'Survived it.'); }},
+    optionB: { label: T('🏃 Termin absagen (Risiko +15)', '🏃 Cancel the appointment (Risk +15)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return T('Kontrolldichte erhöht.', 'Scrutiny ramped up.'); }}
   },
   {
     id: 'behoerde_04', kategorie: 'behoerde',
-    titel: '🚨 Außenprüfung Sozialamt',
-    text: 'Unangekündigte Prüfung wegen Schwarzarbeitsverdacht.',
-    optionA: { label: '💸 Bestechung (-300 € Bargeld, Risiko -20)',
-      effekt(gs) { if (gs.losesBargeld + gs.schwarzeKasse >= 300) { const ausL = Math.min(300, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (300 - ausL)); gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); return 'Akte geschlossen.'; } gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); return 'Kein Geld. Risiko +10.'; }},
-    optionB: { label: '😇 Nichts wissen (Risiko +10)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); const k = Math.floor(gs.losesBargeld * 0.5); gs.losesBargeld = Math.max(0, gs.losesBargeld - k); return `${formatEuro(k)} loses Bargeld konfisziert.`; }}
+    titel: T('🚨 Außenprüfung Sozialamt', '🚨 Welfare Office Field Audit'),
+    text: T('Unangekündigte Prüfung wegen Schwarzarbeitsverdacht.', 'Unannounced audit over suspicion of off-the-books work.'),
+    optionA: { label: T('💸 Bestechung (-300 € Bargeld, Risiko -20)', '💸 Bribe (-300 € cash, Risk -20)'),
+      effekt(gs) { if (gs.losesBargeld + gs.schwarzeKasse >= 300) { const ausL = Math.min(300, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (300 - ausL)); gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); return T('Akte geschlossen.', 'Case closed.'); } gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); return T('Kein Geld. Risiko +10.', 'No money. Risk +10.'); }},
+    optionB: { label: T('😇 Nichts wissen (Risiko +10)', '😇 Play dumb (Risk +10)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); const k = Math.floor(gs.losesBargeld * 0.5); gs.losesBargeld = Math.max(0, gs.losesBargeld - k); return T(`${formatEuro(k)} loses Bargeld konfisziert.`, `${formatEuro(k)} loose cash confiscated.`); }}
   },
   {
     id: 'behoerde_05', kategorie: 'behoerde',
     bedingung: gs => gs.hatSchwarzgearbeitet,   // nur nach erster Schwarzarbeit
-    titel: '📮 Zoll-Brief',
-    text: 'Verdächtige Transaktion mit deinem Namen.',
-    optionA: { label: '📄 Erklärung (-200 € Konto)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 200); gs.risikoRaster = clamp(gs.risikoRaster - 8, 0, 100); return 'Verfahren eingestellt.'; }},
-    optionB: { label: '🗑️ Brief wegwerfen (Risiko +30)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100); return 'Mahnbescheid folgt.'; }}
+    titel: T('📮 Zoll-Brief', '📮 Customs Letter'),
+    text: T('Verdächtige Transaktion mit deinem Namen.', 'A suspicious transaction with your name on it.'),
+    optionA: { label: T('📄 Erklärung (-200 € Konto)', '📄 File a statement (-200 € account)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 200); gs.risikoRaster = clamp(gs.risikoRaster - 8, 0, 100); return T('Verfahren eingestellt.', 'Proceedings dropped.'); }},
+    optionB: { label: T('🗑️ Brief wegwerfen (Risiko +30)', '🗑️ Bin the letter (Risk +30)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100); return T('Mahnbescheid folgt.', 'A payment order follows.'); }}
   },
   {
     id: 'behoerde_06', kategorie: 'behoerde',
     bedingung: gs => (gs.schwarzeKasse || 0) > 0,   // nur wenn Schwarzkasse genutzt
-    titel: '💻 Datenleck – Kontobewegungen prüfbar',
-    text: 'Ungewöhnliche Bewegungen im Konto aufgefallen.',
-    optionA: { label: '🏦 Geld verschieben (-1000 € → Schwarzkasse)',
-      effekt(gs) { const b = Math.min(1000, gs.kontostand); gs.kontostand -= b; gs.schwarzeKasse += b; gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100); return `${formatEuro(b)} gesichert.`; }},
-    optionB: { label: '😅 Abwarten',
-      effekt(gs) { if (gs.risikoRaster > 50) { const v = Math.floor(gs.kontostand * 0.15); gs.kontostand = Math.max(0, gs.kontostand - v); return `Rückforderung ${formatEuro(v)}.`; } return 'Diesmal Glück.'; }}
+    titel: T('💻 Datenleck – Kontobewegungen prüfbar', '💻 Data Leak – Account Movements Exposed'),
+    text: T('Ungewöhnliche Bewegungen im Konto aufgefallen.', 'Unusual movements spotted in your account.'),
+    optionA: { label: T('🏦 Geld verschieben (-1000 € → Schwarzkasse)', '🏦 Move money (-1000 € → slush fund)'),
+      effekt(gs) { const b = Math.min(1000, gs.kontostand); gs.kontostand -= b; gs.schwarzeKasse += b; gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100); return T(`${formatEuro(b)} gesichert.`, `${formatEuro(b)} secured.`); }},
+    optionB: { label: T('😅 Abwarten', '😅 Wait and see'),
+      effekt(gs) { if (gs.risikoRaster > 50) { const v = Math.floor(gs.kontostand * 0.15); gs.kontostand = Math.max(0, gs.kontostand - v); return T(`Rückforderung ${formatEuro(v)}.`, `Clawback of ${formatEuro(v)}.`); } return T('Diesmal Glück.', 'Lucky this time.'); }}
   },
   {
     id: 'behoerde_07', kategorie: 'behoerde',
-    titel: '🧾 Steuerbescheid - 480 €',
-    text: 'Nachzahlung fällig.',
-    optionA: { label: '✅ Zahlen (-480 € Konto, Risiko -5)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 480); gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); return 'Bezahlt.'; }},
-    optionB: { label: '⏳ Widerspruch (Risiko +10)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); return 'Zinsen laufen.'; }}
+    titel: T('🧾 Steuerbescheid - 480 €', '🧾 Tax Assessment - 480 €'),
+    text: T('Nachzahlung fällig.', 'Back payment due.'),
+    optionA: { label: T('✅ Zahlen (-480 € Konto, Risiko -5)', '✅ Pay (-480 € account, Risk -5)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 480); gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); return T('Bezahlt.', 'Paid.'); }},
+    optionB: { label: T('⏳ Widerspruch (Risiko +10)', '⏳ Appeal (Risk +10)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); return T('Zinsen laufen.', 'Interest is accruing.'); }}
   },
   {
     id: 'behoerde_08', kategorie: 'behoerde',
-    titel: '🕵️ Observierung – Baustellen-Video',
-    text: 'Ein Nachbar hat dich gefilmt.',
-    optionA: { label: '🤐 Anwalt (-600 € Konto)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 600); gs.risikoRaster = clamp(gs.risikoRaster - 15, 0, 100); return 'Verfahren eingestellt.'; }},
-    optionB: { label: '😬 Zugeben (-800 € Strafe, Risiko -30)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 800); gs.risikoRaster = clamp(gs.risikoRaster - 30, 0, 100); return 'Strafe bezahlt, Akte geschlossen.'; }}
+    titel: T('🕵️ Observierung – Baustellen-Video', '🕵️ Surveillance – Construction-Site Video'),
+    text: T('Ein Nachbar hat dich gefilmt.', 'A neighbour filmed you.'),
+    optionA: { label: T('🤐 Anwalt (-600 € Konto)', '🤐 Lawyer (-600 € account)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 600); gs.risikoRaster = clamp(gs.risikoRaster - 15, 0, 100); return T('Verfahren eingestellt.', 'Proceedings dropped.'); }},
+    optionB: { label: T('😬 Zugeben (-800 € Strafe, Risiko -30)', '😬 Confess (-800 € fine, Risk -30)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 800); gs.risikoRaster = clamp(gs.risikoRaster - 30, 0, 100); return T('Strafe bezahlt, Akte geschlossen.', 'Fine paid, case closed.'); }}
   },
   {
     id: 'behoerde_09', kategorie: 'behoerde',
-    titel: '🏛️ Vorladung Staatsanwaltschaft',
-    text: 'Verdacht auf Sozialbetrug.',
-    optionA: { label: '⚖️ Anwalt (-1000 € Konto)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 1000); gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); return 'Überstanden.'; }},
-    optionB: { label: '🏃 Untertauchen (E -30, Risiko -10)',
-      effekt(gs) { gs.energie = clamp(gs.energie - 30, 0, 100); gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return 'Verfahren läuft ohne dich.'; }}
+    titel: T('🏛️ Vorladung Staatsanwaltschaft', '🏛️ Prosecutor Summons'),
+    text: T('Verdacht auf Sozialbetrug.', 'Suspicion of welfare fraud.'),
+    optionA: { label: T('⚖️ Anwalt (-1000 € Konto)', '⚖️ Lawyer (-1000 € account)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 1000); gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); return T('Überstanden.', 'Survived it.'); }},
+    optionB: { label: T('🏃 Untertauchen (E -30, Risiko -10)', '🏃 Go underground (Energy -30, Risk -10)'),
+      effekt(gs) { gs.energie = clamp(gs.energie - 30, 0, 100); gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return T('Verfahren läuft ohne dich.', 'Proceedings continue without you.'); }}
   },
   {
     id: 'behoerde_10', kategorie: 'behoerde',
-    titel: '📰 Lokalpresse: "Sozialbetrug"',
-    text: 'Artikel in der Zeitung. Dein Name nicht direkt genannt – noch nicht.',
-    optionA: { label: '🤫 Profil senken (Risiko -5)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); return 'Artikel zieht vorbei.'; }},
-    optionB: { label: '😤 Gegendarstellung (Risiko +15)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return 'Mehr Aufmerksamkeit.'; }}
+    titel: T('📰 Lokalpresse: "Sozialbetrug"', '📰 Local Press: "Welfare Fraud"'),
+    text: T('Artikel in der Zeitung. Dein Name nicht direkt genannt – noch nicht.', 'An article in the paper. Your name not directly mentioned – not yet.'),
+    optionA: { label: T('🤫 Profil senken (Risiko -5)', '🤫 Keep a low profile (Risk -5)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); return T('Artikel zieht vorbei.', 'The article blows over.'); }},
+    optionB: { label: T('😤 Gegendarstellung (Risiko +15)', '😤 Demand a correction (Risk +15)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return T('Mehr Aufmerksamkeit.', 'More attention.'); }}
   },
   // LOAN SHARK EVENTS
   {
     id: 'shark_01', kategorie: 'loan_shark',
-    titel: '🦈 Erste Mahnung',
-    text: 'Bote fordert 200 € zurück.',
-    optionA: { label: '💸 200 € zahlen (Bargeld)',
-      effekt(gs) { const z = Math.min(200, gs.losesBargeld + gs.schwarzeKasse); const ausL = Math.min(z, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (z - ausL)); return z >= 200 ? 'Bote geht.' : 'Nicht genug – Unzufriedenheit.'; }},
-    optionB: { label: '😤 Vertrösten (Risiko +10)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); return 'Zinsaufschlag läuft.'; }}
+    titel: T('🦈 Erste Mahnung', '🦈 First Reminder'),
+    text: T('Bote fordert 200 € zurück.', 'A courier demands 200 € back.'),
+    optionA: { label: T('💸 200 € zahlen (Bargeld)', '💸 Pay 200 € (cash)'),
+      effekt(gs) { const z = Math.min(200, gs.losesBargeld + gs.schwarzeKasse); const ausL = Math.min(z, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (z - ausL)); return z >= 200 ? T('Bote geht.', 'The courier leaves.') : T('Nicht genug – Unzufriedenheit.', 'Not enough – discontent.'); }},
+    optionB: { label: T('😤 Vertrösten (Risiko +10)', '😤 Stall him (Risk +10)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); return T('Zinsaufschlag läuft.', 'Interest surcharge is ticking.'); }}
   },
   {
     id: 'shark_02', kategorie: 'loan_shark',
-    titel: '🦈 "Wir kennen deine Adresse"',
-    text: 'Drohung: 500 € bis Freitag.',
-    optionA: { label: '💰 500 € zahlen',
-      effekt(gs) { if (gs.losesBargeld + gs.schwarzeKasse >= 500) { const ausL = Math.min(500, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (500 - ausL)); return 'Zahlt. Ruhe.'; } gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); return 'Kein Bargeld. Risiko +20.'; }},
-    optionB: { label: '📞 Polizei (Risiko -15)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 15, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); return 'Kreditgeber weg, aber Akte offen.'; }}
+    titel: T('🦈 "Wir kennen deine Adresse"', '🦈 "We Know Where You Live"'),
+    text: T('Drohung: 500 € bis Freitag.', 'Threat: 500 € by Friday.'),
+    optionA: { label: T('💰 500 € zahlen', '💰 Pay 500 €'),
+      effekt(gs) { if (gs.losesBargeld + gs.schwarzeKasse >= 500) { const ausL = Math.min(500, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (500 - ausL)); return T('Zahlt. Ruhe.', 'Paid. Quiet now.'); } gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); return T('Kein Bargeld. Risiko +20.', 'No cash. Risk +20.'); }},
+    optionB: { label: T('📞 Polizei (Risiko -15)', '📞 Police (Risk -15)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 15, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); return T('Kreditgeber weg, aber Akte offen.', 'Loan shark gone, but the case stays open.'); }}
   },
   {
     id: 'shark_03', kategorie: 'loan_shark',
-    titel: '🦈 Einschüchterung',
-    text: 'Zwei Männer vor der Tür.',
-    optionA: { label: '🤝 400 € Bargeld geben',
-      effekt(gs) { const z = Math.min(400, gs.losesBargeld + gs.schwarzeKasse); const ausL = Math.min(z, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (z - ausL)); return `${formatEuro(z)} gegeben.`; }},
-    optionB: { label: '🚪 Flüchten (E -20)',
-      effekt(gs) { gs.energie = clamp(gs.energie - 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 15, 0, 100); return 'Bei Bekanntem geschlafen.'; }}
+    titel: T('🦈 Einschüchterung', '🦈 Intimidation'),
+    text: T('Zwei Männer vor der Tür.', 'Two men at your door.'),
+    optionA: { label: T('🤝 400 € Bargeld geben', '🤝 Hand over 400 € cash'),
+      effekt(gs) { const z = Math.min(400, gs.losesBargeld + gs.schwarzeKasse); const ausL = Math.min(z, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (z - ausL)); return T(`${formatEuro(z)} gegeben.`, `${formatEuro(z)} handed over.`); }},
+    optionB: { label: T('🚪 Flüchten (E -20)', '🚪 Flee (Energy -20)'),
+      effekt(gs) { gs.energie = clamp(gs.energie - 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 15, 0, 100); return T('Bei Bekanntem geschlafen.', 'Crashed at an acquaintance’s place.'); }}
   },
   {
     id: 'shark_04', kategorie: 'loan_shark',
-    titel: '🦈 Neue Konditionen: +300 €',
-    text: 'Kreditgeber verdoppelt Zinsen.',
-    optionA: { label: '😤 Akzeptieren (-300 €)',
-      effekt(gs) { const ausL = Math.min(300, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (300 - ausL)); return '300 € weg.'; }},
-    optionB: { label: '⚖️ Rechtlich prüfen (-150 € Konto)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 150); return 'Anwalt prüft.'; }}
+    titel: T('🦈 Neue Konditionen: +300 €', '🦈 New Terms: +300 €'),
+    text: T('Kreditgeber verdoppelt Zinsen.', 'The loan shark doubles the interest.'),
+    optionA: { label: T('😤 Akzeptieren (-300 €)', '😤 Accept (-300 €)'),
+      effekt(gs) { const ausL = Math.min(300, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (300 - ausL)); return T('300 € weg.', '300 € gone.'); }},
+    optionB: { label: T('⚖️ Rechtlich prüfen (-150 € Konto)', '⚖️ Check it legally (-150 € account)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 150); return T('Anwalt prüft.', 'The lawyer is looking into it.'); }}
   },
   {
     id: 'shark_05', kategorie: 'loan_shark',
-    titel: '🦈 Paket abholen?',
-    text: 'Schulden weg für einen Gefallen.',
-    optionA: { label: '📦 Abholen (Cash +300, Risiko +35)',
-      effekt(gs) { gs.losesBargeld += 300; gs.risikoRaster = clamp(gs.risikoRaster + 35, 0, 100); return 'Paket abgeholt. Inhalt unbekannt.'; }},
-    optionB: { label: '❌ Ablehnen (Risiko +5)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100); return 'Schulden bleiben.'; }}
+    titel: T('🦈 Paket abholen?', '🦈 Pick Up a Package?'),
+    text: T('Schulden weg für einen Gefallen.', 'Debt wiped for a favour.'),
+    optionA: { label: T('📦 Abholen (Cash +300, Risiko +35)', '📦 Pick it up (cash +300, Risk +35)'),
+      effekt(gs) { gs.losesBargeld += 300; gs.risikoRaster = clamp(gs.risikoRaster + 35, 0, 100); return T('Paket abgeholt. Inhalt unbekannt.', 'Package picked up. Contents unknown.'); }},
+    optionB: { label: T('❌ Ablehnen (Risiko +5)', '❌ Decline (Risk +5)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100); return T('Schulden bleiben.', 'The debt stays.'); }}
   },
   {
     id: 'shark_06', kategorie: 'loan_shark',
-    titel: '🦈 Kreditgeber ruft Jobcenter an',
-    text: 'Anonymer Tipp auf dein Schwarzgeld.',
-    optionA: { label: '🏃 2000 € verstecken',
-      effekt(gs) { const b = Math.min(2000, gs.kontostand); gs.kontostand -= b; gs.schwarzeKasse += b; gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return `${formatEuro(b)} gesichert.`; }},
-    optionB: { label: '😇 Nichts tun',
-      effekt(gs) { const v = Math.floor(gs.kontostand * 0.2); gs.kontostand = Math.max(0, gs.kontostand - v); return `Rückforderung ${formatEuro(v)}.`; }}
+    titel: T('🦈 Kreditgeber ruft Jobcenter an', '🦈 Loan Shark Calls the Job Center'),
+    text: T('Anonymer Tipp auf dein Schwarzgeld.', 'An anonymous tip about your off-the-books money.'),
+    optionA: { label: T('🏃 2000 € verstecken', '🏃 Hide 2000 €'),
+      effekt(gs) { const b = Math.min(2000, gs.kontostand); gs.kontostand -= b; gs.schwarzeKasse += b; gs.risikoRaster = clamp(gs.risikoRaster + 15, 0, 100); return T(`${formatEuro(b)} gesichert.`, `${formatEuro(b)} secured.`); }},
+    optionB: { label: T('😇 Nichts tun', '😇 Do nothing'),
+      effekt(gs) { const v = Math.floor(gs.kontostand * 0.2); gs.kontostand = Math.max(0, gs.kontostand - v); return T(`Rückforderung ${formatEuro(v)}.`, `Clawback of ${formatEuro(v)}.`); }}
   },
   {
     id: 'shark_07', kategorie: 'loan_shark',
-    titel: '🦈 Schulden-Reset Angebot',
-    text: 'Alle Schulden weg gegen 20% Schwarzkasse.',
-    optionA: { label: '✅ Deal (-20% Schwarzkasse)',
-      effekt(gs) { const z = Math.floor(gs.schwarzeKasse * 0.2); gs.schwarzeKasse -= z; gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return `${formatEuro(z)} weg. Risiko -10.`; }},
-    optionB: { label: '❌ Ablehnen',
-      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 15, 0, 100); return 'Schulden laufen.'; }}
+    titel: T('🦈 Schulden-Reset Angebot', '🦈 Debt-Reset Offer'),
+    text: T('Alle Schulden weg gegen 20% Schwarzkasse.', 'All debt wiped for 20% of your slush fund.'),
+    optionA: { label: T('✅ Deal (-20% Schwarzkasse)', '✅ Deal (-20% slush fund)'),
+      effekt(gs) { const z = Math.floor(gs.schwarzeKasse * 0.2); gs.schwarzeKasse -= z; gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return T(`${formatEuro(z)} weg. Risiko -10.`, `${formatEuro(z)} gone. Risk -10.`); }},
+    optionB: { label: T('❌ Ablehnen', '❌ Decline'),
+      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 15, 0, 100); return T('Schulden laufen.', 'The debt keeps running.'); }}
   },
   {
     id: 'shark_08', kategorie: 'loan_shark',
-    titel: '🦈 Zins-Forderung 750 €',
-    text: 'Kreditgeber fordert 3 Monate Zinsen.',
-    optionA: { label: '💸 Zahlen (-750 € Bargeld)',
-      effekt(gs) { const ausL = Math.min(750, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (750 - ausL)); return 'Bezahlt.'; }},
-    optionB: { label: '🤬 Bestreiten (Risiko +20)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); return 'Eskalation. Nachbarn aufmerksam.'; }}
+    titel: T('🦈 Zins-Forderung 750 €', '🦈 Interest Demand 750 €'),
+    text: T('Kreditgeber fordert 3 Monate Zinsen.', 'The loan shark demands 3 months of interest.'),
+    optionA: { label: T('💸 Zahlen (-750 € Bargeld)', '💸 Pay (-750 € cash)'),
+      effekt(gs) { const ausL = Math.min(750, gs.losesBargeld); gs.losesBargeld -= ausL; gs.schwarzeKasse = Math.max(0, gs.schwarzeKasse - (750 - ausL)); return T('Bezahlt.', 'Paid.'); }},
+    optionB: { label: T('🤬 Bestreiten (Risiko +20)', '🤬 Dispute it (Risk +20)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster + 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); return T('Eskalation. Nachbarn aufmerksam.', 'Escalation. The neighbours are taking notice.'); }}
   },
   {
     id: 'shark_09', kategorie: 'loan_shark',
-    titel: '🦈 Sofortkredit: +1000 €',
-    text: '1000 € jetzt gegen 1500 € in 4 Wochen.',
-    optionA: { label: '✅ Annehmen (+1000 € loses Bargeld)',
-      effekt(gs) { gs.losesBargeld += 1000; gs.risikoProMonat = clamp(gs.risikoProMonat + 5, 0, 100); return 'Geld da. Rückzahlung drückt.'; }},
-    optionB: { label: '❌ Ablehnen',
-      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 5, 0, 100); return 'Abgelehnt.'; }}
+    titel: T('🦈 Sofortkredit: +1000 €', '🦈 Instant Loan: +1000 €'),
+    text: T('1000 € jetzt gegen 1500 € in 4 Wochen.', '1000 € now for 1500 € in 4 weeks.'),
+    optionA: { label: T('✅ Annehmen (+1000 € loses Bargeld)', '✅ Accept (+1000 € loose cash)'),
+      effekt(gs) { gs.losesBargeld += 1000; gs.risikoProMonat = clamp(gs.risikoProMonat + 5, 0, 100); return T('Geld da. Rückzahlung drückt.', 'Money in hand. The repayment weighs on you.'); }},
+    optionB: { label: T('❌ Ablehnen', '❌ Decline'),
+      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 5, 0, 100); return T('Abgelehnt.', 'Declined.'); }}
   },
   {
     id: 'shark_10', kategorie: 'loan_shark',
-    titel: '🦈 Kreditgeber verhaftet',
-    text: 'Kreditgeber festgenommen. Unterlagen beschlagnahmt.',
-    optionA: { label: '😅 Abwarten (Risiko -10)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return 'Schulden de facto erloschen.'; }},
-    optionB: { label: '🤝 Polizei-Aussage (Risiko -20)',
-      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100); return 'Teilimmunität erhalten.'; }}
+    titel: T('🦈 Kreditgeber verhaftet', '🦈 Loan Shark Arrested'),
+    text: T('Kreditgeber festgenommen. Unterlagen beschlagnahmt.', 'Loan shark arrested. Documents seized.'),
+    optionA: { label: T('😅 Abwarten (Risiko -10)', '😅 Wait it out (Risk -10)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 10, 0, 100); return T('Schulden de facto erloschen.', 'Debt effectively wiped out.'); }},
+    optionB: { label: T('🤝 Polizei-Aussage (Risiko -20)', '🤝 Statement to police (Risk -20)'),
+      effekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 20, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100); return T('Teilimmunität erhalten.', 'Partial immunity granted.'); }}
   },
   // BEZIEHUNGS-EVENTS
   {
     id: 'beziehung_01', kategorie: 'beziehung',
-    titel: '💔 Partnerin enttäuscht',
-    text: 'Sie fragt, ob du wirklich suchst.',
-    optionA: { label: '🤝 Ehrlich sein (Partner +15, E -10)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 15, 0, 100); gs.energie = clamp(gs.energie - 10, 0, 100); pruefeEheKrise(); return 'Schwieriges, ehrliches Gespräch.'; }},
-    optionB: { label: '🎭 Lügen (Partner -5)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 5, 0, 100); pruefeEheKrise(); return 'Misstrauen wächst.'; }}
+    titel: T('💔 Partnerin enttäuscht', '💔 Partner Disappointed'),
+    text: T('Sie fragt, ob du wirklich suchst.', 'She asks whether you are really looking for work.'),
+    optionA: { label: T('🤝 Ehrlich sein (Partner +15, E -10)', '🤝 Be honest (Partner +15, Energy -10)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 15, 0, 100); gs.energie = clamp(gs.energie - 10, 0, 100); pruefeEheKrise(); return T('Schwieriges, ehrliches Gespräch.', 'A difficult, honest conversation.'); }},
+    optionB: { label: T('🎭 Lügen (Partner -5)', '🎭 Lie (Partner -5)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 5, 0, 100); pruefeEheKrise(); return T('Misstrauen wächst.', 'Distrust grows.'); }}
   },
   {
     id: 'beziehung_02', kategorie: 'beziehung',
-    titel: '🌹 Romantischer Abend',
-    text: 'Sie schlägt ein gutes Restaurant vor.',
-    optionA: { label: '🍽️ Einladen (-300 €, Partner +25)',
-      effekt(gs) { if (gs.kontostand >= 300 || gs.schwarzeKasse >= 300) { if (gs.schwarzeKasse >= 300) gs.schwarzeKasse -= 300; else gs.kontostand -= 300; gs.happinessPartner = clamp(gs.happinessPartner + 25, 0, 100); return 'Wunderschöner Abend.'; } return 'Kein Geld.'; }},
-    optionB: { label: '🍕 Zu Hause (Partner +5)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100); return 'Gemütlich.'; }}
+    titel: T('🌹 Romantischer Abend', '🌹 Romantic Evening'),
+    text: T('Sie schlägt ein gutes Restaurant vor.', 'She suggests a nice restaurant.'),
+    optionA: { label: T('🍽️ Einladen (-300 €, Partner +25)', '🍽️ Treat her (-300 €, Partner +25)'),
+      effekt(gs) { if (gs.kontostand >= 300 || gs.schwarzeKasse >= 300) { if (gs.schwarzeKasse >= 300) gs.schwarzeKasse -= 300; else gs.kontostand -= 300; gs.happinessPartner = clamp(gs.happinessPartner + 25, 0, 100); return T('Wunderschöner Abend.', 'A wonderful evening.'); } return T('Kein Geld.', 'No money.'); }},
+    optionB: { label: T('🍕 Zu Hause (Partner +5)', '🍕 Stay in (Partner +5)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100); return T('Gemütlich.', 'Cozy.'); }}
   },
   {
     id: 'beziehung_03', kategorie: 'beziehung',
-    titel: '😡 Geld-Streit',
-    text: 'Heftiger Streit über Finanzen.',
-    optionA: { label: '💬 Offen reden (Partner +10, E -15)',
-      effekt(gs) { gs.energie = clamp(gs.energie - 15, 0, 100); gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); pruefeEheKrise(); return 'Schwieriges Gespräch.'; }},
-    optionB: { label: '🚶 Rausgehen (Partner -10)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); pruefeEheKrise(); return 'Spannung ungelöst.'; }}
+    titel: T('😡 Geld-Streit', '😡 Money Fight'),
+    text: T('Heftiger Streit über Finanzen.', 'A heated argument over finances.'),
+    optionA: { label: T('💬 Offen reden (Partner +10, E -15)', '💬 Talk it out (Partner +10, Energy -15)'),
+      effekt(gs) { gs.energie = clamp(gs.energie - 15, 0, 100); gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); pruefeEheKrise(); return T('Schwieriges Gespräch.', 'A difficult conversation.'); }},
+    optionB: { label: T('🚶 Rausgehen (Partner -10)', '🚶 Walk out (Partner -10)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 5, 0, 100); pruefeEheKrise(); return T('Spannung ungelöst.', 'Tension unresolved.'); }}
   },
   {
     id: 'beziehung_05', kategorie: 'beziehung',
-    titel: '🎂 Jahrestag vergessen',
-    text: 'Sie wartet schweigend.',
-    optionA: { label: '🌹 Blumen kaufen (-80 €, Partner +15)',
-      effekt(gs) { if (gs.schwarzeKasse >= 80) gs.schwarzeKasse -= 80; else gs.kontostand = Math.max(0, gs.kontostand - 80); gs.happinessPartner = clamp(gs.happinessPartner + 15, 0, 100); return 'Entschuldigt.'; }},
-    optionB: { label: '😅 Ohne Geschenk (Partner -5)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 5, 0, 100); return 'Halbwegs verziehen.'; }}
+    titel: T('🎂 Jahrestag vergessen', '🎂 Forgot the Anniversary'),
+    text: T('Sie wartet schweigend.', 'She waits in silence.'),
+    optionA: { label: T('🌹 Blumen kaufen (-80 €, Partner +15)', '🌹 Buy flowers (-80 €, Partner +15)'),
+      effekt(gs) { if (gs.schwarzeKasse >= 80) gs.schwarzeKasse -= 80; else gs.kontostand = Math.max(0, gs.kontostand - 80); gs.happinessPartner = clamp(gs.happinessPartner + 15, 0, 100); return T('Entschuldigt.', 'Forgiven.'); }},
+    optionB: { label: T('😅 Ohne Geschenk (Partner -5)', '😅 No gift (Partner -5)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 5, 0, 100); return T('Halbwegs verziehen.', 'Half forgiven.'); }}
   },
   {
     id: 'beziehung_06', kategorie: 'beziehung',
-    titel: '🏠 Drohung auszuziehen',
-    text: 'Zu viel Belastung.',
-    optionA: { label: '❤️ Paartherapie (-400 €, Partner +30)',
-      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 400); gs.happinessPartner = clamp(gs.happinessPartner + 30, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 15, 0, 100); return 'Teuer aber wirksam.'; }},
-    optionB: { label: '😶 Nichts tun (Partner -30)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 30, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); pruefeEheKrise(); return 'Sie geht zur Schwester.'; }}
+    titel: T('🏠 Drohung auszuziehen', '🏠 Threat to Move Out'),
+    text: T('Zu viel Belastung.', 'Too much strain.'),
+    optionA: { label: T('❤️ Paartherapie (-400 €, Partner +30)', '❤️ Couples therapy (-400 €, Partner +30)'),
+      effekt(gs) { gs.kontostand = Math.max(0, gs.kontostand - 400); gs.happinessPartner = clamp(gs.happinessPartner + 30, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 15, 0, 100); return T('Teuer aber wirksam.', 'Expensive but effective.'); }},
+    optionB: { label: T('😶 Nichts tun (Partner -30)', '😶 Do nothing (Partner -30)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 30, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 20, 0, 100); pruefeEheKrise(); return T('Sie geht zur Schwester.', 'She goes to stay with her sister.'); }}
   },
   {
     id: 'beziehung_07', kategorie: 'beziehung',
-    titel: '🎉 Freunde kommen',
-    text: 'Spontaner Besuch, wollen feiern.',
-    optionA: { label: '🍺 Party (-150 €, Laune +20)',
-      effekt(gs) { if (gs.schwarzeKasse >= 150) gs.schwarzeKasse -= 150; else gs.kontostand = Math.max(0, gs.kontostand - 150); gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100); gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); return 'Unvergesslicher Abend.'; }},
-    optionB: { label: '🙁 Absagen (Laune -5)',
-      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 5, 0, 100); return 'Vernünftig aber schade.'; }}
+    titel: T('🎉 Freunde kommen', '🎉 Friends Drop By'),
+    text: T('Spontaner Besuch, wollen feiern.', 'A spontaneous visit, they want to party.'),
+    optionA: { label: T('🍺 Party (-150 €, Laune +20)', '🍺 Party (-150 €, Mood +20)'),
+      effekt(gs) { if (gs.schwarzeKasse >= 150) gs.schwarzeKasse -= 150; else gs.kontostand = Math.max(0, gs.kontostand - 150); gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100); gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100); return T('Unvergesslicher Abend.', 'An unforgettable evening.'); }},
+    optionB: { label: T('🙁 Absagen (Laune -5)', '🙁 Cancel (Mood -5)'),
+      effekt(gs) { gs.happinessSpieler = clamp(gs.happinessSpieler - 5, 0, 100); return T('Vernünftig aber schade.', 'Sensible but a shame.'); }}
   },
   {
     id: 'beziehung_08', kategorie: 'beziehung',
-    titel: '💍 Heiratsantrag',
-    text: '"Gemeinsam durch alles."',
-    optionA: { label: '💍 Ja sagen (Partner +40, E -20)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 40, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 30, 0, 100); gs.energie = clamp(gs.energie - 20, 0, 100); return 'Ja gesagt. Freude.'; }},
-    optionB: { label: '😰 Noch nicht (Partner -25)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 25, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); pruefeEheKrise(); return 'Schwere Stille.'; }}
+    titel: T('💍 Heiratsantrag', '💍 Marriage Proposal'),
+    text: T('"Gemeinsam durch alles."', '"Through everything, together."'),
+    optionA: { label: T('💍 Ja sagen (Partner +40, E -20)', '💍 Say yes (Partner +40, Energy -20)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 40, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 30, 0, 100); gs.energie = clamp(gs.energie - 20, 0, 100); return T('Ja gesagt. Freude.', 'Said yes. Joy.'); }},
+    optionB: { label: T('😰 Noch nicht (Partner -25)', '😰 Not yet (Partner -25)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 25, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler - 10, 0, 100); pruefeEheKrise(); return T('Schwere Stille.', 'A heavy silence.'); }}
   },
   {
     id: 'beziehung_09', kategorie: 'beziehung',
-    titel: '💌 Brief vom Ex',
-    text: '"Frisch anfangen?"',
-    optionA: { label: '💬 Treffen (Partner -15)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 15, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100); pruefeEheKrise(); return 'Sie erfährt es.'; }},
-    optionB: { label: '🚫 Ablehnen (Partner +5)',
-      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100); return 'Richtige Entscheidung.'; }}
+    titel: T('💌 Brief vom Ex', '💌 Letter from the Ex'),
+    text: T('"Frisch anfangen?"', '"Start fresh?"'),
+    optionA: { label: T('💬 Treffen (Partner -15)', '💬 Meet up (Partner -15)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner - 15, 0, 100); gs.happinessSpieler = clamp(gs.happinessSpieler + 10, 0, 100); pruefeEheKrise(); return T('Sie erfährt es.', 'She finds out.'); }},
+    optionB: { label: T('🚫 Ablehnen (Partner +5)', '🚫 Decline (Partner +5)'),
+      effekt(gs) { gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100); return T('Richtige Entscheidung.', 'The right call.'); }}
   },
 ];
 
@@ -2384,14 +2384,14 @@ function oeffneEventModal(event) {
 function _renderEventModal(event) {
   document.getElementById('modal-title').textContent = event.titel;
   const body = document.getElementById('modal-body');
-  const kat = { behoerde: '🏛️ Behörden', loan_shark: '🦈 Kreditgeber', beziehung: '💑 Beziehung', alltag: '🎲 Alltag' }[event.kategorie] || '📨';
+  const kat = { behoerde: T('🏛️ Behörden','🏛️ Authorities'), loan_shark: T('🦈 Kreditgeber','🦈 Loan Shark'), beziehung: T('💑 Beziehung','💑 Relationship'), alltag: T('🎲 Alltag','🎲 Everyday') }[event.kategorie] || '📨';
   body.innerHTML = `
     <img src="assets/events/${event.id}.jpg" alt=""
          style="display:block;width:100%;height:170px;object-fit:cover;border-radius:10px;border:1px solid var(--border-hi);margin-bottom:10px;"
          onerror="this.style.display='none'">
     <p style="color:var(--text-dim);font-size:0.6rem;margin-bottom:8px;">${kat}</p>
     <p>${event.text}</p>
-    <p style="margin-top:10px;color:var(--text-dim);font-size:0.65rem;">Wähle eine Option:</p>
+    <p style="margin-top:10px;color:var(--text-dim);font-size:0.65rem;">${T('Wähle eine Option:','Choose an option:')}</p>
   `;
   const btnA = document.createElement('button'); btnA.className = 'action-btn primary';
   btnA.textContent = `A: ${event.optionA.label}`; btnA.onclick = () => verarbeiteEventWahl(event, 'A');
@@ -2409,9 +2409,9 @@ function verarbeiteEventWahl(event, wahl) {
   logEvent(`↳ ${wahl}: ${resultat}`, gs.risikoRaster > 70 ? 'danger' : '');
   updateHUD();
   const body = document.getElementById('modal-body');
-  body.innerHTML = `<p style="color:var(--text-dim);font-size:0.6rem;">Ergebnis:</p><p>${resultat}</p>`;
+  body.innerHTML = `<p style="color:var(--text-dim);font-size:0.6rem;">${T('Ergebnis:','Result:')}</p><p>${resultat}</p>`;
   const closeBtn = document.createElement('button');
-  closeBtn.className = 'action-btn primary'; closeBtn.textContent = '✅ Weiter';
+  closeBtn.className = 'action-btn primary'; closeBtn.textContent = T('✅ Weiter', '✅ Continue');
   closeBtn.onclick = () => { schliesseModal(); pruefeRisiko(); };
   body.appendChild(closeBtn);
 }
