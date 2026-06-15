@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v115 – EN Events';
+const BUILD_MARKE = 'v116 – EN GameOver/Abrechnung/Speichern';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -242,7 +242,11 @@ function zeigeGewonnen(vermoegen) {
   const el = document.getElementById('win-screen');
   const sub = document.getElementById('win-sub');
   if (sub) sub.innerHTML = T(`Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`, `With <strong>${formatEuro(vermoegen)}</strong> you have slipped away to the sunny abroad.<br>No office, no raid, no prison – just beach. The state has lost. 🍹`);
-  if (el) { el.classList.add('show'); return; }
+  if (el) {
+    const wt = el.querySelector('.win-title'); if (wt) wt.textContent = T('GEWONNEN!', 'YOU WON!');
+    const wb = el.querySelector('.win-btn');   if (wb) wb.textContent = T('🔄 Neues Spiel', '🔄 New game');
+    el.classList.add('show'); return;
+  }
   // Fallback
   oeffneModal(T('🏆 Gewonnen!', '🏆 You won!'), T(`Ausgewandert mit ${formatEuro(vermoegen)}!`, `Emigrated with ${formatEuro(vermoegen)}!`), [
     { label: T('🔄 Neues Spiel', '🔄 New game'), primary: true, callback: () => window.location.reload() }]);
@@ -1201,7 +1205,11 @@ function triggerGameOver(grund) {
     const go = document.getElementById('gameover-screen');
     const gt = document.getElementById('go-text');
     if (gt) gt.innerHTML = T('Viel Glück im nächsten Leben als Arbeitsloser.', 'Good luck in your next life as an unemployed.') + '<br><span style="opacity:0.7;font-size:0.85em;">(' + info.titel.replace(/^[^–]*–\s*/, '') + ')</span>';
-    if (go) go.classList.add('show');
+    if (go) {
+      const gsub = go.querySelector('.go-sub'); if (gsub) gsub.textContent = T('Du bist gestorben.', 'You have died.');
+      const gbtn = go.querySelector('.go-btn'); if (gbtn) gbtn.textContent = T('🔄 Neues Leben', '🔄 New life');
+      go.classList.add('show');
+    }
     else {
       // Fallback: altes Modal, falls das Element fehlt
       modalOffen = true;
@@ -4469,13 +4477,13 @@ function monatsAbschluss() {
   // ALG-Zahlung (Grundleistung, danach Einkommens-Anrechnung)
   if (gs.status === 'ALG1') {
     if (gs.algGesperrt) {
-      meldungen.push('🛑 ALG I gesperrt! Besuche das Arbeitsamt um die Sperre aufzuheben.');
-      logEvent('🛑 ALG I gesperrt – kein Geld!', 'danger');
+      meldungen.push(T('🛑 ALG I gesperrt! Besuche das Arbeitsamt um die Sperre aufzuheben.', '🛑 ALG I suspended! Visit the job centre to lift the suspension.'));
+      logEvent(T('🛑 ALG I gesperrt – kein Geld!', '🛑 ALG I suspended – no money!'), 'danger');
     } else {
       const auszahlung = Math.max(0, ALG1_ZAHLUNG - minijobAnrechenbar);
       gs.kontostand += auszahlung; staatGibt(auszahlung);
-      meldungen.push(`✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
-      logEvent(`✅ ALG I +${formatEuro(auszahlung)}.`, 'good');
+      meldungen.push(T(`✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
+      logEvent(T(`✅ ALG I +${formatEuro(auszahlung)}.`, `✅ ALG I +${formatEuro(auszahlung)}.`), 'good');
     }
   } else {
     // ALG2: Vermögensprüfung – nur alle 3 Monate, zählt Konto + (sichtbares) Depot
@@ -4485,13 +4493,13 @@ function monatsAbschluss() {
     const sichtbaresDepot = gs.depotVerschleiert ? 0 : depotWert;
     const pruefVermoegen = gs.kontostand + sichtbaresDepot;
     if (istPruefMonat && pruefVermoegen > ALG2_VERMOEGENS_GRENZE) {
-      meldungen.push(`🛑 Vermögensprüfung (alle 3 Monate): Konto + sichtbares Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`);
-      logEvent('🛑 Vermögensprüfung: zu viel sichtbares Vermögen.', 'danger');
+      meldungen.push(T(`🛑 Vermögensprüfung (alle 3 Monate): Konto + sichtbares Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`, `🛑 Asset check (every 3 months): account + visible portfolio = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. No welfare this month!`));
+      logEvent(T('🛑 Vermögensprüfung: zu viel sichtbares Vermögen.', '🛑 Asset check: too much visible wealth.'), 'danger');
     } else {
       const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar);
       gs.kontostand += auszahlung; staatGibt(auszahlung);
-      meldungen.push(`✅ Bürgergeld: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`);
-      logEvent(`✅ Bürgergeld +${formatEuro(auszahlung)}.`, 'good');
+      meldungen.push(T(`✅ Bürgergeld: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ Welfare: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
+      logEvent(T(`✅ Bürgergeld +${formatEuro(auszahlung)}.`, `✅ Welfare +${formatEuro(auszahlung)}.`), 'good');
     }
   }
 
@@ -4500,8 +4508,8 @@ function monatsAbschluss() {
     gs.kontostand += gs.minijobLohn;
     gs.energie     = clamp(gs.energie - 10, 0, 100);
     const fb = minijobFreibetrag(gs.minijobLohn);
-    meldungen.push(`💼 Minijob: +${formatEuro(gs.minijobLohn)} (anrechnungsfrei: ${formatEuro(fb)}). Energie -10.`);
-    logEvent(`💼 Minijob +${formatEuro(gs.minijobLohn)}.`, 'good');
+    meldungen.push(T(`💼 Minijob: +${formatEuro(gs.minijobLohn)} (anrechnungsfrei: ${formatEuro(fb)}). Energie -10.`, `💼 Minijob: +${formatEuro(gs.minijobLohn)} (exempt: ${formatEuro(fb)}). Energy -10.`));
+    logEvent(T(`💼 Minijob +${formatEuro(gs.minijobLohn)}.`, `💼 Minijob +${formatEuro(gs.minijobLohn)}.`), 'good');
   }
 
   // ---- Legale Mehrbedarfe (monatliche Zuschläge aufs Konto) ----
@@ -4516,8 +4524,8 @@ function monatsAbschluss() {
     }
     if (mbSumme > 0) {
       gs.kontostand += mbSumme; staatGibt(mbSumme);
-      meldungen.push(`📑 Mehrbedarfe: +${formatEuro(mbSumme)} (${mbTeile.join(', ')})`);
-      logEvent(`📑 Mehrbedarfe +${formatEuro(mbSumme)}.`, 'good');
+      meldungen.push(T(`📑 Mehrbedarfe: +${formatEuro(mbSumme)} (${mbTeile.join(', ')})`, `📑 Extra needs: +${formatEuro(mbSumme)} (${mbTeile.join(', ')})`));
+      logEvent(T(`📑 Mehrbedarfe +${formatEuro(mbSumme)}.`, `📑 Extra needs +${formatEuro(mbSumme)}.`), 'good');
     }
   }
 
@@ -4525,18 +4533,18 @@ function monatsAbschluss() {
   if (gs.einstiegsgeldMonate > 0) {
     gs.kontostand += EINSTIEGSGELD_BETRAG; staatGibt(EINSTIEGSGELD_BETRAG);
     gs.einstiegsgeldMonate--;
-    meldungen.push(`🚀 Einstiegsgeld: +${formatEuro(EINSTIEGSGELD_BETRAG)} (noch ${gs.einstiegsgeldMonate} Monate)`);
-    logEvent(`🚀 Einstiegsgeld +${formatEuro(EINSTIEGSGELD_BETRAG)}.`, 'good');
+    meldungen.push(T(`🚀 Einstiegsgeld: +${formatEuro(EINSTIEGSGELD_BETRAG)} (noch ${gs.einstiegsgeldMonate} Monate)`, `🚀 Start-up grant: +${formatEuro(EINSTIEGSGELD_BETRAG)} (${gs.einstiegsgeldMonate} months left)`));
+    logEvent(T(`🚀 Einstiegsgeld +${formatEuro(EINSTIEGSGELD_BETRAG)}.`, `🚀 Start-up grant +${formatEuro(EINSTIEGSGELD_BETRAG)}.`), 'good');
   }
 
   // ---- Schein-WG: Bonus, solange Partnerin da ist (sonst auto-aus) ----
   if (gs.scheinWG && gs.frauAusgezogen) {
     gs.scheinWG = false;
-    meldungen.push('🏠 Schein-WG hinfällig – Partnerin ist ausgezogen.');
+    meldungen.push(T('🏠 Schein-WG hinfällig – Partnerin ist ausgezogen.', '🏠 Fake flat-share void – your partner has moved out.'));
   } else if (gs.scheinWG) {
     gs.kontostand += SCHEINWG_BETRAG; staatGibt(SCHEINWG_BETRAG);
-    meldungen.push(`🏠 Schein-WG: +${formatEuro(SCHEINWG_BETRAG)} (voller Single-Satz).`);
-    logEvent(`🏠 Schein-WG +${formatEuro(SCHEINWG_BETRAG)}.`, 'warn');
+    meldungen.push(T(`🏠 Schein-WG: +${formatEuro(SCHEINWG_BETRAG)} (voller Single-Satz).`, `🏠 Fake flat-share: +${formatEuro(SCHEINWG_BETRAG)} (full single rate).`));
+    logEvent(T(`🏠 Schein-WG +${formatEuro(SCHEINWG_BETRAG)}.`, `🏠 Fake flat-share +${formatEuro(SCHEINWG_BETRAG)}.`), 'warn');
   }
 
   // ---- Immobilie: Mieteinnahmen / KdU-Masche + Wertsteigerung ----
@@ -4552,9 +4560,9 @@ function monatsAbschluss() {
       gs.schwarzeKasse += einnahme;
       if (gs.immobilie.modus === 'eigen') staatGibt(einnahme); // KdU kommt vom Amt
       gs.risikoRaster   = clamp(gs.risikoRaster + 6, 0, 100);
-      const quelle = gs.immobilie.modus === 'eigen' ? 'Amt-Miete (KdU-Masche)' : 'Mieteinnahmen';
-      meldungen.push(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`);
-      logEvent(`🏘️ Immobilie +${formatEuro(einnahme)} Schwarzkasse.`, 'warn');
+      const quelle = gs.immobilie.modus === 'eigen' ? T('Amt-Miete (KdU-Masche)', 'office rent (housing-cost scam)') : T('Mieteinnahmen', 'rental income');
+      meldungen.push(T(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`, `🏘️ Property – ${quelle}: +${formatEuro(einnahme)} slush fund. Risk +6.`));
+      logEvent(T(`🏘️ Immobilie +${formatEuro(einnahme)} Schwarzkasse.`, `🏘️ Property +${formatEuro(einnahme)} slush fund.`), 'warn');
     }
     // Ratenzahlung (Schwarzkasse zuerst, dann Konto)
     if (gs.immobilie.restSchuld > 0) {
@@ -4565,12 +4573,12 @@ function monatsAbschluss() {
       const ausSK = Math.min(r, Math.max(0, gs.schwarzeKasse)); gs.schwarzeKasse -= ausSK; r -= ausSK;
       gs.kontostand -= r;
       gs.immobilie.restSchuld -= zahlbar;
-      meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(zahlbar)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
+      meldungen.push(T(`🏘️ Immobilien-Rate: -${formatEuro(zahlbar)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`, `🏘️ Property installment: -${formatEuro(zahlbar)} (remaining debt: ${formatEuro(gs.immobilie.restSchuld)}).`));
       fehlt(rate - zahlbar, T('Immobilien-Rate', 'property installment'));
     }
     // Wertsteigerung +2 %/Monat
     gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
-    meldungen.push(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+2 %).`);
+    meldungen.push(T(`📈 Immobilienwert: ${formatEuro(gs.immobilie.wert)} (+2 %).`, `📈 Property value: ${formatEuro(gs.immobilie.wert)} (+2 %).`));
   }
 
   // ---- Villa-Trick: Einliegerwohnung schwarz vermietet ----
@@ -4578,8 +4586,8 @@ function monatsAbschluss() {
   if (gs.einliegerVermietet && gs.immobilie && gs.immobilie.modus === 'eigen') {
     gs.schwarzeKasse += EINLIEGER_MIETE;
     gs.risikoRaster   = clamp(gs.risikoRaster + 4, 0, 100);
-    meldungen.push(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse. Risiko +4.`);
-    logEvent(`🚪 Einliegerwohnung +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse.`, 'warn');
+    meldungen.push(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse. Risiko +4.`, `🚪 Granny flat rented under the table: +${formatEuro(EINLIEGER_MIETE)} slush fund. Risk +4.`));
+    logEvent(T(`🚪 Einliegerwohnung +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse.`, `🚪 Granny flat +${formatEuro(EINLIEGER_MIETE)} slush fund.`), 'warn');
   } else if (gs.einliegerVermietet) {
     // Villa nicht mehr selbst bewohnt → Masche entfällt automatisch
     gs.einliegerVermietet = false;
@@ -4591,14 +4599,14 @@ function monatsAbschluss() {
     const zahlbar = Math.min(rate, Math.max(0, gs.kontostand));
     gs.kontostand -= zahlbar;
     gs.kautionRest -= zahlbar;
-    meldungen.push(`📦 Kaution-Darlehen: -${formatEuro(zahlbar)} (Rest: ${formatEuro(gs.kautionRest)}).`);
+    meldungen.push(T(`📦 Kaution-Darlehen: -${formatEuro(zahlbar)} (Rest: ${formatEuro(gs.kautionRest)}).`, `📦 Deposit loan: -${formatEuro(zahlbar)} (remaining: ${formatEuro(gs.kautionRest)}).`));
     fehlt(rate - zahlbar, T('Kaution-Rate', 'deposit installment'));
   }
 
   // ---- Depot: Monatliche Kursaktualisierung ----
   const depotMeldungen = aktuelisiereDepotKurse();
   if (depotMeldungen && depotMeldungen.length > 0) {
-    meldungen.push('📊 <strong>Depot-Update:</strong><br>' + depotMeldungen.join('<br>'));
+    meldungen.push(T('📊 <strong>Depot-Update:</strong><br>', '📊 <strong>Portfolio update:</strong><br>') + depotMeldungen.join('<br>'));
   }
   // ---- Schattenbank-Depotgebühr: 5% des Werts, wenn verschleiert ----
   if (gs.depotVerschleiert && (gs.depot || []).length > 0) {
@@ -4609,8 +4617,8 @@ function monatsAbschluss() {
     });
     fee = Math.round(fee);
     if (fee > 0) {
-      meldungen.push(`🏴 Schattenbank-Depotgebühr: -${formatEuro(fee)} (5% des verschleierten Depots).`);
-      logEvent(`🏴 Depotgebühr -${formatEuro(fee)}.`, 'warn');
+      meldungen.push(T(`🏴 Schattenbank-Depotgebühr: -${formatEuro(fee)} (5% des verschleierten Depots).`, `🏴 Shadow-bank portfolio fee: -${formatEuro(fee)} (5% of the hidden portfolio).`));
+      logEvent(T(`🏴 Depotgebühr -${formatEuro(fee)}.`, `🏴 Portfolio fee -${formatEuro(fee)}.`), 'warn');
     }
   }
 
@@ -4619,8 +4627,8 @@ function monatsAbschluss() {
     const zinsen = Math.round(gs.loanSharkSchuld * 0.10);
     gs.loanSharkSchuld += zinsen;
     gs.risikoRaster     = clamp(gs.risikoRaster + 5, 0, 100);
-    meldungen.push(`🦈 Kredithai-Zinsen: +${formatEuro(zinsen)} → Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}. Risiko +5.`);
-    logEvent(`🦈 Zinsen +${formatEuro(zinsen)}. Schulden: ${formatEuro(gs.loanSharkSchuld)}.`, 'danger');
+    meldungen.push(T(`🦈 Kredithai-Zinsen: +${formatEuro(zinsen)} → Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}. Risiko +5.`, `🦈 Loan-shark interest: +${formatEuro(zinsen)} → debt now ${formatEuro(gs.loanSharkSchuld)}. Risk +5.`));
+    logEvent(T(`🦈 Zinsen +${formatEuro(zinsen)}. Schulden: ${formatEuro(gs.loanSharkSchuld)}.`, `🦈 Interest +${formatEuro(zinsen)}. Debt: ${formatEuro(gs.loanSharkSchuld)}.`), 'danger');
   }
 
   // ---- Auslands-Kindergeld (Kindergeld-Paradoxon) ----
@@ -4634,11 +4642,11 @@ function monatsAbschluss() {
       gs.kontostand  += zahlung; staatGibt(zahlung);
       gs.kontostand  -= tarnGebuehr;
       gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
-      meldungen.push(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)}, Tarnungs-Gebühr -${formatEuro(tarnGebuehr)} (10%). Risiko +${anzahl * 5}.`);
-      logEvent(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung -${formatEuro(tarnGebuehr)}).`, 'warn');
+      meldungen.push(T(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)}, Tarnungs-Gebühr -${formatEuro(tarnGebuehr)} (10%). Risiko +${anzahl * 5}.`, `👶 Foreign child benefit (disguised): +${formatEuro(zahlung)}, cover-up fee -${formatEuro(tarnGebuehr)} (10%). Risk +${anzahl * 5}.`));
+      logEvent(T(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung -${formatEuro(tarnGebuehr)}).`, `👶 Child benefit +${formatEuro(zahlung)} (cover-up -${formatEuro(tarnGebuehr)}).`), 'warn');
     } else {
-      meldungen.push(`👶 Auslands-Kindergeld ${formatEuro(zahlung)} fließt, wird aber voll als Einkommen angerechnet → netto 0 €. Tipp: Unterhalts-Tarnung in der Schattenbank.`);
-      logEvent('👶 Kindergeld komplett angerechnet (netto 0).', '');
+      meldungen.push(T(`👶 Auslands-Kindergeld ${formatEuro(zahlung)} fließt, wird aber voll als Einkommen angerechnet → netto 0 €. Tipp: Unterhalts-Tarnung in der Schattenbank.`, `👶 Foreign child benefit ${formatEuro(zahlung)} comes in but is fully counted as income → net 0 €. Tip: alimony cover-up at the shadow bank.`));
+      logEvent(T('👶 Kindergeld komplett angerechnet (netto 0).', '👶 Child benefit fully deducted (net 0).'), '');
     }
   }
 
@@ -4661,37 +4669,37 @@ function monatsAbschluss() {
         if (gs.ernaehrungFake) {
           rueck += MEHRBEDARF_BETRAG.ernaehrung;
           gs.mehrbedarf.ernaehrung = false; gs.ernaehrungFake = false;
-          gestrichen.push('Ernährungs-Mehrbedarf');
+          gestrichen.push(T('Ernährungs-Mehrbedarf', 'dietary extra need'));
         }
         if (gs.unterhaltsTarnung) {
           rueck += (gs.kindergeldKinder || []).length * 300;
           gs.unterhaltsTarnung = false;
-          gestrichen.push('Unterhalts-Tarnung');
+          gestrichen.push(T('Unterhalts-Tarnung', 'alimony cover-up'));
         }
         if (gs.scheinWG) {
           rueck += SCHEINWG_BETRAG;
           gs.scheinWG = false;
-          gestrichen.push('Schein-WG (Hausbesuch!)');
+          gestrichen.push(T('Schein-WG (Hausbesuch!)', 'fake flat-share (home visit!)'));
         }
         if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') {
           rueck += gs.immobilie.miete;
           gs.immobilie.modus = 'vermietet';   // KdU-Masche auffgeflogen → nur noch vermieten
-          gestrichen.push('Immobilien-KdU-Masche');
+          gestrichen.push(T('Immobilien-KdU-Masche', 'property housing-cost scam'));
         }
         if (gs.einliegerVermietet) {
           rueck += EINLIEGER_MIETE;
           gs.einliegerVermietet = false;
-          gestrichen.push('Einliegerwohnung-Schwarzvermietung');
+          gestrichen.push(T('Einliegerwohnung-Schwarzvermietung', 'granny-flat under-the-table rental'));
         }
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
         staatGibt(-rueck);   // Rückzahlung → "Vom Staat kassiert" sinkt
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
-        meldungen.push(`🚨 Jobcenter-Prüfung AUFGEFLOGEN! Rückforderung ${formatEuro(rueck)}, Risiko +30. Gestrichen: ${gestrichen.join(', ')}.`);
-        logEvent(`🚨 Jobcenter-Prüfung aufgeflogen: -${formatEuro(rueck)}, Risiko +30.`, 'danger');
+        meldungen.push(T(`🚨 Jobcenter-Prüfung AUFGEFLOGEN! Rückforderung ${formatEuro(rueck)}, Risiko +30. Gestrichen: ${gestrichen.join(', ')}.`, `🚨 Job-centre check BUSTED! Clawback ${formatEuro(rueck)}, risk +30. Cancelled: ${gestrichen.join(', ')}.`));
+        logEvent(T(`🚨 Jobcenter-Prüfung aufgeflogen: -${formatEuro(rueck)}, Risiko +30.`, `🚨 Job-centre check busted: -${formatEuro(rueck)}, risk +30.`), 'danger');
         sozialbetrugErwischt();   // strafrechtliche Eskalation (Ermittlung → Bewährung → Knast)
       } else {
-        meldungen.push('🔍 Jobcenter-Prüfung: diesmal nichts aufgefallen (Glück gehabt).');
-        logEvent('🔍 Jobcenter-Prüfung überstanden.', 'warn');
+        meldungen.push(T('🔍 Jobcenter-Prüfung: diesmal nichts aufgefallen (Glück gehabt).', '🔍 Job-centre check: nothing noticed this time (got lucky).'));
+        logEvent(T('🔍 Jobcenter-Prüfung überstanden.', '🔍 Job-centre check survived.'), 'warn');
       }
     }
   }
@@ -4699,34 +4707,34 @@ function monatsAbschluss() {
   // Immobilien-Fake und andere Cheat-Extras → schwarze Kasse
   if (gs.monatlicheExtras > 0) {
     gs.schwarzeKasse += gs.monatlicheExtras;
-    meldungen.push(`🎭 Sozialbetrug: +${formatEuro(gs.monatlicheExtras)} (Schwarzkasse)`);
-    logEvent(`🎭 Cheat +${formatEuro(gs.monatlicheExtras)}.`, 'warn');
+    meldungen.push(T(`🎭 Sozialbetrug: +${formatEuro(gs.monatlicheExtras)} (Schwarzkasse)`, `🎭 Welfare fraud: +${formatEuro(gs.monatlicheExtras)} (slush fund)`));
+    logEvent(T(`🎭 Cheat +${formatEuro(gs.monatlicheExtras)}.`, `🎭 Cheat +${formatEuro(gs.monatlicheExtras)}.`), 'warn');
   }
 
   // Risiko-Aufschlag durch Cheats
   if (gs.risikoProMonat > 0) {
     gs.risikoRaster = clamp(gs.risikoRaster + gs.risikoProMonat, 0, 100);
-    meldungen.push(`⚠️ Cheat-Risiko: +${gs.risikoProMonat}%`);
-    logEvent(`⚠️ Cheat-Risiko +${gs.risikoProMonat}.`, 'danger');
+    meldungen.push(T(`⚠️ Cheat-Risiko: +${gs.risikoProMonat}%`, `⚠️ Cheat risk: +${gs.risikoProMonat}%`));
+    logEvent(T(`⚠️ Cheat-Risiko +${gs.risikoProMonat}.`, `⚠️ Cheat risk +${gs.risikoProMonat}.`), 'danger');
   }
 
   // ---- Schattenbank-Gebühr: 5% der Schwarzkasse pro Monat ----
   if (gs.schattenbankAktiv && gs.schwarzeKasse > 0) {
     const gebuehr = Math.floor(gs.schwarzeKasse * 0.05);
     gs.schwarzeKasse -= gebuehr;
-    meldungen.push(`🏴 Schattenbank-Gebühr: -${formatEuro(gebuehr)} (5% der Schwarzkasse).`);
-    logEvent(`🏴 Schattenbank -${formatEuro(gebuehr)}.`, 'warn');
+    meldungen.push(T(`🏴 Schattenbank-Gebühr: -${formatEuro(gebuehr)} (5% der Schwarzkasse).`, `🏴 Shadow-bank fee: -${formatEuro(gebuehr)} (5% of the slush fund).`));
+    logEvent(T(`🏴 Schattenbank -${formatEuro(gebuehr)}.`, `🏴 Shadow bank -${formatEuro(gebuehr)}.`), 'warn');
   }
 
   // Miete
   if (gs.status === 'ALG1') {
     gs.kontostand -= MIETE;
-    meldungen.push(`🏠 Miete: -${formatEuro(MIETE)} (selbst zahlen, ALG I)`);
-    logEvent(`🏠 Miete -${formatEuro(MIETE)}.`, 'warn');
+    meldungen.push(T(`🏠 Miete: -${formatEuro(MIETE)} (selbst zahlen, ALG I)`, `🏠 Rent: -${formatEuro(MIETE)} (paid yourself, ALG I)`));
+    logEvent(T(`🏠 Miete -${formatEuro(MIETE)}.`, `🏠 Rent -${formatEuro(MIETE)}.`), 'warn');
     if (gs.kontostand < 0) {
       gs.kontostand = 0; gs.status = 'ALG2';
-      meldungen.push('❌ Konto überzogen → Bürgergeld-Notfall!');
-      logEvent('❌ Konto überzogen → Bürgergeld.', 'danger');
+      meldungen.push(T('❌ Konto überzogen → Bürgergeld-Notfall!', '❌ Account overdrawn → welfare emergency!'));
+      logEvent(T('❌ Konto überzogen → Bürgergeld.', '❌ Account overdrawn → welfare.'), 'danger');
     }
   } else {
     // Staat zahlt die Miete = geldwerter Vorteil -> zählt mit.
@@ -4734,16 +4742,16 @@ function monatsAbschluss() {
     // Amt-Miete bereits im Immobilien-Block gezählt -> keine Doppelzählung.
     if (!(gs.immobilie && gs.immobilie.modus === 'eigen')) {
       staatGibt(MIETE);
-      meldungen.push(`🏠 Miete vom Staat übernommen: +${formatEuro(MIETE)} (gespart).`);
-      logEvent(`🏠 Miete Staat +${formatEuro(MIETE)}.`, 'good');
+      meldungen.push(T(`🏠 Miete vom Staat übernommen: +${formatEuro(MIETE)} (gespart).`, `🏠 Rent covered by the state: +${formatEuro(MIETE)} (saved).`));
+      logEvent(T(`🏠 Miete Staat +${formatEuro(MIETE)}.`, `🏠 Rent from state +${formatEuro(MIETE)}.`), 'good');
     } else {
-      meldungen.push('🏠 Wohnkosten laufen über die Immobilien-Masche.');
+      meldungen.push(T('🏠 Wohnkosten laufen über die Immobilien-Masche.', '🏠 Housing costs run through the property scam.'));
     }
   }
 
   // Krankenversicherung vom Staat übernommen (geldwerter Vorteil, kein Bargeld)
   staatGibt(KRANKENKASSE_BEITRAG);
-  meldungen.push(`🏥 Krankenkasse vom Staat: +${formatEuro(KRANKENKASSE_BEITRAG)} (Beitrag übernommen).`);
+  meldungen.push(T(`🏥 Krankenkasse vom Staat: +${formatEuro(KRANKENKASSE_BEITRAG)} (Beitrag übernommen).`, `🏥 Health insurance from the state: +${formatEuro(KRANKENKASSE_BEITRAG)} (contribution covered).`));
 
   // Laufende Lebenshaltung (Strom, Internet, Handy) – selbst zahlen.
   // Bei ALG2 übernimmt das Jobcenter den Strom (100 €) → günstiger + zählt zum Staat.
@@ -4754,8 +4762,8 @@ function monatsAbschluss() {
     const zahlbar = Math.min(eigeneNK, Math.max(0, gs.kontostand));
     gs.kontostand -= zahlbar;
     meldungen.push(stromVomAmt
-      ? `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom vom Amt übernommen, +${formatEuro(stromVomAmt)}).`
-      : `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
+      ? T(`💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom vom Amt übernommen, +${formatEuro(stromVomAmt)}).`, `💡 Utilities: -${formatEuro(zahlbar)} (electricity covered by the office, +${formatEuro(stromVomAmt)}).`)
+      : T(`💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`, `💡 Utilities: -${formatEuro(zahlbar)} (electricity, internet, phone).`));
     fehlt(eigeneNK - zahlbar, T('Nebenkosten', 'utilities'));
   }
 
@@ -4763,11 +4771,11 @@ function monatsAbschluss() {
   if (gs.sachbearbeiterBestochen) {
     if (gs.kontostand >= SACHBEARBEITER_KOSTEN) {
       gs.kontostand -= SACHBEARBEITER_KOSTEN;
-      meldungen.push(`🤝 Sachbearbeiter-Schmiergeld: -${formatEuro(SACHBEARBEITER_KOSTEN)}.`);
+      meldungen.push(T(`🤝 Sachbearbeiter-Schmiergeld: -${formatEuro(SACHBEARBEITER_KOSTEN)}.`, `🤝 Caseworker bribe: -${formatEuro(SACHBEARBEITER_KOSTEN)}.`));
     } else {
       gs.sachbearbeiterBestochen = false;
-      meldungen.push('🤝 Schmiergeld nicht gezahlt – der Sachbearbeiter deckt dich nicht mehr!');
-      logEvent('🤝 Schmiergeld geplatzt.', 'warn');
+      meldungen.push(T('🤝 Schmiergeld nicht gezahlt – der Sachbearbeiter deckt dich nicht mehr!', '🤝 Bribe not paid – the caseworker no longer covers for you!'));
+      logEvent(T('🤝 Schmiergeld geplatzt.', '🤝 Bribe fell through.'), 'warn');
     }
   }
 
@@ -4778,8 +4786,8 @@ function monatsAbschluss() {
     gs.kontostand      -= zahlbar;
     gs.gesundheit       = clamp(gs.gesundheit - 4 * gs.suchtStufe, 0, 100);
     gs.happinessSpieler = clamp(gs.happinessSpieler - 3 * gs.suchtStufe, 0, 100);
-    meldungen.push(`🍺 Sucht (Stufe ${gs.suchtStufe}): -${formatEuro(zahlbar)}, Gesundheit -${4*gs.suchtStufe}, Laune -${3*gs.suchtStufe}. Entzug in der Arztpraxis!`);
-    logEvent(`🍺 Sucht Stufe ${gs.suchtStufe}: -${formatEuro(zahlbar)}.`, 'danger');
+    meldungen.push(T(`🍺 Sucht (Stufe ${gs.suchtStufe}): -${formatEuro(zahlbar)}, Gesundheit -${4*gs.suchtStufe}, Laune -${3*gs.suchtStufe}. Entzug in der Arztpraxis!`, `🍺 Addiction (level ${gs.suchtStufe}): -${formatEuro(zahlbar)}, Health -${4*gs.suchtStufe}, Mood -${3*gs.suchtStufe}. Detox at the doctor’s office!`));
+    logEvent(T(`🍺 Sucht Stufe ${gs.suchtStufe}: -${formatEuro(zahlbar)}.`, `🍺 Addiction level ${gs.suchtStufe}: -${formatEuro(zahlbar)}.`), 'danger');
   }
 
   // Natürlicher Verfall
@@ -4793,23 +4801,23 @@ function monatsAbschluss() {
   // ---- Lebensmittel: rollender Vorrat (kein Monats-Stichtag mehr) ----
   // Verbrauch/Hunger laufen tagesweise in tagGewechselt(); hier nur Hinweis.
   if ((gs.lebensmittelTageRest || 0) <= 0) {
-    meldungen.push('⚠️ Kühlschrank ist leer – einkaufen gehen!');
+    meldungen.push(T('⚠️ Kühlschrank ist leer – einkaufen gehen!', '⚠️ Fridge is empty – go shopping!'));
   }
 
   // ---- Frau ausgezogen – Prüfung ----
   if (!gs.frauAusgezogen && gs.happinessPartner < 20) {
     gs.frauAusgezogen    = true;
     gs.unterhaltProMonat = 1000;
-    meldungen.push('💔 Deine Partnerin ist ausgezogen! Unterhalt: 1.000 €/Monat. Kaufe Geschenke für 1.000 € für ihre Rückkehr.');
-    logEvent('💔 Frau ausgezogen! Unterhalt 1.000€/M.', 'danger');
+    meldungen.push(T('💔 Deine Partnerin ist ausgezogen! Unterhalt: 1.000 €/Monat. Kaufe Geschenke für 1.000 € für ihre Rückkehr.', '💔 Your partner has moved out! Alimony: 1,000 €/month. Buy gifts worth 1,000 € for her return.'));
+    logEvent(T('💔 Frau ausgezogen! Unterhalt 1.000€/M.', '💔 Wife moved out! Alimony 1,000€/mo.'), 'danger');
     soundAlarm && soundAlarm();
   }
   // ---- Unterhalt abziehen ----
   if (gs.frauAusgezogen && gs.unterhaltProMonat > 0) {
     const zahlbar = Math.min(gs.unterhaltProMonat, Math.max(0, gs.kontostand));
     gs.kontostand -= zahlbar;
-    meldungen.push(`💸 Unterhalt: -${formatEuro(zahlbar)}`);
-    logEvent(`💸 Unterhalt -${formatEuro(zahlbar)}.`, 'danger');
+    meldungen.push(T(`💸 Unterhalt: -${formatEuro(zahlbar)}`, `💸 Alimony: -${formatEuro(zahlbar)}`));
+    logEvent(T(`💸 Unterhalt -${formatEuro(zahlbar)}.`, `💸 Alimony -${formatEuro(zahlbar)}.`), 'danger');
     fehlt(gs.unterhaltProMonat - zahlbar, T('Unterhalt', 'alimony'));
   }
 
@@ -4819,11 +4827,11 @@ function monatsAbschluss() {
     if (gs.kontostand >= behandlung) {
       gs.kontostand -= behandlung;
       gs.gesundheit  = clamp(gs.gesundheit + 20, 0, 100);
-      meldungen.push(`🏥 Krankenhaus: -${formatEuro(behandlung)}, Gesundheit +20.`);
-      logEvent('🏥 Krankenhausaufenthalt! -20.000€, Gesundheit +20.', 'danger');
+      meldungen.push(T(`🏥 Krankenhaus: -${formatEuro(behandlung)}, Gesundheit +20.`, `🏥 Hospital: -${formatEuro(behandlung)}, Health +20.`));
+      logEvent(T('🏥 Krankenhausaufenthalt! -20.000€, Gesundheit +20.', '🏥 Hospital stay! -20,000€, Health +20.'), 'danger');
     } else {
-      meldungen.push('🏥 Krankenhaus nötig aber kein Geld! Gesundheit kritisch!');
-      logEvent('🏥 KEIN GELD FÜR KRANKENHAUS! Gesundheit kritisch!', 'danger');
+      meldungen.push(T('🏥 Krankenhaus nötig aber kein Geld! Gesundheit kritisch!', '🏥 Hospital needed but no money! Health critical!'));
+      logEvent(T('🏥 KEIN GELD FÜR KRANKENHAUS! Gesundheit kritisch!', '🏥 NO MONEY FOR HOSPITAL! Health critical!'), 'danger');
     }
   }
   // Game Over bei Gesundheit 0
@@ -4834,8 +4842,8 @@ function monatsAbschluss() {
 
   // ---- Arbeitsamt-Sperre aufheben wenn Besuch gemacht ----
   if (gs.algGesperrt) {
-    meldungen.push('🛑 ALG gesperrt wegen verpasster Termine! Bitte Arbeitsamt besuchen.');
-    logEvent('🛑 ALG gesperrt – Arbeitsamt aufsuchen!', 'danger');
+    meldungen.push(T('🛑 ALG gesperrt wegen verpasster Termine! Bitte Arbeitsamt besuchen.', '🛑 Benefits suspended due to missed appointments! Please visit the job centre.'));
+    logEvent(T('🛑 ALG gesperrt – Arbeitsamt aufsuchen!', '🛑 Benefits suspended – visit the job centre!'), 'danger');
   }
 
   // ---- Loan-Shark Mahnung-System ----
@@ -4843,29 +4851,37 @@ function monatsAbschluss() {
     gs.loanSharkMahnungStufe = (gs.loanSharkMahnungStufe || 0) + 1;
     // Rückzahlungszeit verdoppelt: Konsequenzen erst bei Stufe 2 / 4 / 6
     if (gs.loanSharkMahnungStufe === 2) {
-      meldungen.push('🦈 Kredithai-Mahnung: Zahle deine Schulden!');
-      logEvent('🦈 MAHNUNG vom Kredithai!', 'danger');
-      setTimeout(() => oeffneModal('🦈 Mahnung vom Kredithai',
-        `Du schuldest <strong>${formatEuro(gs.loanSharkSchuld)}</strong>.<br><br>`
-        + 'Zahle bald, sonst kommen Eintreiber!', []), 400);
+      meldungen.push(T('🦈 Kredithai-Mahnung: Zahle deine Schulden!', '🦈 Loan-shark reminder: Pay your debts!'));
+      logEvent(T('🦈 MAHNUNG vom Kredithai!', '🦈 REMINDER from the loan shark!'), 'danger');
+      setTimeout(() => oeffneModal(T('🦈 Mahnung vom Kredithai', '🦈 Reminder from the loan shark'),
+        T(`Du schuldest <strong>${formatEuro(gs.loanSharkSchuld)}</strong>.<br><br>`
+        + 'Zahle bald, sonst kommen Eintreiber!',
+          `You owe <strong>${formatEuro(gs.loanSharkSchuld)}</strong>.<br><br>`
+        + 'Pay soon or the collectors will come!'), []), 400);
     } else if (gs.loanSharkMahnungStufe === 4) {
       gs.gesundheit = clamp(gs.gesundheit - 5, 0, 100);
-      meldungen.push('🦈 Erster Besuch der Eintreiber: Gesundheit -5!');
-      logEvent('🦈 Eintreiber! Gesundheit -5.', 'danger');
+      meldungen.push(T('🦈 Erster Besuch der Eintreiber: Gesundheit -5!', '🦈 First visit from the collectors: Health -5!'));
+      logEvent(T('🦈 Eintreiber! Gesundheit -5.', '🦈 Collectors! Health -5.'), 'danger');
       soundAlarm && soundAlarm();
-      setTimeout(() => oeffneModal('🦈 Eintreiber – erster Besuch!',
-        'Zwei Männer haben dich aufgesucht. Eine Warnung.<br><br>'
+      setTimeout(() => oeffneModal(T('🦈 Eintreiber – erster Besuch!', '🦈 Collectors – first visit!'),
+        T('Zwei Männer haben dich aufgesucht. Eine Warnung.<br><br>'
         + '<strong>Gesundheit −5</strong><br><br>'
-        + `Schulden: ${formatEuro(gs.loanSharkSchuld)}`, []), 400);
+        + `Schulden: ${formatEuro(gs.loanSharkSchuld)}`,
+          'Two men paid you a visit. A warning.<br><br>'
+        + '<strong>Health −5</strong><br><br>'
+        + `Debt: ${formatEuro(gs.loanSharkSchuld)}`), []), 400);
     } else if (gs.loanSharkMahnungStufe >= 6) {
       gs.gesundheit = clamp(gs.gesundheit - 15, 0, 100);
-      meldungen.push('🦈 Zweiter Besuch! Schlimme Verletzungen: Gesundheit -15!');
-      logEvent('🦈 Zweiter Besuch! Gesundheit -15!', 'danger');
+      meldungen.push(T('🦈 Zweiter Besuch! Schlimme Verletzungen: Gesundheit -15!', '🦈 Second visit! Serious injuries: Health -15!'));
+      logEvent(T('🦈 Zweiter Besuch! Gesundheit -15!', '🦈 Second visit! Health -15!'), 'danger');
       soundAlarm && soundAlarm();
-      setTimeout(() => oeffneModal('🦈 Eintreiber – zweiter Besuch!',
-        'Sie haben es ernst gemeint. Du liegst verletzt am Boden.<br><br>'
+      setTimeout(() => oeffneModal(T('🦈 Eintreiber – zweiter Besuch!', '🦈 Collectors – second visit!'),
+        T('Sie haben es ernst gemeint. Du liegst verletzt am Boden.<br><br>'
         + '<strong>Gesundheit −15</strong><br><br>'
-        + 'Zahle sofort oder das nächste Mal wird es schlimmer.', []), 400);
+        + 'Zahle sofort oder das nächste Mal wird es schlimmer.',
+          'They meant it. You are lying injured on the ground.<br><br>'
+        + '<strong>Health −15</strong><br><br>'
+        + 'Pay now or next time it gets worse.'), []), 400);
       gs.loanSharkMahnungStufe = 0; // Reset
     }
   } else {
@@ -4875,7 +4891,7 @@ function monatsAbschluss() {
   // Loses Bargeld beim Transport penalisieren (noch nicht gesichertes Geld ist Risiko)
   if (gs.losesBargeld > 0) {
     gs.risikoRaster = clamp(gs.risikoRaster + Math.floor(gs.losesBargeld / 200), 0, 100);
-    meldungen.push(`⚠️ Loses Bargeld ${formatEuro(gs.losesBargeld)} erhöht Risiko! Zur Bank/Pfandleiher!`);
+    meldungen.push(T(`⚠️ Loses Bargeld ${formatEuro(gs.losesBargeld)} erhöht Risiko! Zur Bank/Pfandleiher!`, `⚠️ Loose cash ${formatEuro(gs.losesBargeld)} raises risk! Off to the bank/pawnshop!`));
   }
 
   // ---- Rückstand mit übrigem Konto-Guthaben tilgen ----
@@ -4883,7 +4899,7 @@ function monatsAbschluss() {
     const tilg = Math.min(gs.zahlungsRueckstand, gs.kontostand);
     gs.kontostand        -= tilg;
     gs.zahlungsRueckstand -= tilg;
-    if (tilg > 0) meldungen.push(`📉 Rückstand getilgt: -${formatEuro(tilg)} (offen: ${formatEuro(gs.zahlungsRueckstand)}).`);
+    if (tilg > 0) meldungen.push(T(`📉 Rückstand getilgt: -${formatEuro(tilg)} (offen: ${formatEuro(gs.zahlungsRueckstand)}).`, `📉 Arrears paid down: -${formatEuro(tilg)} (outstanding: ${formatEuro(gs.zahlungsRueckstand)}).`));
   }
   // Monatszähler für den Rückstand
   if (gs.zahlungsRueckstand > 0) gs.rueckstandMonate++;
@@ -4897,22 +4913,22 @@ function monatsAbschluss() {
   if (gs.zahlungsRueckstand > 0) {
     const leihBetrag = gs.zahlungsRueckstand;
     const verbleibend = Math.max(0, 3 - gs.rueckstandMonate);
-    meldungen.push(`⚠️ <strong>Offener Rückstand: ${formatEuro(leihBetrag)}</strong> – Rückstand seit ${gs.rueckstandMonate} Monat(en). Bei 3 Monaten ohne Begleichung droht <strong>Game Over</strong> (noch ${verbleibend}).`);
+    meldungen.push(T(`⚠️ <strong>Offener Rückstand: ${formatEuro(leihBetrag)}</strong> – Rückstand seit ${gs.rueckstandMonate} Monat(en). Bei 3 Monaten ohne Begleichung droht <strong>Game Over</strong> (noch ${verbleibend}).`, `⚠️ <strong>Outstanding arrears: ${formatEuro(leihBetrag)}</strong> – in arrears for ${gs.rueckstandMonate} month(s). After 3 months without payment you face <strong>Game Over</strong> (${verbleibend} left).`));
     summaryAktionen.push({
-      label: `🦈 ${formatEuro(leihBetrag)} beim Kredithai leihen (Zins 10%/M, Risiko +15)`,
+      label: T(`🦈 ${formatEuro(leihBetrag)} beim Kredithai leihen (Zins 10%/M, Risiko +15)`, `🦈 Borrow ${formatEuro(leihBetrag)} from the loan shark (interest 10%/mo, risk +15)`),
       danger: true,
       callback: () => {
         gs.loanSharkSchuld   += leihBetrag;
         gs.zahlungsRueckstand = 0;
         gs.rueckstandMonate   = 0;
         gs.risikoRaster       = clamp(gs.risikoRaster + 15, 0, 100);
-        logEvent(`🦈 Rückstand (${formatEuro(leihBetrag)}) mit Kredithai-Kredit beglichen. Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}.`, 'danger');
+        logEvent(T(`🦈 Rückstand (${formatEuro(leihBetrag)}) mit Kredithai-Kredit beglichen. Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}.`, `🦈 Arrears (${formatEuro(leihBetrag)}) settled with a loan-shark loan. Debt now ${formatEuro(gs.loanSharkSchuld)}.`), 'danger');
         soundShark && soundShark();
         updateHUD();
       }
     });
   }
-  oeffneModal(`📅 Monatsabschluss – Monat ${gs.monat}`, meldungen.join('<br><br>'), summaryAktionen);
+  oeffneModal(T(`📅 Monatsabschluss – Monat ${gs.monat}`, `📅 Month-end report – Month ${gs.monat}`), meldungen.join('<br><br>'), summaryAktionen);
   pruefeGameOverBedingungen();
 }
 
@@ -7510,26 +7526,29 @@ class SpielSzene extends Phaser.Scene {
 
     // Pflichttermin nur prüfen, wenn man NICHT krankgeschrieben ist
     if ((gameState.krankmeldungWochenRest || 0) > 0) {
-      logEvent('🤒 Krankgeschrieben – kein Pflichttermin nötig.', 'good');
+      logEvent(T('🤒 Krankgeschrieben – kein Pflichttermin nötig.', '🤒 On sick leave – no mandatory appointment needed.'), 'good');
     } else {
     gameState.naechsterAmtsBesuch--;
     if (gameState.naechsterAmtsBesuch <= 0) {
       gameState.risikoRaster = clamp(gameState.risikoRaster + 15, 0, 100);
       gameState.naechsterAmtsBesuch = 2;
       gameState.amtsTermineVerpasst = (gameState.amtsTermineVerpasst || 0) + 1;
-      logEvent(`⚠️ Pflichttermin verpasst! (${gameState.amtsTermineVerpasst}x) Risiko +15.`, 'danger');
+      logEvent(T(`⚠️ Pflichttermin verpasst! (${gameState.amtsTermineVerpasst}x) Risiko +15.`, `⚠️ Mandatory appointment missed! (${gameState.amtsTermineVerpasst}x) Risk +15.`), 'danger');
       if (gameState.amtsTermineVerpasst >= 3) {
         gameState.algGesperrt = true;
-        oeffneModal('🛑 ALG gesperrt!',
-          `Du hast <strong>3 Pflichttermine</strong> verpasst!<br><br>`
+        oeffneModal(T('🛑 ALG gesperrt!', '🛑 Benefits suspended!'),
+          T(`Du hast <strong>3 Pflichttermine</strong> verpasst!<br><br>`
           + 'Das ALG wird einbehalten bis du persönlich erscheinst.<br>'
           + 'Besuche das <strong>Arbeitsamt</strong>, um die Sperre aufzuheben.',
+            `You have missed <strong>3 mandatory appointments</strong>!<br><br>`
+          + 'Your benefits are withheld until you show up in person.<br>'
+          + 'Visit the <strong>job centre</strong> to lift the suspension.'),
           []);
-        logEvent('🛑 ALG gesperrt nach 3 verpassten Terminen!', 'danger');
+        logEvent(T('🛑 ALG gesperrt nach 3 verpassten Terminen!', '🛑 Benefits suspended after 3 missed appointments!'), 'danger');
         soundAlarm && soundAlarm();
       } else {
-        oeffneModal('⚠️ Pflichttermin verpasst!',
-          `Kein Amt-Besuch! (${gameState.amtsTermineVerpasst}/3)<br><br><strong>Risiko +15</strong><br>Bei 3 Fehlterminen wird das ALG gesperrt!`, []);
+        oeffneModal(T('⚠️ Pflichttermin verpasst!', '⚠️ Mandatory appointment missed!'),
+          T(`Kein Amt-Besuch! (${gameState.amtsTermineVerpasst}/3)<br><br><strong>Risiko +15</strong><br>Bei 3 Fehlterminen wird das ALG gesperrt!`, `No office visit! (${gameState.amtsTermineVerpasst}/3)<br><br><strong>Risk +15</strong><br>After 3 missed appointments your benefits are suspended!`), []);
       }
     }
     }   // Ende: Pflichttermin nur ohne Krankmeldung
