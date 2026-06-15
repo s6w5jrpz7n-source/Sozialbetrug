@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v112 – EN Gebaeude-Aktionen';
+const BUILD_MARKE = 'v113 – EN dyn. Labels';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -321,7 +321,7 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: T('📋  Pflichttermin wahrnehmen', '📋 Attend mandatory appointment'),               id: 'pflichttermin' },
       { label: T('📝  Scheinbewerbung einreichen (Risiko -5)', '📝 Submit fake application (Risk -5)'), id: 'scheinbewerbung' },
-      { label: T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)'),         id: 'kur' },
+      { label: T(T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)'), '🏖️ Apply for spa cure (full recovery)'),         id: 'kur' },
       { label: T('🚿  Mehrbedarf Warmwasser (+15 €/M)', '🚿 Hot-water extra benefit (+15 €/mo)'),         id: 'mb_warmwasser' },
       { label: T('👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)', '👨‍👧 Single-parent extra benefit (+70 €/mo)'),    id: 'mb_alleinerziehend' },
       { label: T('🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', '🥗 Dietary extra benefit / certificate (+110 €/mo)'), id: 'mb_ernaehrung' },
@@ -494,11 +494,11 @@ const ORTE_CONFIG = [
 // ================================================================
 const PFAND_ZINS = 1.25;   // +25% Zins beim Auslösen
 const PFAND_ITEMS = {
-  handy:     { name: '📱 Handy',         wert: 240,  laune: 4,  ziel: 'spieler' },
-  schmuck:   { name: '💎 Schmuck',       wert: 500,  laune: 6,  ziel: 'partner' },
-  fernseher: { name: '📺 Fernseher',     wert: 440,  laune: 8,  ziel: 'spieler' },
-  konsole:   { name: '🎮 Spielekonsole', wert: 360,  laune: 10, ziel: 'spieler' },
-  auto:      { name: '🚗 Auto',          wert: 2400, laune: 12, ziel: 'spieler' },
+  handy:     { name: T('📱 Handy', '📱 Phone'),         wert: 240,  laune: 4,  ziel: 'spieler' },
+  schmuck:   { name: T('💎 Schmuck', '💎 Jewelry'),       wert: 500,  laune: 6,  ziel: 'partner' },
+  fernseher: { name: T('📺 Fernseher', '📺 TV'),     wert: 440,  laune: 8,  ziel: 'spieler' },
+  konsole:   { name: T('🎮 Spielekonsole', '🎮 Game console'), wert: 360,  laune: 10, ziel: 'spieler' },
+  auto:      { name: T('🚗 Auto', '🚗 Car'),          wert: 2400, laune: 12, ziel: 'spieler' },
 };
 
 // ================================================================
@@ -2912,17 +2912,17 @@ function interact(ortId) {
     if (ortId === 'loanshark' && a.id === 'schulden_zahlen') {
       const schulden = gs.loanSharkSchuld || 0;
       label = schulden > 0
-        ? `💸  Schulden zurückzahlen (aktuell: ${formatEuro(schulden)})`
-        : '💸  Schulden zurückzahlen (keine Schulden)';
+        ? T(`💸  Schulden zurückzahlen (aktuell: ${formatEuro(schulden)})`, `💸 Repay debt (currently: ${formatEuro(schulden)})`)
+        : T('💸  Schulden zurückzahlen (keine Schulden)', '💸 Repay debt (no debt)');
     }
     if (ortId === 'supermarkt' && a.id === 'geschenk') {
       const bereits = gs.geschenkeSumme || 0;
-      label = `🎁  Geschenk kaufen (500€ · bereits: ${formatEuro(bereits)} / 1.000€)`;
+      label = T(`🎁  Geschenk kaufen (500€ · bereits: ${formatEuro(bereits)} / 1.000€)`, `🎁 Buy a gift (500€ · so far: ${formatEuro(bereits)} / 1,000€)`);
     }
     if (ortId === 'bank' && a.id === 'einzahlen') {
       const limit  = 200;
       const uebrig = limit - (gs.bankEinzahlungDieseWoche || 0);
-      label = `💳  Bargeld einzahlen → Konto (Limit: ${formatEuro(Math.max(0,uebrig))}/Woche)`;
+      label = T(`💳  Bargeld einzahlen → Konto (Limit: ${formatEuro(Math.max(0,uebrig))}/Woche)`, `💳 Deposit cash → account (limit: ${formatEuro(Math.max(0,uebrig))}/week)`);
     }
     // Pfandleiher: Verpfänden ⇄ Auslösen je nach Zustand
     if (ortId === 'pawn' && a.id.startsWith('pfand_')) {
@@ -2931,20 +2931,20 @@ function interact(ortId) {
       if (item) {
         if (gs.verpfaendet[itemId]) {
           const kosten = Math.round(item.wert * PFAND_ZINS);
-          label = `${item.name} auslösen (${formatEuro(kosten)} · +25% Zins)`;
+          label = T(`${item.name} auslösen (${formatEuro(kosten)} · +25% Zins)`, `Redeem ${item.name} (${formatEuro(kosten)} · +25% interest)`);
         } else {
-          label = `${item.name} verpfänden (+${formatEuro(item.wert)} → Konto, Laune −${item.laune})`;
+          label = T(`${item.name} verpfänden (+${formatEuro(item.wert)} → Konto, Laune −${item.laune})`, `Pawn ${item.name} (+${formatEuro(item.wert)} → account, Mood −${item.laune})`);
         }
       }
     }
     if (ortId === 'pawn' && a.id === 'gold_verkaufen') {
       const n = gs.goldBarren || 0;
-      label = `🥇  Gold ausgraben & verkaufen (${n} Barren · ${formatEuro(n * 500)})`;
+      label = T(`🥇  Gold ausgraben & verkaufen (${n} Barren · ${formatEuro(n * 500)})`, `🥇 Dig up & sell gold (${n} bars · ${formatEuro(n * 500)})`);
     }
     if (ortId === 'villa' && a.id === 'villa_einlieger') {
       label = gs.einliegerVermietet
-        ? `🚪  Einliegerwohnung vermietet (+${formatEuro(EINLIEGER_MIETE)}/M schwarz) – kündigen`
-        : `🚪  Einliegerwohnung schwarz vermieten (+${formatEuro(EINLIEGER_MIETE)}/M)`;
+        ? T(`🚪  Einliegerwohnung vermietet (+${formatEuro(EINLIEGER_MIETE)}/M schwarz) – kündigen`, `🚪 Granny flat rented out (+${formatEuro(EINLIEGER_MIETE)}/mo off the books) – cancel`)
+        : T(`🚪  Einliegerwohnung schwarz vermieten (+${formatEuro(EINLIEGER_MIETE)}/M)`, `🚪 Rent out granny flat off the books (+${formatEuro(EINLIEGER_MIETE)}/mo)`);
     }
     // Arbeitsamt: Mehrbedarfe zeigen Aktiv-Status
     if (ortId === 'arbeitsamt' && a.id.startsWith('mb_')) {
@@ -2955,76 +2955,76 @@ function interact(ortId) {
       }
     }
     if (ortId === 'arbeitsamt' && a.id === 'einstiegsgeld' && gs.einstiegsgeldMonate > 0) {
-      label = `🚀  Einstiegsgeld  ✅ läuft (noch ${gs.einstiegsgeldMonate} Monate · +${EINSTIEGSGELD_BETRAG} €/M)`;
+      label = T(`🚀  Einstiegsgeld  ✅ läuft (noch ${gs.einstiegsgeldMonate} Monate · +${EINSTIEGSGELD_BETRAG} €/M)`, `🚀 Start-up grant ✅ active (${gs.einstiegsgeldMonate} months left · +${EINSTIEGSGELD_BETRAG} €/mo)`);
     }
     if (ortId === 'supermarkt' && a.id === 'minijob') {
       label = gs.minijobLohn > 0
-        ? `💼  Minijob aktiv (${formatEuro(gs.minijobLohn)}/M · ändern/kündigen)`
-        : '💼  Minijob annehmen (legales Einkommen mit Freibetrag)';
+        ? T(`💼  Minijob aktiv (${formatEuro(gs.minijobLohn)}/M · ändern/kündigen)`, `💼 Mini-job active (${formatEuro(gs.minijobLohn)}/mo · change/quit)`)
+        : T('💼  Minijob annehmen (legales Einkommen mit Freibetrag)', '💼 Take a mini-job (legal income with allowance)');
     }
     if (ortId === 'schattenbank' && a.id === 'unterhalts_tarnung') {
       label = gs.unterhaltsTarnung
-        ? '🌍  Unterhalts-Tarnung AKTIV (abschalten)'
-        : '🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)';
+        ? T('🌍  Unterhalts-Tarnung AKTIV (abschalten)', '🌍 Support cover-up ACTIVE (turn off)')
+        : T('🌍  Unterhalts-Tarnung aktivieren (Auslands-Kindergeld behalten)', '🌍 Activate support cover-up (keep foreign child benefit)');
     }
     if (ortId === 'schattenbank' && a.id === 'immo_kaufen' && gs.immobilie) {
       const rs = gs.immobilie.restSchuld || 0;
-      label = `🏘️  Immobilie: Wert ${formatEuro(gs.immobilie.wert)}${rs > 0 ? ` · Restschuld ${formatEuro(rs)}` : ' · schuldenfrei'}`;
+      label = T(`🏘️  Immobilie: Wert ${formatEuro(gs.immobilie.wert)}${rs > 0 ? ` · Restschuld ${formatEuro(rs)}` : ' · schuldenfrei'}`, `🏘️ Property: value ${formatEuro(gs.immobilie.wert)}${rs > 0 ? ` · balance ${formatEuro(rs)}` : ' · debt-free'}`);
     }
     if (ortId === 'schattenbank' && a.id === 'immo_modus' && gs.immobilie) {
       label = gs.immobilie.modus === 'eigen'
-        ? '🔑  Modus: Eigennutzung → auf Vermieten umschalten'
-        : '🔑  Modus: Vermietet → auf Eigennutzung umschalten';
+        ? T('🔑  Modus: Eigennutzung → auf Vermieten umschalten', '🔑 Mode: own use → switch to renting')
+        : T('🔑  Modus: Vermietet → auf Eigennutzung umschalten', '🔑 Mode: rented → switch to own use');
     }
     if (ortId === 'schattenbank' && a.id === 'immo_tilgen' && gs.immobilie) {
       const rs = gs.immobilie.restSchuld || 0;
-      label = rs > 0 ? `🏦  Sofort tilgen (Restschuld ${formatEuro(rs)})` : '🏦  Bereits schuldenfrei';
+      label = rs > 0 ? T(`🏦  Sofort tilgen (Restschuld ${formatEuro(rs)})`, `🏦 Pay off now (balance ${formatEuro(rs)})`) : T('🏦  Bereits schuldenfrei', '🏦 Already debt-free');
     }
     if (ortId === 'schattenbank' && a.id === 'immo_verkaufen' && gs.immobilie) {
       const netto = Math.max(0, Math.round(gs.immobilie.wert) - (gs.immobilie.restSchuld || 0));
-      label = `💰  Immobilie verkaufen (netto ${formatEuro(netto)} → Schwarzkasse)`;
+      label = T(`💰  Immobilie verkaufen (netto ${formatEuro(netto)} → Schwarzkasse)`, `💰 Sell property (net ${formatEuro(netto)} → slush fund)`);
     }
     if (ortId === 'schattenbank' && a.id === 'depot_verschleiern') {
       label = gs.depotVerschleiert
-        ? '📈  Depot verschleiert AKTIV (wieder offiziell machen)'
-        : '📈  Depot verschleiern (Amt-unsichtbar, 5%/Monat)';
+        ? T('📈  Depot verschleiert AKTIV (wieder offiziell machen)', '📈 Portfolio hidden ACTIVE (make official again)')
+        : T('📈  Depot verschleiern (Amt-unsichtbar, 5%/Monat)', '📈 Hide portfolio (invisible to office, 5%/mo)');
     }
     if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'anwalt') {
       label = (gs.strafStufe || 0) > 0
-        ? `⚖️  Anwalt anrufen (Status: ${strafStufeName(gs.strafStufe)})`
-        : '⚖️  Anwalt anrufen (keine Probleme)';
+        ? T(`⚖️  Anwalt anrufen (Status: ${strafStufeName(gs.strafStufe)})`, `⚖️ Call a lawyer (status: ${strafStufeName(gs.strafStufe)})`)
+        : T('⚖️  Anwalt anrufen (keine Probleme)', '⚖️ Call a lawyer (no problems)');
     }
     if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'auswandern') {
       const v = gesamtVermoegen();
       label = v >= AUSWANDERN_GRENZE
-        ? '✈️  AUSWANDERN – du kannst gewinnen!'
-        : `✈️  Auswandern (${formatEuro(v)} / ${formatEuro(AUSWANDERN_GRENZE)})`;
+        ? T('✈️  AUSWANDERN – du kannst gewinnen!', '✈️ EMIGRATE – you can win!')
+        : T(`✈️  Auswandern (${formatEuro(v)} / ${formatEuro(AUSWANDERN_GRENZE)})`, `✈️ Emigrate (${formatEuro(v)} / ${formatEuro(AUSWANDERN_GRENZE)})`);
     }
     if (ortId === 'arbeitsamt' && a.id === 'sachbearbeiter') {
       label = gs.sachbearbeiterBestochen
-        ? '🤝  Sachbearbeiter geschmiert AKTIV (beenden)'
-        : '🤝  Sachbearbeiter schmieren (150 €/M)';
+        ? T('🤝  Sachbearbeiter geschmiert AKTIV (beenden)', '🤝 Caseworker bribed ACTIVE (stop)')
+        : T('🤝  Sachbearbeiter schmieren (150 €/M)', '🤝 Bribe caseworker (150 €/mo)');
     }
     // Kur (jetzt am Arbeitsamt) / Schein-WG / Umzug
     if (a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
-        ? `🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`
+        ? T(`🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`, `🏖️ Spa cure (again from month ${gs.kurCooldownMonat})`)
         : '🏖️  Kur beantragen (volle Erholung)';
     }
     if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'scheinwg') {
       label = gs.scheinWG
-        ? '🏠  Schein-WG AKTIV (abmelden)'
-        : `🏠  Schein-WG deklarieren (+${SCHEINWG_BETRAG} €/M, riskant)`;
+        ? T('🏠  Schein-WG AKTIV (abmelden)', '🏠 Fake flatshare ACTIVE (deregister)')
+        : T(`🏠  Schein-WG deklarieren (+${SCHEINWG_BETRAG} €/M, riskant)`, `🏠 Declare fake flatshare (+${SCHEINWG_BETRAG} €/mo, risky)`);
     }
     if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'umzug' && gs.kautionRest > 0) {
-      label = `📦  Umzug (Kaution-Darlehen läuft: ${formatEuro(gs.kautionRest)})`;
+      label = T(`📦  Umzug (Kaution-Darlehen läuft: ${formatEuro(gs.kautionRest)})`, `📦 Move (deposit loan running: ${formatEuro(gs.kautionRest)})`);
     }
     // Arbeitsamt: Pauschalen Status
     if (ortId === 'arbeitsamt' && a.id === 'pausch_erstausstattung' && gs.pauschalen.erstausstattung) {
-      label = '🛋️  Erstausstattung Wohnung  ✅ bezogen';
+      label = T('🛋️  Erstausstattung Wohnung  ✅ bezogen', '🛋️ Home starter grant ✅ received');
     }
     if (ortId === 'arbeitsamt' && a.id === 'pausch_moebel' && gs.pauschalen.moebel) {
-      label = '🪑  Möbel/Schreibtisch fürs Kind  ✅ bezogen';
+      label = T('🪑  Möbel/Schreibtisch fürs Kind  ✅ bezogen', '🪑 Furniture/desk for the kid ✅ received');
     }
     return { id: a.id, label, callback: () => aktionAusfuehren(ortId, a.id) };
   });
