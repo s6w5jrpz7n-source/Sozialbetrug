@@ -3135,71 +3135,73 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- WOHNUNG (oder bewohnte Villa) ---
   if (ortId === 'wohnung' || ortId === 'villa') {
     if (aktionsId === 'kaufen_menu') {
-      oeffneModal('🛒 Kaufen', 'Anschaffungen für dein Zuhause.', [
+      oeffneModal(T('🛒 Kaufen', '🛒 Buy'), T('Anschaffungen für dein Zuhause.', 'Purchases for your home.'), [
         { label: gs.grosserKuehlschrank
-            ? '🧊 Großer Kühlschrank ✅ vorhanden'
-            : '🧊 Großer Kühlschrank (1.000 €) – Vorrats-Kapazität 14 statt 7 Tage',
+            ? T('🧊 Großer Kühlschrank ✅ vorhanden', '🧊 Large fridge ✅ owned')
+            : T('🧊 Großer Kühlschrank (1.000 €) – Vorrats-Kapazität 14 statt 7 Tage', '🧊 Large fridge (1,000 €) – stock capacity 14 instead of 7 days'),
           callback: () => aktionAusfuehren(ortId, 'kauf_kuehlschrank') },
       ]);
       return;
     }
     if (aktionsId === 'kauf_kuehlschrank') {
-      if (gs.grosserKuehlschrank) { oeffneModal('🧊 Schon vorhanden', 'Du hast bereits einen großen Kühlschrank.', []); return; }
-      if (gs.kontostand < 1000) { oeffneModal('💸 Zu wenig Geld', 'Der große Kühlschrank kostet <strong>1.000 €</strong> (vom Konto).', []); return; }
+      if (gs.grosserKuehlschrank) { oeffneModal(T('🧊 Schon vorhanden', '🧊 Already owned'), T('Du hast bereits einen großen Kühlschrank.', 'You already have a large fridge.'), []); return; }
+      if (gs.kontostand < 1000) { oeffneModal(T('💸 Zu wenig Geld', '💸 Not enough money'), T('Der große Kühlschrank kostet <strong>1.000 €</strong> (vom Konto).', 'The large fridge costs <strong>1,000 €</strong> (from your account).'), []); return; }
       gs.kontostand -= 1000;
       gs.grosserKuehlschrank = true;
-      logEvent('🧊 Großer Kühlschrank gekauft – Vorrats-Kapazität jetzt 14 statt 7 Tage.', 'good');
-      oeffneModal('🧊 Großer Kühlschrank',
-        'Gekauft! Deine <strong>Vorrats-Kapazität steigt auf 14 Tage</strong> (statt 7) – ' +
-        'du kannst auf einmal mehr einkaufen und musst seltener zum Supermarkt.', []);
+      logEvent(T('🧊 Großer Kühlschrank gekauft – Vorrats-Kapazität jetzt 14 statt 7 Tage.', '🧊 Large fridge bought – stock capacity now 14 instead of 7 days.'), 'good');
+      oeffneModal(T('🧊 Großer Kühlschrank', '🧊 Large fridge'),
+        T('Gekauft! Deine <strong>Vorrats-Kapazität steigt auf 14 Tage</strong> (statt 7) – ' +
+        'du kannst auf einmal mehr einkaufen und musst seltener zum Supermarkt.', 'Bought! Your <strong>stock capacity rises to 14 days</strong> (instead of 7) – ' +
+        'you can buy more at once and need to visit the supermarket less often.'), []);
       updateHUD();
       return;
     }
     if (aktionsId === 'schlafen') {
       // Basis-Energiegewinn
       let energieGewinn = 25;
-      let schlafMeldung = '💤 Geschlafen. ';
+      let schlafMeldung = T('💤 Geschlafen. ', '💤 Slept. ');
 
       // Bonus: Eigene Stimmung hoch → man schläft besser
       if (gs.happinessSpieler > 60) {
         energieGewinn += 10;
-        schlafMeldung += '+10 Bonus (gute Laune). ';
+        schlafMeldung += T('+10 Bonus (gute Laune). ', '+10 bonus (good mood). ');
       }
       // Malus: Partnerstreit → schlechter Schlaf
       if (gs.happinessPartner < 40) {
         energieGewinn -= 5;
-        schlafMeldung += '-5 Malus (Streit mit Partner). ';
+        schlafMeldung += T('-5 Malus (Streit mit Partner). ', '-5 penalty (fight with partner). ');
       }
 
       gs.energie = clamp(gs.energie + energieGewinn, 0, 100);
       verbraucheTag(1);
-      schlafMeldung += `Energie +${energieGewinn}. 1 Tag vergangen.`;
+      schlafMeldung += T(`Energie +${energieGewinn}. 1 Tag vergangen.`, `Energy +${energieGewinn}. 1 day passed.`);
       logEvent(schlafMeldung, energieGewinn >= 25 ? 'good' : 'warn');
     }
     if (aktionsId === 'verstecken') {
       const b = Math.min(500, gs.kontostand);
-      if (b <= 0) { logEvent('⚠️ Kein Geld zum Verstecken.', 'warn'); return; }
+      if (b <= 0) { logEvent(T('⚠️ Kein Geld zum Verstecken.', '⚠️ No money to hide.'), 'warn'); return; }
       gs.kontostand -= b; gs.schwarzeKasse += b;
-      logEvent(`💵 ${formatEuro(b)} versteckt.`, 'good');
+      logEvent(T(`💵 ${formatEuro(b)} versteckt.`, `💵 ${formatEuro(b)} hidden.`), 'good');
     }
     if (aktionsId === 'holen') {
       const b = Math.min(500, gs.schwarzeKasse);
-      if (b <= 0) { logEvent('⚠️ Schwarze Kasse leer.', 'warn'); return; }
+      if (b <= 0) { logEvent(T('⚠️ Schwarze Kasse leer.', '⚠️ Slush fund empty.'), 'warn'); return; }
       gs.schwarzeKasse -= b; gs.kontostand += b;
-      logEvent(`💵 ${formatEuro(b)} aufs Konto.`, 'good');
+      logEvent(T(`💵 ${formatEuro(b)} aufs Konto.`, `💵 ${formatEuro(b)} to the account.`), 'good');
     }
     // ---- Kur / Sanatorium: volle Erholung, Cooldown 3 Monate ----
     if (aktionsId === 'kur') {
       if (gs.monat < gs.kurCooldownMonat) {
-        oeffneModal('🏖️ Noch keine neue Kur', `Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, []);
+        oeffneModal(T('🏖️ Noch keine neue Kur', '🏖️ No new spa cure yet'), T(`Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, `Only from month ${gs.kurCooldownMonat} will a spa cure be approved again.`), []);
         return;
       }
       const attestKosten = 300;
-      oeffneModal('🏖️ Kur – nur mit Attest',
-        `Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> vom willigen Arzt kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`
-        + 'Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).',
-        [{ label: `🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, danger: true, callback: () => {
-            if (gs.kontostand < attestKosten) { logEvent('⚠️ Nicht genug Geld fürs Attest.', 'warn'); return; }
+      oeffneModal(T('🏖️ Kur – nur mit Attest', '🏖️ Spa cure – only with a certificate'),
+        T(`Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> vom willigen Arzt kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`
+        + 'Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).', `A spa cure is available only with a medical certificate. A <strong>forged certificate</strong> from a willing doctor costs <strong>${formatEuro(attestKosten)}</strong> and raises your risk (+12).<br><br>`
+        + 'In return: 3 weeks of rehab at the health fund expense – you come back in top shape (Energy and Health full, Mood +20).'),
+        [{ label: T(`🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, `🩺 Get a forged certificate (${formatEuro(attestKosten)})`), danger: true, callback: () => {
+            if (gs.kontostand < attestKosten) { logEvent(T('⚠️ Nicht genug Geld fürs Attest.', '⚠️ Not enough money for the certificate.'), 'warn'); return; }
             gs.kontostand      -= attestKosten;
             gs.risikoRaster     = clamp(gs.risikoRaster + 12, 0, 100);
             gs.energie          = 100;
@@ -3207,8 +3209,8 @@ function aktionAusfuehren(ortId, aktionsId) {
             gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
             gs.kurCooldownMonat = gs.monat + 3;
             verbraucheTag(7);
-            logEvent('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', 'warn');
-            oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', []);
+            logEvent(T('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', '🏖️ Spa cure (forged certificate): Energy and Health full, Mood +20. Risk +12.'), 'warn');
+            oeffneModal(T('🏖️ Ab in die Kur!', '🏖️ Off to the spa!'), T('Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', 'Three weeks of rehab at the health fund expense – back in top shape. Your welfare kept running unchanged.'), []);
           }}]);
       return;
     }
@@ -3216,24 +3218,25 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'scheinwg') {
       if (gs.scheinWG) {
         gs.scheinWG = false;
-        logEvent('🏠 Schein-WG abgemeldet.', '');
+        logEvent(T('🏠 Schein-WG abgemeldet.', '🏠 Fake flatshare deregistered.'), '');
         return;
       }
       if (gs.frauAusgezogen) {
-        oeffneModal('🏠 Keine Mitbewohnerin', 'Eine Schein-WG kannst du nur deklarieren, solange eine Partnerin bei dir wohnt.', []);
+        oeffneModal(T('🏠 Keine Mitbewohnerin', '🏠 No flatmate'), T('Eine Schein-WG kannst du nur deklarieren, solange eine Partnerin bei dir wohnt.', 'You can only declare a fake flatshare while a partner lives with you.'), []);
         return;
       }
       gs.scheinWG = true;
-      oeffneModal('🏠 Schein-WG deklariert',
-        `Du meldest die Beziehung als reine Wohngemeinschaft – beide behalten den vollen Single-Satz: <strong>+${SCHEINWG_BETRAG} €/Monat</strong>.<br><br>`
-        + '⚠️ Risiko: bei der <strong>Jobcenter-Prüfung</strong> kommt der Außendienst zum unangekündigten Hausbesuch!', []);
-      logEvent(`🏠 Schein-WG aktiv: +${SCHEINWG_BETRAG} €/Monat (riskant).`, 'warn');
+      oeffneModal(T('🏠 Schein-WG deklariert', '🏠 Fake flatshare declared'),
+        T(`Du meldest die Beziehung als reine Wohngemeinschaft – beide behalten den vollen Single-Satz: <strong>+${SCHEINWG_BETRAG} €/Monat</strong>.<br><br>`
+        + '⚠️ Risiko: bei der <strong>Jobcenter-Prüfung</strong> kommt der Außendienst zum unangekündigten Hausbesuch!', `You report the relationship as a pure flatshare – both keep the full single rate: <strong>+${SCHEINWG_BETRAG} €/mo</strong>.<br><br>`
+        + '⚠️ Risk: during the <strong>Job Center audit</strong> the field service shows up for an unannounced home visit!'), []);
+      logEvent(T(`🏠 Schein-WG aktiv: +${SCHEINWG_BETRAG} €/Monat (riskant).`, `🏠 Fake flatshare active: +${SCHEINWG_BETRAG} €/mo (risky).`), 'warn');
       return;
     }
     // ---- Umzug: einmalig Cash, dafür Kaution-Darlehen + schaltet Erstausstattung frei ----
     if (aktionsId === 'umzug') {
       if (gs.kautionRest > 0) {
-        oeffneModal('📦 Darlehen läuft noch', `Zahle erst das laufende Kaution-Darlehen (${formatEuro(gs.kautionRest)}) ab, bevor du wieder umziehst.`, []);
+        oeffneModal(T('📦 Darlehen läuft noch', '📦 Loan still running'), T(`Zahle erst das laufende Kaution-Darlehen (${formatEuro(gs.kautionRest)}) ab, bevor du wieder umziehst.`, `Pay off the running deposit loan (${formatEuro(gs.kautionRest)}) first before you move again.`), []);
         return;
       }
       const pauschale = 450;
@@ -3241,11 +3244,13 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.kautionRest = 900;
       gs.umzugGemacht = true;
       gs.pauschalen.erstausstattung = false;   // neue Wohnung → Erstausstattung wieder beantragbar
-      oeffneModal('📦 Umzug!',
-        `Umzugs- & Renovierungspauschale: <strong>+${formatEuro(pauschale)}</strong> sofort.<br><br>`
+      oeffneModal(T('📦 Umzug!', '📦 Moving!'),
+        T(`Umzugs- & Renovierungspauschale: <strong>+${formatEuro(pauschale)}</strong> sofort.<br><br>`
         + `Die Mietkaution (${formatEuro(gs.kautionRest)}) ist ein Darlehen und wird in Raten von ${formatEuro(KAUTION_RATE)}/Monat abgezogen.<br><br>`
-        + '💡 Tipp: Jetzt am Arbeitsamt die <strong>Erstausstattung Wohnung</strong> beantragen!', []);
-      logEvent(`📦 Umzug: +${formatEuro(pauschale)}, Kaution-Darlehen ${formatEuro(gs.kautionRest)}.`, 'warn');
+        + '💡 Tipp: Jetzt am Arbeitsamt die <strong>Erstausstattung Wohnung</strong> beantragen!', `Moving and renovation allowance: <strong>+${formatEuro(pauschale)}</strong> right away.<br><br>`
+        + `The rent deposit (${formatEuro(gs.kautionRest)}) is a loan and is deducted in instalments of ${formatEuro(KAUTION_RATE)}/mo.<br><br>`
+        + '💡 Tip: Now apply for the <strong>home starter package</strong> at the Job Center!'), []);
+      logEvent(T(`📦 Umzug: +${formatEuro(pauschale)}, Kaution-Darlehen ${formatEuro(gs.kautionRest)}.`, `📦 Moving: +${formatEuro(pauschale)}, deposit loan ${formatEuro(gs.kautionRest)}.`), 'warn');
       return;
     }
     // ---- Anwalt / Strafverteidiger: Strafstufe anfechten ----
