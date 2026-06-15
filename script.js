@@ -241,11 +241,11 @@ function staatGibt(betrag) {
 function zeigeGewonnen(vermoegen) {
   const el = document.getElementById('win-screen');
   const sub = document.getElementById('win-sub');
-  if (sub) sub.innerHTML = `Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`;
+  if (sub) sub.innerHTML = T(`Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`, `With <strong>${formatEuro(vermoegen)}</strong> you have slipped away to the sunny abroad.<br>No office, no raid, no prison – just beach. The state has lost. 🍹`);
   if (el) { el.classList.add('show'); return; }
   // Fallback
-  oeffneModal('🏆 Gewonnen!', `Ausgewandert mit ${formatEuro(vermoegen)}!`, [
-    { label: '🔄 Neues Spiel', primary: true, callback: () => window.location.reload() }]);
+  oeffneModal(T('🏆 Gewonnen!', '🏆 You won!'), T(`Ausgewandert mit ${formatEuro(vermoegen)}!`, `Emigrated with ${formatEuro(vermoegen)}!`), [
+    { label: T('🔄 Neues Spiel', '🔄 New game'), primary: true, callback: () => window.location.reload() }]);
 }
 
 // Bettler dauerhaft abgeschaltet? (Spielstand-Flag + localStorage-Kompatibilität)
@@ -1116,48 +1116,71 @@ function triggerGameOver(grund) {
 
   const texte = {
     gesundheit: {
-      titel: '💀 Game Over – Tod durch Vernachlässigung',
-      text: 'Deine Gesundheit ist auf 0 gesunken. Du hast es nicht rechtzeitig ins Krankenhaus geschafft.<br><br>'
+      titel: T('💀 Game Over – Tod durch Vernachlässigung', '💀 Game Over – Death by neglect'),
+      text: T('Deine Gesundheit ist auf 0 gesunken. Du hast es nicht rechtzeitig ins Krankenhaus geschafft.<br><br>'
             + 'Das Ergebnis eines Lebens voller Stress, schlechter Ernährung und zu viel Risiko.<br><br>'
-            + '<strong>Neustart für einen zweiten Versuch?</strong>'
+            + '<strong>Neustart für einen zweiten Versuch?</strong>',
+            'Your health has dropped to 0. You did not make it to the hospital in time.<br><br>'
+            + 'The result of a life full of stress, bad nutrition and too much risk.<br><br>'
+            + '<strong>Restart for a second try?</strong>')
     },
     bankrott: {
-      titel: '💸 Game Over – Bankrott',
-      text: 'Du hast kein Geld mehr und beziehst ALG2. Keine Reserven, kein Gold, kein Depot.<br><br>'
+      titel: T('💸 Game Over – Bankrott', '💸 Game Over – Bankrupt'),
+      text: T('Du hast kein Geld mehr und beziehst ALG2. Keine Reserven, kein Gold, kein Depot.<br><br>'
             + 'Das System hat gewonnen.<br><br>'
-            + '<strong>Neustart für einen zweiten Versuch?</strong>'
+            + '<strong>Neustart für einen zweiten Versuch?</strong>',
+            'You are out of money and back on welfare. No reserves, no gold, no portfolio.<br><br>'
+            + 'The system has won.<br><br>'
+            + '<strong>Restart for a second try?</strong>')
     },
     sorgerecht: {
-      titel:  '💔 Game Over – Sorgerechtsstreit verloren',
-      text:   'Du hast die Ehe-Krise nicht überstanden. Das Gericht hat das alleinige Sorgerecht<br>' +
+      titel:  T('💔 Game Over – Sorgerechtsstreit verloren', '💔 Game Over – Custody battle lost'),
+      text:   T('Du hast die Ehe-Krise nicht überstanden. Das Gericht hat das alleinige Sorgerecht<br>' +
               'deiner Partnerin zugesprochen. Du verlierst den Kontakt zu deinem Kind.<br><br>' +
               'Die finanzielle und emotionale Last war zu groß.<br><br>' +
-              '<strong>Neustart für einen zweiten Versuch?</strong>'
+              '<strong>Neustart für einen zweiten Versuch?</strong>',
+              'You did not survive the marriage crisis. The court granted sole custody<br>' +
+              'to your partner. You lose contact with your child.<br><br>' +
+              'The financial and emotional burden was too much.<br><br>' +
+              '<strong>Restart for a second try?</strong>')
     },
     razzia: {
-      titel:  '🚨 Game Over – Razzia ohne Ausrede',
-      text:   'Die Behörden haben dich auf frischer Tat ertappt. Deine schwarze Kasse ist<br>' +
+      titel:  T('🚨 Game Over – Razzia ohne Ausrede', '🚨 Game Over – Raid with no excuse'),
+      text:   T('Die Behörden haben dich auf frischer Tat ertappt. Deine schwarze Kasse ist<br>' +
               'konfisziert, dein Konto eingefroren. Ein Strafverfahren wegen Sozialbetrugs<br>' +
-              'wurde eröffnet.<br><br><strong>Neustart für einen zweiten Versuch?</strong>'
+              'wurde eröffnet.<br><br><strong>Neustart für einen zweiten Versuch?</strong>',
+              'The authorities caught you red-handed. Your slush fund is<br>' +
+              'confiscated, your account frozen. Criminal proceedings for welfare fraud<br>' +
+              'have been opened.<br><br><strong>Restart for a second try?</strong>')
     },
     knast: {
-      titel:  '🔒 Game Over – Lange Haft',
-      text:   'Als Wiederholungstäter beim Sozialbetrug verurteilt dich das Gericht zu<br>' +
+      titel:  T('🔒 Game Over – Lange Haft', '🔒 Game Over – Long prison sentence'),
+      text:   T('Als Wiederholungstäter beim Sozialbetrug verurteilt dich das Gericht zu<br>' +
               'einer mehrjährigen Haftstrafe ohne Bewährung. Vermögen eingezogen,<br>' +
               'Familie verloren. Das System hat doch gewonnen.<br><br>' +
-              '<strong>Neustart für einen zweiten Versuch?</strong>'
+              '<strong>Neustart für einen zweiten Versuch?</strong>',
+              'As a repeat offender in welfare fraud the court sentences you to<br>' +
+              'several years in prison without parole. Assets seized,<br>' +
+              'family lost. The system has won after all.<br><br>' +
+              '<strong>Restart for a second try?</strong>')
     },
     zahlungsunfaehig: {
-      titel:  '💀 Game Over – Zahlungsunfähig',
-      text:   'Du konntest deine Verpflichtungen drei Monate lang nicht begleichen.<br>' +
+      titel:  T('💀 Game Over – Zahlungsunfähig', '💀 Game Over – Insolvent'),
+      text:   T('Du konntest deine Verpflichtungen drei Monate lang nicht begleichen.<br>' +
               'Der Gerichtsvollzieher pfändet alles, du wirst aus der Wohnung geklagt.<br><br>' +
-              '<strong>Neustart für einen zweiten Versuch?</strong>'
+              '<strong>Neustart für einen zweiten Versuch?</strong>',
+              'You could not settle your obligations for three months straight.<br>' +
+              'The bailiff seizes everything and you are evicted from your apartment.<br><br>' +
+              '<strong>Restart for a second try?</strong>')
     },
     bankrott: {
-      titel:  '💸 Game Over – Totalpleite',
-      text:   'Konto leer, Schwarze Kasse leer, keine Leistungen mehr.<br>' +
+      titel:  T('💸 Game Over – Totalpleite', '💸 Game Over – Flat broke'),
+      text:   T('Konto leer, Schwarze Kasse leer, keine Leistungen mehr.<br>' +
               'Du kannst die Miete nicht mehr zahlen und wirst obdachlos.<br><br>' +
-              '<strong>Neustart für einen zweiten Versuch?</strong>'
+              '<strong>Neustart für einen zweiten Versuch?</strong>',
+              'Account empty, slush fund empty, no more benefits.<br>' +
+              'You can no longer pay the rent and end up homeless.<br><br>' +
+              '<strong>Restart for a second try?</strong>')
     }
   };
 
@@ -1177,7 +1200,7 @@ function triggerGameOver(grund) {
   setTimeout(() => {
     const go = document.getElementById('gameover-screen');
     const gt = document.getElementById('go-text');
-    if (gt) gt.innerHTML = 'Viel Glück im nächsten Leben als Arbeitsloser.<br><span style="opacity:0.7;font-size:0.85em;">(' + info.titel.replace(/^[^–]*–\s*/, '') + ')</span>';
+    if (gt) gt.innerHTML = T('Viel Glück im nächsten Leben als Arbeitsloser.', 'Good luck in your next life as an unemployed.') + '<br><span style="opacity:0.7;font-size:0.85em;">(' + info.titel.replace(/^[^–]*–\s*/, '') + ')</span>';
     if (go) go.classList.add('show');
     else {
       // Fallback: altes Modal, falls das Element fehlt
@@ -1186,7 +1209,7 @@ function triggerGameOver(grund) {
       const body = document.getElementById('modal-body');
       body.innerHTML = `<p>${info.text}</p>`;
       const rb = document.createElement('button');
-      rb.className = 'action-btn danger-btn'; rb.textContent = '🔄 Neustart';
+      rb.className = 'action-btn danger-btn'; rb.textContent = T('🔄 Neustart', '🔄 Restart');
       rb.onclick = () => window.location.reload();
       body.appendChild(rb);
       document.getElementById('modal-overlay').classList.add('active');
@@ -4422,20 +4445,20 @@ function monatsAbschluss() {
   const fehlt = (betrag, was) => {
     if (betrag <= 0) return;
     gs.zahlungsRueckstand += betrag;
-    meldungen.push(`❗ ${was} nicht (voll) bezahlt: +${formatEuro(betrag)} Rückstand.`);
-    logEvent(`❗ Rückstand +${formatEuro(betrag)} (${was}).`, 'danger');
+    meldungen.push(T(`❗ ${was} nicht (voll) bezahlt: +${formatEuro(betrag)} Rückstand.`, `❗ ${was} not (fully) paid: +${formatEuro(betrag)} arrears.`));
+    logEvent(T(`❗ Rückstand +${formatEuro(betrag)} (${was}).`, `❗ Arrears +${formatEuro(betrag)} (${was}).`), 'danger');
   };
 
   // ALG1 → ALG2 Wechsel
   if (gs.monat > 12 && gs.status === 'ALG1') {
     gs.status = 'ALG2';
-    meldungen.push('⚠️ ALG I ausgelaufen – jetzt Bürgergeld!');
-    logEvent('⚠️ ALG I → Bürgergeld.', 'danger');
+    meldungen.push(T('⚠️ ALG I ausgelaufen – jetzt Bürgergeld!', '⚠️ ALG I expired – now on welfare!'));
+    logEvent(T('⚠️ ALG I → Bürgergeld.', '⚠️ ALG I → welfare.'), 'danger');
   }
   if (gs.kontostand <= 0 && gs.status === 'ALG1') {
     gs.status = 'ALG2';
-    meldungen.push('💸 Konto leer – Bürgergeld-Modus.');
-    logEvent('💸 Konto leer → Bürgergeld.', 'danger');
+    meldungen.push(T('💸 Konto leer – Bürgergeld-Modus.', '💸 Account empty – welfare mode.'));
+    logEvent(T('💸 Konto leer → Bürgergeld.', '💸 Account empty → welfare.'), 'danger');
   }
 
   // ---- Minijob: anrechenbarer Teil (Freibetrag bleibt frei) ----
@@ -4543,7 +4566,7 @@ function monatsAbschluss() {
       gs.kontostand -= r;
       gs.immobilie.restSchuld -= zahlbar;
       meldungen.push(`🏘️ Immobilien-Rate: -${formatEuro(zahlbar)} (Restschuld: ${formatEuro(gs.immobilie.restSchuld)}).`);
-      fehlt(rate - zahlbar, 'Immobilien-Rate');
+      fehlt(rate - zahlbar, T('Immobilien-Rate', 'property installment'));
     }
     // Wertsteigerung +2 %/Monat
     gs.immobilie.wert = Math.round(gs.immobilie.wert * IMMO_WERT_WACHSTUM);
@@ -4569,7 +4592,7 @@ function monatsAbschluss() {
     gs.kontostand -= zahlbar;
     gs.kautionRest -= zahlbar;
     meldungen.push(`📦 Kaution-Darlehen: -${formatEuro(zahlbar)} (Rest: ${formatEuro(gs.kautionRest)}).`);
-    fehlt(rate - zahlbar, 'Kaution-Rate');
+    fehlt(rate - zahlbar, T('Kaution-Rate', 'deposit installment'));
   }
 
   // ---- Depot: Monatliche Kursaktualisierung ----
@@ -4733,7 +4756,7 @@ function monatsAbschluss() {
     meldungen.push(stromVomAmt
       ? `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom vom Amt übernommen, +${formatEuro(stromVomAmt)}).`
       : `💡 Nebenkosten: -${formatEuro(zahlbar)} (Strom, Internet, Handy).`);
-    fehlt(eigeneNK - zahlbar, 'Nebenkosten');
+    fehlt(eigeneNK - zahlbar, T('Nebenkosten', 'utilities'));
   }
 
   // ---- Schmiergeld für den Sachbearbeiter ----
@@ -4787,7 +4810,7 @@ function monatsAbschluss() {
     gs.kontostand -= zahlbar;
     meldungen.push(`💸 Unterhalt: -${formatEuro(zahlbar)}`);
     logEvent(`💸 Unterhalt -${formatEuro(zahlbar)}.`, 'danger');
-    fehlt(gs.unterhaltProMonat - zahlbar, 'Unterhalt');
+    fehlt(gs.unterhaltProMonat - zahlbar, T('Unterhalt', 'alimony'));
   }
 
   // ---- Gesundheit – Krankenhaus bei < 20 ----
@@ -6736,7 +6759,7 @@ class StartSzene extends Phaser.Scene {
           fontFamily: '"Courier New", monospace', fontSize: '22px', color: '#ffd700',
         }).setOrigin(0, 0.5).setDepth(21);
         this.add.text(W/2 - 145, y - 10,
-          `Slot ${e.slot}  ·  M${e.monat} W${e.woche}`,
+          T(`Slot ${e.slot}  ·  M${e.monat} W${e.woche}`, `Slot ${e.slot}  ·  M${e.monat} W${e.woche}`),
           { fontFamily: '"Courier New", monospace', fontSize: '12px', color: '#8090b8' }
         ).setOrigin(0, 0.5).setDepth(21);
         this.add.text(W/2 - 145, y + 12,
@@ -8387,17 +8410,19 @@ function saveSpiel(slot, silent) {
 
     if (!silent) {
       const name = slot === AUTO_SAVE_SLOT ? 'Auto-Save' : `Slot ${slot}`;
-      logEvent(`💾 Gespeichert: ${name}.`, 'good');
+      logEvent(T(`💾 Gespeichert: ${name}.`, `💾 Saved: ${name}.`), 'good');
       soundGut && soundGut();
       // Kurze Bestätigung im Modal
-      oeffneModal('💾 Gespeichert',
-        `Spielstand in <strong>${name}</strong> gesichert.<br>
+      oeffneModal(T('💾 Gespeichert', '💾 Saved'),
+        T(`Spielstand in <strong>${name}</strong> gesichert.<br>
          Monat ${gameState.monat}, Woche ${gameState.woche} · ${formatEuro(gameState.kontostand)} auf Konto`,
+          `Save stored in <strong>${name}</strong>.<br>
+         Month ${gameState.monat}, Week ${gameState.woche} · ${formatEuro(gameState.kontostand)} in account`),
         []
       );
     }
   } catch (e) {
-    logEvent('⚠️ Speichern fehlgeschlagen: ' + e.message, 'danger');
+    logEvent(T('⚠️ Speichern fehlgeschlagen: ', '⚠️ Save failed: ') + e.message, 'danger');
   }
 }
 
@@ -8409,16 +8434,19 @@ function ladeSpiel(slot) {
   try {
     const raw = localStorage.getItem(SAVE_PREFIX + slot);
     if (!raw) {
-      oeffneModal('❌ Slot leer', 'Dieser Speicherplatz enthält keinen Spielstand.', []);
+      oeffneModal(T('❌ Slot leer', '❌ Empty slot'), T('Dieser Speicherplatz enthält keinen Spielstand.', 'This slot contains no save.'), []);
       return;
     }
     const snapshot = JSON.parse(raw);
 
     if (snapshot.version !== SAVE_VERSION) {
-      oeffneModal('⚠️ Veralteter Spielstand',
-        `Dieser Spielstand wurde mit Version ${snapshot.version} gespeichert.<br>
+      oeffneModal(T('⚠️ Veralteter Spielstand', '⚠️ Outdated save'),
+        T(`Dieser Spielstand wurde mit Version ${snapshot.version} gespeichert.<br>
          Aktuelle Version: ${SAVE_VERSION}.<br>
-         Er kann nicht geladen werden.`, []);
+         Er kann nicht geladen werden.`,
+          `This save was created with version ${snapshot.version}.<br>
+         Current version: ${SAVE_VERSION}.<br>
+         It cannot be loaded.`), []);
       return;
     }
 
@@ -8456,7 +8484,7 @@ function ladeSpiel(slot) {
     gameState.gameOver = false; // Sicherheitshalber zurücksetzen
 
     updateHUD();
-    logEvent(`📂 Geladen: Slot ${slot === AUTO_SAVE_SLOT ? 'Auto' : slot} · M${gameState.monat} W${gameState.woche}.`, 'good');
+    logEvent(T(`📂 Geladen: Slot ${slot === AUTO_SAVE_SLOT ? 'Auto' : slot} · M${gameState.monat} W${gameState.woche}.`, `📂 Loaded: Slot ${slot === AUTO_SAVE_SLOT ? 'Auto' : slot} · M${gameState.monat} W${gameState.woche}.`), 'good');
     soundGut && soundGut();
 
     // Phaser-Szene neu starten (Karte neu aufbauen mit gleichen Daten)
@@ -8470,7 +8498,7 @@ function ladeSpiel(slot) {
     schliesseModal();
 
   } catch (e) {
-    oeffneModal('❌ Ladefehler', 'Spielstand konnte nicht geladen werden:<br>' + e.message, []);
+    oeffneModal(T('❌ Ladefehler', '❌ Load error'), T('Spielstand konnte nicht geladen werden:<br>', 'Save could not be loaded:<br>') + e.message, []);
   }
 }
 
@@ -8479,7 +8507,7 @@ function ladeSpiel(slot) {
 // ----------------------------------------------------------------
 function loescheSpiel(slot) {
   localStorage.removeItem(SAVE_PREFIX + slot);
-  logEvent(`🗑️ Slot ${slot} gelöscht.`, 'warn');
+  logEvent(T(`🗑️ Slot ${slot} gelöscht.`, `🗑️ Slot ${slot} deleted.`), 'warn');
 }
 
 // ----------------------------------------------------------------
@@ -8510,8 +8538,8 @@ function oeffneSaveMenu() {
   const aktionen = [1, 2, 3].map(slot => {
     const info = leseSaveInfo(slot);
     const label = info
-      ? `Slot ${slot}: M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)} · ${info.datum}`
-      : `Slot ${slot}: [leer]`;
+      ? T(`Slot ${slot}: M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)} · ${info.datum}`, `Slot ${slot}: M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)} · ${info.datum}`)
+      : T(`Slot ${slot}: [leer]`, `Slot ${slot}: [empty]`);
     return {
       label,
       callback: () => saveSpiel(slot)
@@ -8519,9 +8547,11 @@ function oeffneSaveMenu() {
   });
 
   oeffneModal(
-    '💾 Spiel speichern',
-    `Wähle einen Speicherplatz.<br>
+    T('💾 Spiel speichern', '💾 Save game'),
+    T(`Wähle einen Speicherplatz.<br>
      <span style="color:var(--text-dim); font-size:0.62rem;">Auto-Save läuft automatisch alle 2 Minuten.</span>`,
+      `Choose a save slot.<br>
+     <span style="color:var(--text-dim); font-size:0.62rem;">Auto-Save runs automatically every 2 minutes.</span>`),
     aktionen
   );
 }
@@ -8542,8 +8572,8 @@ function oeffneLadeMenu() {
     const info = leseSaveInfo(slot);
     if (!info) {
       return {
-        label: `${label}: [leer]`,
-        callback: () => oeffneModal('❌ Slot leer', 'Kein Spielstand vorhanden.', [])
+        label: T(`${label}: [leer]`, `${label}: [empty]`),
+        callback: () => oeffneModal(T('❌ Slot leer', '❌ Empty slot'), T('Kein Spielstand vorhanden.', 'No save here.'), [])
       };
     }
     return {
@@ -8552,19 +8582,21 @@ function oeffneLadeMenu() {
       callback: () => {
         // Bestätigung vor dem Laden (überschreibt aktuellen Fortschritt)
         oeffneModal(
-          `📂 ${label} laden?`,
-          `M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)}<br><br>
+          T(`📂 ${label} laden?`, `📂 Load ${label}?`),
+          T(`M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)}<br><br>
            ⚠️ Der aktuelle Spielstand geht verloren!`,
+            `M${info.monat} W${info.woche} · ${info.status} · ${formatEuro(info.kontostand)}<br><br>
+           ⚠️ The current save will be lost!`),
           [
-            { label: '✅ Laden', primary: true, callback: () => ladeSpiel(slot) },
-            { label: '❌ Abbrechen', callback: () => {} }
+            { label: T('✅ Laden', '✅ Load'), primary: true, callback: () => ladeSpiel(slot) },
+            { label: T('❌ Abbrechen', '❌ Cancel'), callback: () => {} }
           ]
         );
       }
     };
   });
 
-  oeffneModal('📂 Spiel laden', 'Wähle einen Spielstand zum Laden:', aktionen);
+  oeffneModal(T('📂 Spiel laden', '📂 Load game'), T('Wähle einen Spielstand zum Laden:', 'Choose a save to load:'), aktionen);
 }
 
 // ================================================================
