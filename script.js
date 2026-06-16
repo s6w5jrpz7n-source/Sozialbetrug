@@ -539,12 +539,12 @@ const cheatDefinitions = {
       const spende = Math.max(1000, Math.floor(gs.kontostand * 0.10));
       if (gs.kontostand < spende) {
         // Wird in runCheat() separat abgefangen – hier nur als Fallback
-        logEvent('⚠️ Nicht genug Geld für die Spende.', 'warn');
+        logEvent(T('⚠️ Nicht genug Geld für die Spende.', '⚠️ Not enough money for the donation.'), 'warn');
         return;
       }
       gs.kontostand  -= spende;
       gs.risikoRaster = Math.floor(gs.risikoRaster * 0.5);
-      logEvent(`🎗️ Spende ${formatEuro(spende)}: Risiko halbiert auf ${gs.risikoRaster}%.`, 'good');
+      logEvent(T(`🎗️ Spende ${formatEuro(spende)}: Risiko halbiert auf ${gs.risikoRaster}%.`, `🎗️ Donation ${formatEuro(spende)}: Risk halved to ${gs.risikoRaster}%.`), 'good');
     },
     logText: '🎗️ Spende: Risiko -50%.'
   }
@@ -623,16 +623,19 @@ function verarbeiteAfrikaReise() {
     logEvent('⚠️ Bereits 4 Kinder angemeldet – Maximum erreicht.', 'warn'); return;
   }
   if (gs.kontostand < 1000) {
-    oeffneModal('❌ Nicht genug Geld',
-      `Die Reise kostet <strong>1.000 €</strong>.<br>
-       Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, []);
+    oeffneModal(T('❌ Nicht genug Geld', '❌ Not enough money'),
+      T(`Die Reise kostet <strong>1.000 €</strong>.<br>
+       Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, `The trip costs <strong>€1,000</strong>.<br>
+       Your account: <strong>${formatEuro(gs.kontostand)}</strong>`), []);
     return;
   }
   if (gs.energie < 50) {
-    oeffneModal('❌ Zu erschöpft',
-      `Die Reise kostet <strong>50 Energie</strong>.<br>
+    oeffneModal(T('❌ Zu erschöpft', '❌ Too exhausted'),
+      T(`Die Reise kostet <strong>50 Energie</strong>.<br>
        Deine Energie: <strong>${Math.round(gs.energie)}</strong><br><br>
-       Schlafe zuerst!`, []);
+       Schlafe zuerst!`, `The trip costs <strong>50 Energy</strong>.<br>
+       Your energy: <strong>${Math.round(gs.energie)}</strong><br><br>
+       Sleep first!`), []);
     return;
   }
 
@@ -646,14 +649,14 @@ function verarbeiteAfrikaReise() {
   gs.kindergeldKinder.push(name);
   gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
 
-  logEvent(`✈️ Zurück aus Afrika. ${name} angemeldet. +300€/Monat, Risiko +5.`, 'warn');
+  logEvent(T(`✈️ Zurück aus Afrika. ${name} angemeldet. +300€/Monat, Risiko +5.`, `✈️ Back from Africa. ${name} registered. +€300/month, Risk +5.`), 'warn');
   updateHUD();
 
   // Ergebnis-Modal
   const anzahl = gs.kindergeldKinder.length;
   oeffneModal(
-    `✈️ Erfolgreich! ${name} ist jetzt dein Kind`,
-    `Du bist zurück aus Afrika.<br><br>
+    T(`✈️ Erfolgreich! ${name} ist jetzt dein Kind`, `✈️ Success! ${name} is now your child`),
+    T(`Du bist zurück aus Afrika.<br><br>
      <strong>${name}</strong> ist nun offiziell in Deutschland für Kindergeld angemeldet.<br><br>
      📋 Alle angemeldeten Kinder (${anzahl}/4):<br>
      <strong>${gs.kindergeldKinder.join(', ')}</strong><br><br>
@@ -662,9 +665,18 @@ function verarbeiteAfrikaReise() {
      ${anzahl < 4
        ? `<span style="color:var(--accent2);">Du kannst noch ${4 - anzahl} weitere Kinder anmelden.</span>`
        : '<span style="color:var(--danger);">Maximum von 4 Kindern erreicht!</span>'
-     }`,
+     }`, `You're back from Africa.<br><br>
+     <strong>${name}</strong> is now officially registered in Germany for child benefit.<br><br>
+     📋 All registered children (${anzahl}/4):<br>
+     <strong>${gs.kindergeldKinder.join(', ')}</strong><br><br>
+     💰 Monthly child benefit income: <strong>+${formatEuro(anzahl * 300)}</strong> into your account<br>
+     ⚠️ Risk surcharge: <strong>+${anzahl * 5}%/month</strong><br><br>
+     ${anzahl < 4
+       ? `<span style="color:var(--accent2);">You can still register ${4 - anzahl} more children.</span>`
+       : '<span style="color:var(--danger);">Maximum of 4 children reached!</span>'
+     }`),
     anzahl < 4 ? [{
-      label:   '✈️ Gleich nochmal fliegen (weiteres Kind)',
+      label:   T('✈️ Gleich nochmal fliegen (weiteres Kind)', '✈️ Fly again right away (another child)'),
       callback: () => oeffneAfrikaReiseModal()
     }] : []
   );
@@ -689,20 +701,24 @@ function runCheat(cheatName) {
   if (cheatName === 'Spende') {
     const spende = Math.max(1000, Math.floor(gs.kontostand * 0.10));
     if (gs.kontostand < spende) {
-      oeffneModal('❌ Nicht genug Geld',
-        `Die Spende beträgt <strong>${formatEuro(spende)}</strong><br>
+      oeffneModal(T('❌ Nicht genug Geld', '❌ Not enough money'),
+        T(`Die Spende beträgt <strong>${formatEuro(spende)}</strong><br>
          (10% deines Kontos, mind. 1.000 €).<br><br>
-         Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, []);
+         Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, `The donation is <strong>${formatEuro(spende)}</strong><br>
+         (10% of your account, min. €1,000).<br><br>
+         Your account: <strong>${formatEuro(gs.kontostand)}</strong>`), []);
       return;
     }
     // Bestätigung vor dem Abzug
     oeffneModal(
-      '🎗️ Spende bestätigen',
-      `Du zahlst <strong>${formatEuro(spende)}</strong> (10% des Kontos).<br><br>
+      T('🎗️ Spende bestätigen', '🎗️ Confirm donation'),
+      T(`Du zahlst <strong>${formatEuro(spende)}</strong> (10% des Kontos).<br><br>
        Dafür wird dein Risikoraster von <strong>${Math.round(gs.risikoRaster)}%</strong>
-       auf <strong>${Math.floor(gs.risikoRaster * 0.5)}%</strong> halbiert.`,
+       auf <strong>${Math.floor(gs.risikoRaster * 0.5)}%</strong> halbiert.`, `You pay <strong>${formatEuro(spende)}</strong> (10% of your account).<br><br>
+       In return your risk rating is halved from <strong>${Math.round(gs.risikoRaster)}%</strong>
+       to <strong>${Math.floor(gs.risikoRaster * 0.5)}%</strong>.`),
       [{
-        label: `✅ Spende zahlen (${formatEuro(spende)})`,
+        label: T(`✅ Spende zahlen (${formatEuro(spende)})`, `✅ Pay donation (${formatEuro(spende)})`),
         primary: true,
         callback: () => {
           cheat.sofortEffekt(gs);
@@ -722,9 +738,10 @@ function runCheat(cheatName) {
 
   // Alle anderen Cheats: Energie-Check
   if (gs.energie < cheat.kosten.energie) {
-    oeffneModal('❌ Zu erschöpft!',
-      `Benötigt: <strong>${cheat.kosten.energie} Energie</strong><br>
-       Vorhanden: <strong>${Math.round(gs.energie)}</strong><br><br>Schlafe zuerst!`, []);
+    oeffneModal(T('❌ Zu erschöpft!', '❌ Too exhausted!'),
+      T(`Benötigt: <strong>${cheat.kosten.energie} Energie</strong><br>
+       Vorhanden: <strong>${Math.round(gs.energie)}</strong><br><br>Schlafe zuerst!`, `Required: <strong>${cheat.kosten.energie} Energy</strong><br>
+       Available: <strong>${Math.round(gs.energie)}</strong><br><br>Sleep first!`), []);
     return;
   }
   gs.energie = clamp(gs.energie - cheat.kosten.energie, 0, 100);
@@ -739,8 +756,8 @@ function oeffneCheatMenu() {
     label: `${def.label}${def.kosten.energie ? `  [E: -${def.kosten.energie}]` : ''}  ${def.beschreibung}`,
     callback: () => runCheat(name)
   }));
-  oeffneModal('🎭 Sozialbetrug',
-    'Illegale Aktionen. Jede kostet Energie und beeinflusst Risiko.', aktionen);
+  oeffneModal(T('🎭 Sozialbetrug', '🎭 Welfare Fraud'),
+    T('Illegale Aktionen. Jede kostet Energie und beeinflusst Risiko.', 'Illegal actions. Each one costs Energy and affects Risk.'), aktionen);
 }
 
 // ================================================================
@@ -1066,7 +1083,7 @@ function _pruefeEheKrise_DEAKTIVIERT() {
   if (!gs.eheKriseAktiv && gs.happinessPartner < 30) {
     gs.eheKriseAktiv    = true;
     gs.eheKriseSchritt  = 1;
-    logEvent('💔 EHE-KRISE ausgelöst! Partnerlaune < 30.', 'danger');
+    logEvent(T('💔 EHE-KRISE ausgelöst! Partnerlaune < 30.', '💔 MARRIAGE CRISIS triggered! Partner mood < 30.'), 'danger');
     setTimeout(() => zeigeEheKriseSchritt(), 400);
     return;
   }
@@ -1123,7 +1140,7 @@ function verarbeiteEheKriseWahl(schritt, wahl) {
   const result = option.effekt(gs);
 
   updateHUD();
-  logEvent(`⚖️ Ehe-Krise Schritt ${schritt.schritt}: ${result.text}`,
+  logEvent(T(`⚖️ Ehe-Krise Schritt ${schritt.schritt}: ${result.text}`, `⚖️ Marriage crisis step ${schritt.schritt}: ${result.text}`),
     result.erfolg ? 'warn' : 'danger');
 
   const body = document.getElementById('modal-body');
@@ -1148,8 +1165,8 @@ function verarbeiteEheKriseWahl(schritt, wahl) {
     }
     // Quest erfolgreich beendet
     else if (!gs.eheKriseAktiv && gs.eheKriseSchritt === 0) {
-      setTimeout(() => oeffneModal('🎊 Ehe-Krise überwunden!',
-        'Ihr habt die Krise gemeinsam überstanden. Die Beziehung ist stabilisiert.', []), 300);
+      setTimeout(() => oeffneModal(T('🎊 Ehe-Krise überwunden!', '🎊 Marriage crisis overcome!'),
+        T('Ihr habt die Krise gemeinsam überstanden. Die Beziehung ist stabilisiert.', 'You weathered the crisis together. The relationship is stabilized.'), []), 300);
     }
     // Nächsten Schritt nach kurzer Pause zeigen
     else if (gs.eheKriseAktiv && gs.eheKriseSchritt <= 5) {
@@ -1251,7 +1268,7 @@ function triggerGameOver(grund) {
     setTimeout(() => { flash.style.display = 'none'; }, 1200);
   }
 
-  logEvent(`💀 GAME OVER: ${info.titel}`, 'danger');
+  logEvent(T(`💀 GAME OVER: ${info.titel}`, `💀 GAME OVER: ${info.titel}`), 'danger');
   try { soundGameOver(); } catch (e) {}   // Sound darf den Game-Over-Bildschirm nicht verhindern
 
   // Vollbild-Game-Over (knallig). Grund-Text klein darunter.
@@ -1326,7 +1343,7 @@ function ausloesenRazziaV3() {
   if (flash) { flash.style.display = 'block'; setTimeout(() => { flash.style.display = 'none'; }, 800); }
 
   soundRazzia();  // Sirenen-Sound!
-  logEvent('🚨 RAZZIA-PRÜFUNG! Wähle sofort eine Ausrede!', 'danger');
+  logEvent(T('🚨 RAZZIA-PRÜFUNG! Wähle sofort eine Ausrede!', '🚨 RAID AUDIT! Pick an excuse right now!'), 'danger');
 
   modalOffen = true;
   document.getElementById('modal-title').textContent = '🚨 RAZZIA!';
@@ -1419,7 +1436,7 @@ function kaufeRubbellose(anzahl) {
   const gs = gameState;
   const kosten = 5 * anzahl;
   if (gs.kontostand < kosten) {
-    logEvent(`⚠️ Kein Geld für ${anzahl === 1 ? 'ein Rubbellos' : anzahl + ' Rubbellose'} (${formatEuro(kosten)}).`, 'warn');
+    logEvent(T(`⚠️ Kein Geld für ${anzahl === 1 ? 'ein Rubbellos' : anzahl + ' Rubbellose'} (${formatEuro(kosten)}).`, `⚠️ No money for ${anzahl === 1 ? 'one scratch card' : anzahl + ' scratch cards'} (${formatEuro(kosten)}).`), 'warn');
     return;
   }
   gs.kontostand -= kosten;
@@ -1444,21 +1461,21 @@ function kaufeRubbellose(anzahl) {
   const netto  = summe - kosten;
   const detail = gewinne.map(g => g === 0 ? '✖️' : `+${formatEuro(g)}`).join('   ');
   if (anzahl === 1) {
-    logEvent(summe > 0 ? `🎟️ Rubbellos: +${formatEuro(summe)}.` : '🎟️ Rubbellos: Niete.', summe > 0 ? 'good' : 'warn');
-    if (summe >= 2000) setTimeout(() => oeffneModal('🎉 JACKPOT!', `Du gewinnst <strong>${formatEuro(summe)}</strong>!`, []), seqDauer + 250);
+    logEvent(summe > 0 ? T(`🎟️ Rubbellos: +${formatEuro(summe)}.`, `🎟️ Scratch card: +${formatEuro(summe)}.`) : T('🎟️ Rubbellos: Niete.', '🎟️ Scratch card: Blank.'), summe > 0 ? 'good' : 'warn');
+    if (summe >= 2000) setTimeout(() => oeffneModal(T('🎉 JACKPOT!', '🎉 JACKPOT!'), T(`Du gewinnst <strong>${formatEuro(summe)}</strong>!`, `You win <strong>${formatEuro(summe)}</strong>!`), []), seqDauer + 250);
   } else {
-    logEvent(`🎟️ 5 Lose: +${formatEuro(summe)} bei ${nieten} Nieten.`, netto >= 0 ? 'good' : 'warn');
+    logEvent(T(`🎟️ 5 Lose: +${formatEuro(summe)} bei ${nieten} Nieten.`, `🎟️ 5 cards: +${formatEuro(summe)} with ${nieten} blanks.`), netto >= 0 ? 'good' : 'warn');
     // Zusammenfassung erst NACH der Stempel-Sequenz
-    setTimeout(() => oeffneModal(maxGewinn >= 2000 ? '🎉 JACKPOT!' : '🎟️ 5 Rubbellose',
+    setTimeout(() => oeffneModal(maxGewinn >= 2000 ? T('🎉 JACKPOT!', '🎉 JACKPOT!') : T('🎟️ 5 Rubbellose', '🎟️ 5 Scratch Cards'),
       summe > 0
-        ? `${detail}<br><br>Gewinn gesamt: <strong>${formatEuro(summe)}</strong> (Einsatz ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`
-        : `Alles Nieten! ${detail}<br><br>${formatEuro(kosten)} verspielt.`, []), seqDauer + 250);
+        ? T(`${detail}<br><br>Gewinn gesamt: <strong>${formatEuro(summe)}</strong> (Einsatz ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`, `${detail}<br><br>Total winnings: <strong>${formatEuro(summe)}</strong> (stake ${formatEuro(kosten)} → ${netto >= 0 ? '+' : ''}${formatEuro(netto)}).`)
+        : T(`Alles Nieten! ${detail}<br><br>${formatEuro(kosten)} verspielt.`, `All blanks! ${detail}<br><br>${formatEuro(kosten)} gambled away.`), []), seqDauer + 250);
   }
 
   // Sucht-Risiko (steigt leicht mit Einsatz)
   if (Math.random() < 0.15 * Math.min(2, anzahl) && gs.suchtStufe < 3) {
     gs.suchtStufe++;
-    logEvent(`🎰 Das Zocken packt dich… Sucht-Stufe ${gs.suchtStufe}.`, 'danger');
+    logEvent(T(`🎰 Das Zocken packt dich… Sucht-Stufe ${gs.suchtStufe}.`, `🎰 The gambling bug bites… Addiction level ${gs.suchtStufe}.`), 'danger');
   }
   updateHUD();
 }
@@ -1493,12 +1510,16 @@ function sozialbetrugErwischt() {
     gs.einliegerVermietet = false;
     if (gs.immobilie && gs.immobilie.modus === 'eigen') gs.immobilie.modus = 'vermietet';
     soundAlarm && soundAlarm();
-    logEvent('🔒 Gefängnis! 3 Monate Haft, Schwarzgeld konfisziert.', 'danger');
-    setTimeout(() => oeffneModal('🔒 Gefängnis – Sozialbetrug',
-      `Das Gericht verurteilt dich zu <strong>${haftMonate} Monaten Haft</strong>.<br><br>`
+    logEvent(T('🔒 Gefängnis! 3 Monate Haft, Schwarzgeld konfisziert.', '🔒 Prison! 3 months behind bars, dirty money confiscated.'), 'danger');
+    setTimeout(() => oeffneModal(T('🔒 Gefängnis – Sozialbetrug', '🔒 Prison – Welfare Fraud'),
+      T(`Das Gericht verurteilt dich zu <strong>${haftMonate} Monaten Haft</strong>.<br><br>`
       + `Konfisziert: <strong>${formatEuro(konfisziert)}</strong> (loses Bargeld + Schwarzkasse).<br>`
       + 'Gesundheit −20, Partnerlaune −30. Alle laufenden Maschen sind aufgeflogen.<br><br>'
-      + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.', []), 1700);
+      + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.',
+      `The court sentences you to <strong>${haftMonate} months in prison</strong>.<br><br>`
+      + `Confiscated: <strong>${formatEuro(konfisziert)}</strong> (loose cash + slush fund).<br>`
+      + 'Health −20, Partner mood −30. All your running scams have been blown.<br><br>'
+      + '⚠️ As a repeat offender: if you get caught <strong>one more time</strong>, it is over.'), []), 1700);
     updateHUD();
     return;
   }
@@ -1507,20 +1528,24 @@ function sozialbetrugErwischt() {
     // ---- Anklage: Geldstrafe + Bewährung ----
     const strafe = Math.min(Math.max(0, gs.kontostand), Math.max(2000, Math.floor((gs.vomStaatGesamt || 0) * 0.10)));
     gs.kontostand -= strafe;
-    logEvent(`⚖️ Anklage: Geldstrafe ${formatEuro(strafe)} + Bewährung.`, 'danger');
-    setTimeout(() => oeffneModal('⚖️ Anklage – Bewährung',
-      `Anklage wegen Sozialbetrugs. <strong>Geldstrafe ${formatEuro(strafe)}</strong> und <strong>Bewährung</strong>.<br><br>`
-      + 'Das nächste Mal drohen <strong>Gefängnis</strong>.', []), 1700);
+    logEvent(T(`⚖️ Anklage: Geldstrafe ${formatEuro(strafe)} + Bewährung.`, `⚖️ Charge: fine ${formatEuro(strafe)} + suspended sentence.`), 'danger');
+    setTimeout(() => oeffneModal(T('⚖️ Anklage – Bewährung', '⚖️ Charge – Suspended Sentence'),
+      T(`Anklage wegen Sozialbetrugs. <strong>Geldstrafe ${formatEuro(strafe)}</strong> und <strong>Bewährung</strong>.<br><br>`
+      + 'Das nächste Mal drohen <strong>Gefängnis</strong>.',
+      `Charged with welfare fraud. <strong>Fine of ${formatEuro(strafe)}</strong> and a <strong>suspended sentence</strong>.<br><br>`
+      + 'Next time you face <strong>prison</strong>.'), []), 1700);
     updateHUD();
     return;
   }
 
   // ---- Erster Bust: Ermittlung / Verwarnung ----
-  logEvent('📂 Ermittlungsverfahren wegen Sozialbetrugs eröffnet.', 'danger');
+  logEvent(T('📂 Ermittlungsverfahren wegen Sozialbetrugs eröffnet.', '📂 Criminal investigation for welfare fraud opened.'), 'danger');
   updateHUD();
-  setTimeout(() => oeffneModal('📂 Ermittlungsverfahren',
-    'Gegen dich wird wegen Verdachts auf Sozialbetrug ermittelt – noch eine <strong>Verwarnung</strong>.<br><br>'
-    + 'Halte dein Risiko niedrig (Sportverein, Spende) und versteck dein Geld (Gold/verschleiertes Depot), sonst wird es ernst.', []), 1700);
+  setTimeout(() => oeffneModal(T('📂 Ermittlungsverfahren', '📂 Criminal Investigation'),
+    T('Gegen dich wird wegen Verdachts auf Sozialbetrug ermittelt – noch eine <strong>Verwarnung</strong>.<br><br>'
+    + 'Halte dein Risiko niedrig (Sportverein, Spende) und versteck dein Geld (Gold/verschleiertes Depot), sonst wird es ernst.',
+    'You are under investigation on suspicion of welfare fraud – consider this a <strong>warning</strong>.<br><br>'
+    + 'Keep your Risk low (sports club, donation) and hide your money (gold/disguised portfolio), or things will get serious.'), []), 1700);
 }
 
 function verarbeiteRazzia(wahl) {
@@ -1536,32 +1561,32 @@ function verarbeiteRazzia(wahl) {
       gs.losesBargeld  -= ausLose;
       gs.schwarzeKasse  = Math.max(0, gs.schwarzeKasse - (300 - ausLose));
       gs.risikoRaster   = clamp(gs.risikoRaster - 20, 0, 100);
-      resultatText = 'Der Beamte steckt das Geld ein und geht. Risiko -20.';
+      resultatText = T('Der Beamte steckt das Geld ein und geht. Risiko -20.', 'The official pockets the cash and leaves. Risk -20.');
     } else {
       // Nicht genug Geld → eskaliert
       gs.schwarzeKasse = 0;
       gs.losesBargeld  = 0;
       gs.risikoRaster  = 95;
-      resultatText = 'Kein Bargeld! Der Beamte ist wütend. Alles konfisziert, Risiko 95%.';
+      resultatText = T('Kein Bargeld! Der Beamte ist wütend. Alles konfisziert, Risiko 95%.', 'No cash! The official is furious. Everything confiscated, Risk 95%.');
       erwischt = true;
     }
-    logEvent(`🚨 Razzia: Bestechung. ${resultatText}`, 'danger');
+    logEvent(T(`🚨 Razzia: Bestechung. ${resultatText}`, `🚨 Raid: bribe. ${resultatText}`), 'danger');
   }
 
   else if (wahl === 'ausrede') {
     if (Math.random() < 0.5) {
       // Ausrede klappt
       gs.risikoRaster  = clamp(gs.risikoRaster - 10, 0, 100);
-      resultatText = '✅ Ausrede geglaubt! Beamter zieht ab. Risiko -10.';
-      logEvent('🚨 Razzia: Ausrede geglaubt. Risiko -10.', 'warn');
+      resultatText = T('✅ Ausrede geglaubt! Beamter zieht ab. Risiko -10.', '✅ Excuse believed! The official leaves. Risk -10.');
+      logEvent(T('🚨 Razzia: Ausrede geglaubt. Risiko -10.', '🚨 Raid: excuse believed. Risk -10.'), 'warn');
     } else {
       // Ausrede fliegt auf
       const konfisziert = gs.losesBargeld + Math.floor(gs.schwarzeKasse * 0.5);
       gs.losesBargeld  = 0;
       gs.schwarzeKasse = Math.floor(gs.schwarzeKasse * 0.5);
       gs.risikoRaster  = 95;
-      resultatText = `❌ Ausrede aufgeflogen! ${formatEuro(konfisziert)} konfisziert. Risiko 95%.`;
-      logEvent('🚨 Razzia: Ausrede aufgeflogen!', 'danger');
+      resultatText = T(`❌ Ausrede aufgeflogen! ${formatEuro(konfisziert)} konfisziert. Risiko 95%.`, `❌ Excuse blown! ${formatEuro(konfisziert)} confiscated. Risk 95%.`);
+      logEvent(T('🚨 Razzia: Ausrede aufgeflogen!', '🚨 Raid: excuse blown!'), 'danger');
       erwischt = true;
     }
   }
@@ -1570,8 +1595,8 @@ function verarbeiteRazzia(wahl) {
     gs.schwarzeKasse = 0;
     gs.losesBargeld  = 0;
     gs.risikoRaster  = 95;
-    resultatText = 'Du gibst alles zu. Schwarzkasse = 0, Risiko = 95%.';
-    logEvent('🚨 Razzia: Kapitulation – Ermittlungen folgen!', 'danger');
+    resultatText = T('Du gibst alles zu. Schwarzkasse = 0, Risiko = 95%.', 'You confess to everything. Slush fund = 0, Risk = 95%.');
+    logEvent(T('🚨 Razzia: Kapitulation – Ermittlungen folgen!', '🚨 Raid: surrender – investigation follows!'), 'danger');
     erwischt = true;
   }
 
@@ -2445,7 +2470,7 @@ function waehleEvent() {
 }
 
 function triggerEvent(event) {
-  logEvent(`📨 "${event.titel}"`, event.kategorie === 'behoerde' ? 'danger' : 'warn');
+  logEvent(T(`📨 "${event.titel}"`, `📨 "${event.titel}"`), event.kategorie === 'behoerde' ? 'danger' : 'warn');
   if (event.kategorie === 'behoerde') {
     const f = document.getElementById('danger-flash');
     if (f) { f.style.display = 'block'; setTimeout(() => { f.style.display = 'none'; }, 500); }
@@ -2911,12 +2936,12 @@ function goldKaufen(n) {
   const gs = gameState;
   const maxN = Math.floor((gs.losesBargeld + gs.kontostand) / GOLD_PREIS);
   n = Math.min(n, maxN);
-  if (n <= 0) { logEvent('⚠️ Nicht genug Geld für Gold.', 'warn'); return; }
+  if (n <= 0) { logEvent(T('⚠️ Nicht genug Geld für Gold.', '⚠️ Not enough money for gold.'), 'warn'); return; }
   let rest = n * GOLD_PREIS;
   const ausLose = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= ausLose; rest -= ausLose;
   gs.kontostand -= rest;
   gs.goldBarren += n;
-  logEvent(`🥇 ${n} Goldbarren gekauft (${formatEuro(n * GOLD_PREIS)}) – im Garten vergraben.`, 'good');
+  logEvent(T(`🥇 ${n} Goldbarren gekauft (${formatEuro(n * GOLD_PREIS)}) – im Garten vergraben.`, `🥇 Bought ${n} gold bars (${formatEuro(n * GOLD_PREIS)}) – buried in the garden.`), 'good');
   soundGeld && soundGeld();
   updateHUD();
   oeffneGoldKaufMenu();   // Menü offen halten (wie Depot)
@@ -2925,35 +2950,36 @@ function oeffneGoldKaufMenu() {
   const gs = gameState;
   const maxN = Math.floor((gs.losesBargeld + gs.kontostand) / GOLD_PREIS);
   if (maxN <= 0) {
-    oeffneModal('🥇 Goldbarren kaufen', `Du brauchst mindestens ${formatEuro(GOLD_PREIS)} (Bargeld oder Konto) für einen Barren.`, []);
+    oeffneModal(T('🥇 Goldbarren kaufen', '🥇 Buy Gold Bars'), T(`Du brauchst mindestens ${formatEuro(GOLD_PREIS)} (Bargeld oder Konto) für einen Barren.`, `You need at least ${formatEuro(GOLD_PREIS)} (cash or account) for one bar.`), []);
     return;
   }
   const tranchen = [1, 5, 10, 25, 50].filter(x => x <= maxN);
   if (!tranchen.includes(maxN)) tranchen.push(maxN);
-  const aktionen = tranchen.map(x => ({ label: `🥇 ${x} Barren (${formatEuro(x * GOLD_PREIS)})`, callback: () => goldKaufen(x) }));
-  oeffneModal('🥇 Goldbarren kaufen',
-    `Preis: <strong>${formatEuro(GOLD_PREIS)}</strong>/Barren (Bargeld zuerst, dann Konto). Bezahlbar: max. <strong>${maxN}</strong>. Bereits vergraben: <strong>${gs.goldBarren || 0}</strong>.`,
+  const aktionen = tranchen.map(x => ({ label: T(`🥇 ${x} Barren (${formatEuro(x * GOLD_PREIS)})`, `🥇 ${x} bars (${formatEuro(x * GOLD_PREIS)})`), callback: () => goldKaufen(x) }));
+  oeffneModal(T('🥇 Goldbarren kaufen', '🥇 Buy Gold Bars'),
+    T(`Preis: <strong>${formatEuro(GOLD_PREIS)}</strong>/Barren (Bargeld zuerst, dann Konto). Bezahlbar: max. <strong>${maxN}</strong>. Bereits vergraben: <strong>${gs.goldBarren || 0}</strong>.`,
+    `Price: <strong>${formatEuro(GOLD_PREIS)}</strong>/bar (cash first, then account). Affordable: max. <strong>${maxN}</strong>. Already buried: <strong>${gs.goldBarren || 0}</strong>.`),
     aktionen);
 }
 function goldVerkaufen(n) {
   const gs = gameState;
   n = Math.min(n, gs.goldBarren || 0);
-  if (n <= 0) { logEvent('⚠️ Kein Gold vorhanden.', 'warn'); return; }
+  if (n <= 0) { logEvent(T('⚠️ Kein Gold vorhanden.', '⚠️ No gold available.'), 'warn'); return; }
   const erloes = n * GOLD_PREIS;
   gs.goldBarren -= n;
   gs.losesBargeld += erloes;
-  logEvent(`🥇 ${n} Goldbarren ausgegraben & verkauft: +${formatEuro(erloes)} loses Bargeld.`, 'good');
+  logEvent(T(`🥇 ${n} Goldbarren ausgegraben & verkauft: +${formatEuro(erloes)} loses Bargeld.`, `🥇 Dug up & sold ${n} gold bars: +${formatEuro(erloes)} loose cash.`), 'good');
   soundGeld && soundGeld();
   updateHUD();
   if (gs.goldBarren > 0) oeffneGoldVerkaufMenu();
 }
 function oeffneGoldVerkaufMenu() {
   const gs = gameState;
-  if ((gs.goldBarren || 0) <= 0) { oeffneModal('🥇 Gold verkaufen', 'Du hast kein Gold im Garten vergraben.', []); return; }
+  if ((gs.goldBarren || 0) <= 0) { oeffneModal(T('🥇 Gold verkaufen', '🥇 Sell Gold'), T('Du hast kein Gold im Garten vergraben.', 'You have no gold buried in the garden.'), []); return; }
   const tranchen = [1, 5, 10, 25].filter(x => x <= gs.goldBarren);
-  const aktionen = tranchen.map(x => ({ label: `🥇 ${x} Barren verkaufen (${formatEuro(x * GOLD_PREIS)})`, callback: () => goldVerkaufen(x) }));
-  aktionen.push({ label: `🥇 Alle ${gs.goldBarren} verkaufen (${formatEuro(gs.goldBarren * GOLD_PREIS)})`, primary: true, callback: () => goldVerkaufen(gs.goldBarren) });
-  oeffneModal('🥇 Goldbarren verkaufen', `Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`, aktionen);
+  const aktionen = tranchen.map(x => ({ label: T(`🥇 ${x} Barren verkaufen (${formatEuro(x * GOLD_PREIS)})`, `🥇 Sell ${x} bars (${formatEuro(x * GOLD_PREIS)})`), callback: () => goldVerkaufen(x) }));
+  aktionen.push({ label: T(`🥇 Alle ${gs.goldBarren} verkaufen (${formatEuro(gs.goldBarren * GOLD_PREIS)})`, `🥇 Sell all ${gs.goldBarren} (${formatEuro(gs.goldBarren * GOLD_PREIS)})`), primary: true, callback: () => goldVerkaufen(gs.goldBarren) });
+  oeffneModal(T('🥇 Goldbarren verkaufen', '🥇 Sell Gold Bars'), T(`Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`, `Buried in the garden: <strong>${gs.goldBarren} bars</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`), aktionen);
 }
 
 function interact(ortId) {
@@ -2971,16 +2997,20 @@ function interact(ortId) {
 
   // Villa nur bewohnbar, wenn die Immobilie selbst genutzt wird
   if (ortId === 'villa' && !villaBewohnt) {
-    oeffneModal('🏖️ Leeres Baugrundstück',
-      'Hier könnte deine Villa stehen!<br><br>'
-      + 'Kaufe bei der <strong>Schattenbank</strong> eine Immobilie und stelle sie auf <strong>Eigennutzung</strong> – dann ziehst du hier ein.', []);
+    oeffneModal(T('🏖️ Leeres Baugrundstück', '🏖️ Empty Building Plot'),
+      T('Hier könnte deine Villa stehen!<br><br>'
+      + 'Kaufe bei der <strong>Schattenbank</strong> eine Immobilie und stelle sie auf <strong>Eigennutzung</strong> – dann ziehst du hier ein.',
+      'Your villa could stand right here!<br><br>'
+      + 'Buy a property at the <strong>Shadow Bank</strong> and set it to <strong>owner-occupied</strong> – then you move in here.'), []);
     return;
   }
   // Nach Einzug in die Villa ist die alte Wohnung verlassen
   if (ortId === 'wohnung' && villaBewohnt) {
-    oeffneModal('🏠 Hier wohnst du nicht mehr',
-      'Du bist in deine <strong>Villa</strong> gezogen.<br><br>'
-      + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Sozialbetrug – ist jetzt dort.', []);
+    oeffneModal(T('🏠 Hier wohnst du nicht mehr', '🏠 You no longer live here'),
+      T('Du bist in deine <strong>Villa</strong> gezogen.<br><br>'
+      + 'Dein ganzes Zuhause – Schlafen, Verstecken, Anträge, Sozialbetrug – ist jetzt dort.',
+      'You have moved into your <strong>villa</strong>.<br><br>'
+      + 'Your entire home – sleeping, stashing, benefit claims, welfare fraud – is now there.'), []);
     return;
   }
 
@@ -3137,9 +3167,10 @@ function interact(ortId) {
     const byId = {}; aktionen.forEach(x => byId[x.id] = x);
     const pick = ids => ids.map(i => byId[i]).filter(Boolean);
     const top = pick(['pflichttermin', 'scheinbewerbung', 'kur']);
-    top.push({ label: '📂  Anträge & Förderungen …', callback: () => {
-      oeffneModal('📂 Anträge & Förderungen',
-        'Wähle einen Antrag. <br><span style="color:#9aa6b4;font-size:0.62rem;">Ernährungs-Mehrbedarf braucht ein Attest vom Arzt.</span>',
+    top.push({ label: T('📂  Anträge & Förderungen …', '📂  Applications & Grants …'), callback: () => {
+      oeffneModal(T('📂 Anträge & Förderungen', '📂 Applications & Grants'),
+        T('Wähle einen Antrag. <br><span style="color:#9aa6b4;font-size:0.62rem;">Ernährungs-Mehrbedarf braucht ein Attest vom Arzt.</span>',
+        'Pick an application. <br><span style="color:#9aa6b4;font-size:0.62rem;">The dietary extra benefit needs a doctor’s certificate.</span>'),
         pick(['mb_warmwasser', 'mb_alleinerziehend', 'mb_ernaehrung', 'mb_but',
               'pausch_erstausstattung', 'pausch_moebel', 'pausch_bekleidung', 'einstiegsgeld']));
     }});
