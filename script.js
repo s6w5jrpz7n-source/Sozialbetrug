@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v119 – Fix Niete/Kur/Disclaimer-Sprache';
+const BUILD_MARKE = 'v120 – Front-Häuser-Maske';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6037,6 +6037,13 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
       scene.add.image(cx, cy, 'umgebung')
         .setOrigin(0.5, 0.5).setDisplaySize(UMG_W * sc, UMG_H * sc)
         .setDepth(-20);
+      // Vordere Häuser nochmal ÜBER dem Spieler (gleiche Position) → unten läuft
+      // der Spieler hinter den Häusern statt drüber. Tiefe > jeder Spieler/Geb.
+      if (scene.textures.exists('umgebung_front')) {
+        scene.add.image(cx, cy, 'umgebung_front')
+          .setOrigin(0.5, 0.5).setDisplaySize(UMG_W * sc, UMG_H * sc)
+          .setDepth(9000);
+      }
     } else {
       // ---- Fallback: zentralen Boden in alle Richtungen kacheln (alt) ----
       const Ax = feldW / 2, Ay = feldH / 2;
@@ -6978,6 +6985,9 @@ class SpielSzene extends Phaser.Scene {
     // Gemalte Umgebung (ein Bild, 3200×2000, Mitte transparent) → ersetzt die
     // früheren Deko-Stadtblöcke/Ring-Kacheln. Liegt hinter dem Spieldiamanten.
     this.load.image('umgebung', 'assets/umgebung.png');
+    // Vordere Häuser der Umgebung als Maske → werden ÜBER dem Spieler gezeichnet,
+    // damit er unten hinter den Häusern verschwindet (nicht auf den Dächern läuft).
+    this.load.image('umgebung_front', 'assets/umgebung_front.png');
     // Park-Grafik + animierter Dealer (7 Frames)
     this.load.image('park', 'assets/park.png');
     this.load.spritesheet('dealer', 'assets/dealer.png', { frameWidth: 96, frameHeight: 141 });
