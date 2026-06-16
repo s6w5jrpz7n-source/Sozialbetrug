@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v116 – EN GameOver/Abrechnung/Speichern';
+const BUILD_MARKE = 'v117 – EN Story/Info/Disclaimer/Quest';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -747,7 +747,7 @@ function oeffneCheatMenu() {
 //  DISCLAIMER (Pflicht-Hinweis) + INFO/ANLEITUNG (mit Reitern)
 // ================================================================
 function zeigeDisclaimer(ausInfo) {
-  const txt =
+  const txt = T(
     '<span style="display:block;font-size:12.5px;line-height:1.6;color:#d6ceb4;">' +
     'Dieses Spiel ist reine <strong>Satire und Fiktion</strong> – bewusst überzeichnet und ' +
     '<strong>ironisch</strong> gemeint. „Gurkistan", alle Figuren und Vorgänge sind frei erfunden.<br><br>' +
@@ -758,9 +758,20 @@ function zeigeDisclaimer(ausInfo) {
     'Dieses Spiel ist <strong>keine Anleitung</strong> und ruft <strong>nicht</strong> zur ' +
     'Nachahmung auf. Bitte nichts davon im echten Leben tun.<br><br>' +
     '<span style="color:#9aa6b4;">Mit „Verstanden" bestätigst du, dass du diesen Hinweis gelesen und verstanden hast.</span>' +
-    '</span>';
-  oeffneModal('⚖️ Wichtiger Hinweis – bitte lesen', txt, [
-    { label: '✅ Verstanden – ich habe gelesen', primary: true, callback: () => {
+    '</span>',
+    '<span style="display:block;font-size:12.5px;line-height:1.6;color:#d6ceb4;">' +
+    'This game is pure <strong>satire and fiction</strong> – deliberately exaggerated and meant ' +
+    '<strong>ironically</strong>. "Gurkistan" and all characters and events are entirely made up.<br><br>' +
+    '<strong>Welfare fraud is no trivial offence.</strong> It harms society as a whole and ' +
+    'above all the people who genuinely depend on support. The actions depicted in this game ' +
+    '(e.g. benefit fraud, off-the-books work, forged medical certificates, ' +
+    'bribery, drug dealing) are <strong>criminal offences</strong> in real life.<br><br>' +
+    'This game is <strong>not a how-to guide</strong> and does <strong>not</strong> encourage ' +
+    'imitation. Please do not do any of this in real life.<br><br>' +
+    '<span style="color:#9aa6b4;">By clicking "Understood" you confirm that you have read and understood this notice.</span>' +
+    '</span>');
+  oeffneModal(T('⚖️ Wichtiger Hinweis – bitte lesen', '⚖️ Important Notice – please read'), txt, [
+    { label: T('✅ Verstanden – ich habe gelesen', '✅ Understood – I have read this'), primary: true, callback: () => {
         try { localStorage.setItem('disclaimer_ok', '1'); } catch (e) {}
         if (ausInfo) oeffneInfo('disclaimer');
       } },
@@ -768,20 +779,31 @@ function zeigeDisclaimer(ausInfo) {
 }
 
 const INFO_TEXTE = {
-  story:
+  story: T(
     '<strong>📖 Willkommen in Gurkistan</strong><br><br>' +
     'Gurkistan – ein kleines Land mit einem erstaunlich großzügigen Sozialsystem. ' +
     'Arbeit gilt hier als… überbewertet. Schon mit ganz normaler Unterstützung lässt es ' +
     'sich bequem leben. Aber du hast Größeres vor: Mit ein paar „kreativen Optimierungen" ' +
     'willst du es vom Arbeitslosen zum <strong>Millionär</strong> bringen.<br><br>' +
     '<span style="color:#9aa6b4;font-size:0.85em;">(Alles satirisch &amp; fiktiv – siehe Reiter „Hinweis".)</span>',
-  ziel:
+    '<strong>📖 Welcome to Gurkistan</strong><br><br>' +
+    'Gurkistan – a small country with an astonishingly generous welfare system. ' +
+    'Work is considered… overrated around here. Even on ordinary benefits you can ' +
+    'live quite comfortably. But you have bigger plans: with a few "creative optimisations" ' +
+    'you intend to go from unemployed to <strong>millionaire</strong>.<br><br>' +
+    '<span style="color:#9aa6b4;font-size:0.85em;">(All satirical &amp; fictional – see the "Notice" tab.)</span>'),
+  ziel: T(
     '<strong>🎯 Dein Ziel</strong><br><br>Erreiche eines von beiden:<br>' +
     '• <strong>100.000 €</strong> vom Staat kassiert, <em>oder</em><br>' +
     '• <strong>1.000.000 €</strong> Gesamtvermögen.<br><br>' +
     'Achte dabei auf <strong>Gesundheit, Energie, Laune</strong> und dein <strong>Risiko-Raster</strong>. ' +
     'Zu viel Risiko → Razzia. Bei 0 Gesundheit ist Schluss.',
-  amt:
+    '<strong>🎯 Your Goal</strong><br><br>Reach one of the two:<br>' +
+    '• <strong>€100,000</strong> milked from the state, <em>or</em><br>' +
+    '• <strong>€1,000,000</strong> in total assets.<br><br>' +
+    'Keep an eye on your <strong>Health, Energy, Mood</strong> and your <strong>Risk grid</strong>. ' +
+    'Too much risk → raid. At 0 Health it is game over.'),
+  amt: T(
     '<strong>🏛️ Arbeitsamt &amp; Pflichten</strong><br><br>' +
     '• Zieh erst eine <strong>Wartenummer</strong> (grünes LED-Schild). Erst wenn deine Nummer dran ist ' +
     '(oder du dich für 100 € vordrängelst), kommst du zu den Anträgen.<br>' +
@@ -789,21 +811,40 @@ const INFO_TEXTE = {
     '• Unter <strong>Anträge</strong>: legale Mehrbedarfe &amp; Förderungen (Warmwasser, Alleinerziehend, ' +
     'Ernährung [<em>Attest vom Arzt nötig</em>], Bildung, Erstausstattung, Möbel, Bekleidung, Einstiegsgeld).<br>' +
     '• <strong>Krankmeldung</strong> beim Arzt befreit dich zeitweise von Terminen &amp; Prüfungen.',
-  essen:
+    '<strong>🏛️ Job Center &amp; Obligations</strong><br><br>' +
+    '• First take a <strong>queue number</strong> (green LED sign). Only once your number is called ' +
+    '(or you push in for €100) do you get to the applications.<br>' +
+    '• Attend your <strong>mandatory appointments</strong> – otherwise Risk +15, and after 3 missed appointments your benefits are suspended.<br>' +
+    '• Under <strong>Applications</strong>: legal extra benefits &amp; grants (hot water, single parent, ' +
+    'nutrition [<em>doctor’s certificate required</em>], education, initial set-up, furniture, clothing, start-up allowance).<br>' +
+    '• A <strong>sick note</strong> from the doctor temporarily exempts you from appointments &amp; audits.'),
+  essen: T(
     '<strong>🛒 Einkaufen</strong><br><br>' +
     'Du bezahlst <strong>pro Tag</strong> und füllst nur bis zur Kapazität auf ' +
     '(<strong>7 Tage</strong>, mit großem Kühlschrank <strong>14 Tage</strong>). Läuft der Vorrat leer ' +
     '(„Kühlschrank ist leer"), verlierst du <strong>täglich Gesundheit, Energie und Laune</strong>, ' +
     'bis du wieder einkaufst.<br><br>' +
     'Bio-Einkauf gibt Boni, billig spart Geld (aber Abzüge &amp; Ärger mit der Partnerin).',
-  npc:
+    '<strong>🛒 Shopping</strong><br><br>' +
+    'You pay <strong>per day</strong> and only top up to capacity ' +
+    '(<strong>7 days</strong>, with a big fridge <strong>14 days</strong>). If the supply runs out ' +
+    '("the fridge is empty"), you lose <strong>Health, Energy and Mood every day</strong> ' +
+    'until you go shopping again.<br><br>' +
+    'Organic shopping gives bonuses, cheap food saves money (but means penalties &amp; trouble with your partner).'),
+  npc: T(
     '<strong>👥 Leute auf der Straße</strong><br><br>' +
     '• <strong>Bettler:</strong> bittet um Spenden (freiwillige Unterstützung fürs Projekt).<br>' +
     '• <strong>Räuber</strong> (Schatten-Viertel um Schattenbank &amp; Arzt): überfällt dich bei Kontakt – ' +
     'kooperieren (Bargeld weg) oder kämpfen (50/50). Verlässt du das Viertel, entkommst du.<br>' +
     '• <strong>Dealer</strong> (Park): Laune rauf – Gesundheit &amp; Risiko leider auch.<br><br>' +
     'Tipp: <strong>Loses Bargeld</strong> schnell sichern (Bank/Schattenbank) – sonst Beute für Räuber oder Razzia.',
-  gebaeude:
+    '<strong>👥 People on the Street</strong><br><br>' +
+    '• <strong>Beggar:</strong> asks for donations (a voluntary contribution to the project).<br>' +
+    '• <strong>Mugger</strong> (the shady district around the shadow bank &amp; doctor): attacks you on contact – ' +
+    'cooperate (lose your cash) or fight (50/50). Leave the district and you escape.<br>' +
+    '• <strong>Dealer</strong> (park): boosts your Mood – unfortunately your Health &amp; Risk too.<br><br>' +
+    'Tip: stash <strong>loose cash</strong> quickly (bank/shadow bank) – otherwise it is loot for muggers or a raid.'),
+  gebaeude: T(
     '<strong>🏢 Wichtige Orte</strong><br><br>' +
     '• <strong>Wohnung/Villa:</strong> schlafen, Geld verstecken, „Sozialbetrug"-Menü.<br>' +
     '• <strong>Bank:</strong> Bargeld aufs Konto, Aktiendepot.<br>' +
@@ -813,11 +854,24 @@ const INFO_TEXTE = {
     '• <strong>Arztpraxis:</strong> Behandlung, Krankmeldung, Ernährungs-Attest.<br>' +
     '• <strong>Arbeitsamt:</strong> Pflichttermine &amp; Anträge.<br>' +
     '• <strong>Pfandleiher, Kasino, Kiosk, Sportverein, Amüsierbetrieb, Kredithai, Kirche</strong> – entdecke sie selbst.',
-  disclaimer:
+    '<strong>🏢 Important Places</strong><br><br>' +
+    '• <strong>Flat/Villa:</strong> sleep, hide money, the "Welfare Fraud" menu.<br>' +
+    '• <strong>Bank:</strong> deposit cash, stock portfolio.<br>' +
+    '• <strong>Shadow Bank:</strong> stash the slush fund, real estate, cover stories.<br>' +
+    '• <strong>Construction Site:</strong> off-the-books work (cash, but risk).<br>' +
+    '• <strong>Supermarket:</strong> groceries, mini-job.<br>' +
+    '• <strong>Doctor’s Office:</strong> treatment, sick notes, nutrition certificate.<br>' +
+    '• <strong>Job Center:</strong> mandatory appointments &amp; applications.<br>' +
+    '• <strong>Pawnshop, Casino, Kiosk, Sports Club, Entertainment Venue, Loan Shark, Church</strong> – discover them yourself.'),
+  disclaimer: T(
     '<strong>⚖️ Rechtlicher Hinweis</strong><br><br>' +
     'Reine <strong>Satire &amp; Fiktion</strong>, ironisch gemeint. <strong>Sozialbetrug ist strafbar</strong> ' +
     'und schadet der Allgemeinheit. Dieses Spiel ist <strong>keine Anleitung</strong> und ruft nicht zur ' +
     'Nachahmung auf. Bitte nichts davon im echten Leben nachmachen.',
+    '<strong>⚖️ Legal Notice</strong><br><br>' +
+    'Pure <strong>satire &amp; fiction</strong>, meant ironically. <strong>Welfare fraud is a crime</strong> ' +
+    'and harms society as a whole. This game is <strong>not a how-to guide</strong> and does not encourage ' +
+    'imitation. Please do not copy any of this in real life.'),
 };
 
 function oeffneInfo(tab) {
@@ -857,118 +911,118 @@ function oeffneInfo(tab) {
 const eheKriseSchritte = [
   {
     schritt: 1,
-    titel: '💔 Krise Stufe 1 – Auszug angedroht',
-    text: 'Deine Partnerin hat die Koffer gepackt. Sie fordert ein ernsthaftes Gespräch über eure Zukunft.',
+    titel: T('💔 Krise Stufe 1 – Auszug angedroht', '💔 Crisis Level 1 – Threat to Move Out'),
+    text: T('Deine Partnerin hat die Koffer gepackt. Sie fordert ein ernsthaftes Gespräch über eure Zukunft.', 'Your partner has packed her bags. She demands a serious talk about your future together.'),
     optionA: {
-      label: '⚖️ Mediator einschalten (-400 € Konto)',
+      label: T('⚖️ Mediator einschalten (-400 € Konto)', '⚖️ Bring in a mediator (-€400 from account)'),
       effekt(gs) {
         if (gs.kontostand >= 400) {
           gs.kontostand -= 400;
           gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
           gs.eheKriseSchritt = 2;
-          return { erfolg: true, text: 'Der Mediator hilft. Sie bleibt vorerst. Weiter zu Schritt 2.' };
+          return { erfolg: true, text: T('Der Mediator hilft. Sie bleibt vorerst. Weiter zu Schritt 2.', 'The mediator helps. She stays for now. On to step 2.') };
         }
         gs.eheKriseSchritt = 99; // Scheitern
-        return { erfolg: false, text: 'Du kannst den Mediator nicht bezahlen. Sie zieht aus.' };
+        return { erfolg: false, text: T('Du kannst den Mediator nicht bezahlen. Sie zieht aus.', 'You cannot afford the mediator. She moves out.') };
       }
     },
     optionB: {
-      label: '🙏 Selbst reden ohne Hilfe',
+      label: T('🙏 Selbst reden ohne Hilfe', '🙏 Talk it out yourself, no help'),
       effekt(gs) {
         gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100);
         gs.eheKriseSchritt = 99; // Scheitern ohne professionelle Hilfe
-        return { erfolg: false, text: 'Das Gespräch eskaliert. Sie zieht aus.' };
+        return { erfolg: false, text: T('Das Gespräch eskaliert. Sie zieht aus.', 'The conversation escalates. She moves out.') };
       }
     }
   },
   {
     schritt: 2,
-    titel: '⚖️ Krise Stufe 2 – Getrennte Konten',
-    text: 'Die Partnerin verlangt getrennte Konten und einen Unterhaltsnachweis.',
+    titel: T('⚖️ Krise Stufe 2 – Getrennte Konten', '⚖️ Crisis Level 2 – Separate Accounts'),
+    text: T('Die Partnerin verlangt getrennte Konten und einen Unterhaltsnachweis.', 'Your partner demands separate accounts and proof of maintenance payments.'),
     optionA: {
-      label: '📄 Anwalt für Unterhaltsvereinbarung (-600 € Konto)',
+      label: T('📄 Anwalt für Unterhaltsvereinbarung (-600 € Konto)', '📄 Lawyer for a maintenance agreement (-€600 from account)'),
       effekt(gs) {
         if (gs.kontostand >= 600) {
           gs.kontostand -= 600;
           gs.happinessPartner = clamp(gs.happinessPartner + 8, 0, 100);
           gs.eheKriseSchritt = 3;
-          return { erfolg: true, text: 'Die Vereinbarung ist rechtlich klar. Weiter zu Schritt 3.' };
+          return { erfolg: true, text: T('Die Vereinbarung ist rechtlich klar. Weiter zu Schritt 3.', 'The agreement is legally watertight. On to step 3.') };
         }
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Kein Geld für den Anwalt. Verfahren eskaliert.' };
+        return { erfolg: false, text: T('Kein Geld für den Anwalt. Verfahren eskaliert.', 'No money for the lawyer. The proceedings escalate.') };
       }
     },
     optionB: {
-      label: '😤 Ablehnen – kein Unterhalt',
+      label: T('😤 Ablehnen – kein Unterhalt', '😤 Refuse – no maintenance'),
       effekt(gs) {
         gs.risikoRaster    = clamp(gs.risikoRaster + 15, 0, 100);
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Die Weigerung löst ein Gerichtsverfahren aus.' };
+        return { erfolg: false, text: T('Die Weigerung löst ein Gerichtsverfahren aus.', 'Your refusal triggers court proceedings.') };
       }
     }
   },
   {
     schritt: 3,
-    titel: '🏛️ Krise Stufe 3 – Gericht droht',
-    text: 'Deine Partnerin hat einen Rechtsanwalt eingeschaltet. Das Gericht fordert Auskunft über dein Vermögen.',
+    titel: T('🏛️ Krise Stufe 3 – Gericht droht', '🏛️ Crisis Level 3 – Court Looms'),
+    text: T('Deine Partnerin hat einen Rechtsanwalt eingeschaltet. Das Gericht fordert Auskunft über dein Vermögen.', 'Your partner has hired a lawyer. The court demands full disclosure of your assets.'),
     optionA: {
-      label: '⚖️ Eigenen Anwalt beauftragen (-900 € Konto)',
+      label: T('⚖️ Eigenen Anwalt beauftragen (-900 € Konto)', '⚖️ Hire your own lawyer (-€900 from account)'),
       effekt(gs) {
         if (gs.kontostand >= 900) {
           gs.kontostand -= 900;
           gs.happinessPartner = clamp(gs.happinessPartner + 5, 0, 100);
           gs.eheKriseSchritt = 4;
-          return { erfolg: true, text: 'Dein Anwalt stabilisiert die Lage. Weiter zu Schritt 4.' };
+          return { erfolg: true, text: T('Dein Anwalt stabilisiert die Lage. Weiter zu Schritt 4.', 'Your lawyer steadies the situation. On to step 4.') };
         }
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Kein Geld. Du gehst ohne Anwalt ins Verfahren – das ist fatal.' };
+        return { erfolg: false, text: T('Kein Geld. Du gehst ohne Anwalt ins Verfahren – das ist fatal.', 'No money. You face the proceedings without a lawyer – that is fatal.') };
       }
     },
     optionB: {
-      label: '🏃 Vermögen in Schwarze Kasse verstecken (Risiko +30)',
+      label: T('🏃 Vermögen in Schwarze Kasse verstecken (Risiko +30)', '🏃 Hide assets in the slush fund (Risk +30)'),
       effekt(gs) {
         const betrag = Math.min(gs.kontostand, 2000);
         gs.kontostand    -= betrag;
         gs.schwarzeKasse += betrag;
         gs.risikoRaster   = clamp(gs.risikoRaster + 30, 0, 100);
         gs.eheKriseSchritt = 4; // Riskant aber weiter möglich
-        return { erfolg: true, text: `${formatEuro(betrag)} versteckt. Risiko +30. Gefährlich.` };
+        return { erfolg: true, text: T(`${formatEuro(betrag)} versteckt. Risiko +30. Gefährlich.`, `${formatEuro(betrag)} hidden away. Risk +30. Dangerous.`) };
       }
     }
   },
   {
     schritt: 4,
-    titel: '👶 Krise Stufe 4 – Sorgerechtsantrag eingereicht',
-    text: 'Deine Partnerin hat offiziell das alleinige Sorgerecht beantragt, da sie deine finanzielle Stabilität anzweifelt.',
+    titel: T('👶 Krise Stufe 4 – Sorgerechtsantrag eingereicht', '👶 Crisis Level 4 – Custody Application Filed'),
+    text: T('Deine Partnerin hat offiziell das alleinige Sorgerecht beantragt, da sie deine finanzielle Stabilität anzweifelt.', 'Your partner has officially applied for sole custody, doubting your financial stability.'),
     optionA: {
-      label: '⚖️ Vollständige Verteidigung (-1200 € Konto)',
+      label: T('⚖️ Vollständige Verteidigung (-1200 € Konto)', '⚖️ Full legal defence (-€1200 from account)'),
       effekt(gs) {
         if (gs.kontostand >= 1200) {
           gs.kontostand -= 1200;
           gs.happinessPartner = clamp(gs.happinessPartner + 10, 0, 100);
           gs.eheKriseSchritt = 5;
-          return { erfolg: true, text: 'Dein Anwalt kämpft erfolgreich. Gemeinsames Sorgerecht vorerst gesichert.' };
+          return { erfolg: true, text: T('Dein Anwalt kämpft erfolgreich. Gemeinsames Sorgerecht vorerst gesichert.', 'Your lawyer fights and wins. Joint custody is secured for now.') };
         }
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Du kannst die Verteidigung nicht bezahlen. Sorgerecht verloren.' };
+        return { erfolg: false, text: T('Du kannst die Verteidigung nicht bezahlen. Sorgerecht verloren.', 'You cannot afford the defence. Custody lost.') };
       }
     },
     optionB: {
-      label: '😔 Nachgeben – alleiniges Sorgerecht akzeptieren',
+      label: T('😔 Nachgeben – alleiniges Sorgerecht akzeptieren', '😔 Give in – accept sole custody'),
       effekt(gs) {
         gs.happinessSpieler = clamp(gs.happinessSpieler - 30, 0, 100);
         gs.happinessPartner = clamp(gs.happinessPartner - 10, 0, 100);
         gs.eheKriseSchritt  = 99; // Quest scheitert
-        return { erfolg: false, text: 'Du gibst auf. Das Sorgerecht geht verloren.' };
+        return { erfolg: false, text: T('Du gibst auf. Das Sorgerecht geht verloren.', 'You give up. Custody is lost.') };
       }
     }
   },
   {
     schritt: 5,
-    titel: '🕊️ Krise Stufe 5 – Letzte Chance',
-    text: 'Das Gericht bietet eine letzte Einigungsmöglichkeit vor dem Urteil. Eine Zahlung kann die Beziehung retten.',
+    titel: T('🕊️ Krise Stufe 5 – Letzte Chance', '🕊️ Crisis Level 5 – Last Chance'),
+    text: T('Das Gericht bietet eine letzte Einigungsmöglichkeit vor dem Urteil. Eine Zahlung kann die Beziehung retten.', 'The court offers one final chance to settle before the verdict. A payment could save the relationship.'),
     optionA: {
-      label: '❤️ Alles zahlen – Beziehung retten (-1500 € Konto)',
+      label: T('❤️ Alles zahlen – Beziehung retten (-1500 € Konto)', '❤️ Pay it all – save the relationship (-€1500 from account)'),
       effekt(gs) {
         if (gs.kontostand >= 1500) {
           gs.kontostand -= 1500;
@@ -977,17 +1031,17 @@ const eheKriseSchritte = [
           gs.eheKriseAktiv     = false;
           gs.eheKriseGescheitert = false;
           gs.eheKriseSchritt   = 0;
-          return { erfolg: true, text: '✅ Die Beziehung ist gerettet. Das Sorgerecht bleibt gemeinsam. Ehe-Krise beendet!' };
+          return { erfolg: true, text: T('✅ Die Beziehung ist gerettet. Das Sorgerecht bleibt gemeinsam. Ehe-Krise beendet!', '✅ The relationship is saved. Custody stays joint. Marriage crisis resolved!') };
         }
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Kein Geld. Das Gericht entscheidet gegen dich.' };
+        return { erfolg: false, text: T('Kein Geld. Das Gericht entscheidet gegen dich.', 'No money. The court rules against you.') };
       }
     },
     optionB: {
-      label: '💔 Aufgeben (Sorgerechtsstreit verloren)',
+      label: T('💔 Aufgeben (Sorgerechtsstreit verloren)', '💔 Give up (custody battle lost)'),
       effekt(gs) {
         gs.eheKriseSchritt = 99;
-        return { erfolg: false, text: 'Du gibst auf. Das Gericht fällt sein Urteil.' };
+        return { erfolg: false, text: T('Du gibst auf. Das Gericht fällt sein Urteil.', 'You give up. The court delivers its verdict.') };
       }
     }
   }
