@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v117 – EN Story/Info/Disclaimer/Quest';
+const BUILD_MARKE = 'v118 – Vollständig zweisprachig';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3208,15 +3208,15 @@ function verbraucheTag(anzahl) {
 function kurBeantragen() {
   const gs = gameState;
   if (gs.monat < gs.kurCooldownMonat) {
-    oeffneModal('🏖️ Noch keine neue Kur', `Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, []);
+    oeffneModal(T('🏖️ Noch keine neue Kur', '🏖️ No new spa cure yet'), T(`Erst ab Monat ${gs.kurCooldownMonat} bekommst du wieder eine Kur bewilligt.`, `Only from month ${gs.kurCooldownMonat} will another spa cure be approved.`), []);
     return;
   }
   const attestKosten = 300;
-  oeffneModal('🏖️ Kur – nur mit Attest',
-    `Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`
-    + 'Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).',
-    [{ label: `🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, danger: true, callback: () => {
-        if (gs.kontostand < attestKosten) { logEvent('⚠️ Nicht genug Geld fürs Attest.', 'warn'); return; }
+  oeffneModal(T('🏖️ Kur – nur mit Attest', '🏖️ Spa cure – certificate required'),
+    T(`Eine Kur gibt's nur mit ärztlichem Attest. Ein <strong>gefälschtes Attest</strong> kostet <strong>${formatEuro(attestKosten)}</strong> und erhöht das Risiko (+12).<br><br>`, `A spa cure requires a doctor's certificate. A <strong>forged certificate</strong> costs <strong>${formatEuro(attestKosten)}</strong> and raises your Risk (+12).<br><br>`)
+    + T('Dafür: 3 Wochen Reha auf Kassenkosten – du kommst topfit zurück (Energie & Gesundheit voll, Laune +20).', 'In return: 3 weeks of rehab on the public dime – you come back in top shape (Energy & Health full, Mood +20).'),
+    [{ label: T(`🩺 Gefälschtes Attest besorgen (${formatEuro(attestKosten)})`, `🩺 Get a forged certificate (${formatEuro(attestKosten)})`), danger: true, callback: () => {
+        if (gs.kontostand < attestKosten) { logEvent(T('⚠️ Nicht genug Geld fürs Attest.', '⚠️ Not enough money for the certificate.'), 'warn'); return; }
         gs.kontostand      -= attestKosten;
         gs.risikoRaster     = clamp(gs.risikoRaster + 12, 0, 100);
         gs.energie          = 100;
@@ -3224,8 +3224,8 @@ function kurBeantragen() {
         gs.happinessSpieler = clamp(gs.happinessSpieler + 20, 0, 100);
         gs.kurCooldownMonat = gs.monat + 3;
         verbraucheTag(7);
-        logEvent('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', 'warn');
-        oeffneModal('🏖️ Ab in die Kur!', 'Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', []);
+        logEvent(T('🏖️ Kur (gefälschtes Attest): Energie & Gesundheit voll, Laune +20. Risiko +12.', '🏖️ Spa cure (forged certificate): Energy & Health full, Mood +20. Risk +12.'), 'warn');
+        oeffneModal(T('🏖️ Ab in die Kur!', '🏖️ Off to the spa!'), T('Drei Wochen Reha auf Kassenkosten – topfit zurück. Das Bürgergeld lief unverändert weiter.', 'Three weeks of rehab on the public dime – back in top shape. Your welfare kept rolling in untouched.'), []);
       }}]);
 }
 
@@ -4273,9 +4273,10 @@ function oeffneDepotKaufMenu() {
     label: `${aktie.name} – ${aktie.beschreibung} Min. ${formatEuro(aktie.minKauf)}`,
     callback: () => oeffneKaufDialog(aktie)
   }));
-  oeffneModal('📈 Depot – Wertpapier kaufen',
-    `Kontostand: <strong>${formatEuro(gs.kontostand)}</strong><br>
-     Kaufe Wertpapiere mit deinem Kontoguthaben. Kursschwankungen werden monatlich berechnet.`,
+  oeffneModal(T('📈 Depot – Wertpapier kaufen', '📈 Portfolio – buy a security'),
+    T(`Kontostand: <strong>${formatEuro(gs.kontostand)}</strong><br>
+     Kaufe Wertpapiere mit deinem Kontoguthaben. Kursschwankungen werden monatlich berechnet.`, `Account balance: <strong>${formatEuro(gs.kontostand)}</strong><br>
+     Buy securities with your account funds. Price swings are calculated monthly.`),
     aktionen
   );
 }
@@ -4287,9 +4288,10 @@ function oeffneKaufDialog(aktie) {
   const kurs = bestehend ? bestehend.aktuellerKurs : aktie.startKurs;
 
   if (gs.kontostand < kurs) {
-    oeffneModal('❌ Nicht genug Geld',
-      `Kurs: <strong>${formatEuro(kurs)}</strong> pro Anteil.<br>
-       Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, []);
+    oeffneModal(T('❌ Nicht genug Geld', '❌ Not enough money'),
+      T(`Kurs: <strong>${formatEuro(kurs)}</strong> pro Anteil.<br>
+       Dein Konto: <strong>${formatEuro(gs.kontostand)}</strong>`, `Price: <strong>${formatEuro(kurs)}</strong> per share.<br>
+       Your account: <strong>${formatEuro(gs.kontostand)}</strong>`), []);
     return;
   }
 
@@ -4303,7 +4305,7 @@ function oeffneKaufDialog(aktie) {
 
   function zeigeKaufMenu() {
     const pos = bestehend
-      ? `<br>Im Depot: <strong>${bestehend.anteile} Anteile</strong> (Kaufkurs Ø ${formatEuro(bestehend.kaufkurs)})`
+      ? T(`<br>Im Depot: <strong>${bestehend.anteile} Anteile</strong> (Kaufkurs Ø ${formatEuro(bestehend.kaufkurs)})`, `<br>In portfolio: <strong>${bestehend.anteile} shares</strong> (avg buy price ${formatEuro(bestehend.kaufkurs)})`)
       : '';
 
     const aktionen = tranchen.map(stueck => {
@@ -4311,8 +4313,8 @@ function oeffneKaufDialog(aktie) {
       const kannKaufen = gs.kontostand >= kosten;
       return {
         label: kannKaufen
-          ? `Kaufe ${stueck} Anteile → ${formatEuro(kosten)}`
-          : `[Zu teuer] ${stueck} Anteile = ${formatEuro(kosten)}`,
+          ? T(`Kaufe ${stueck} Anteile → ${formatEuro(kosten)}`, `Buy ${stueck} shares → ${formatEuro(kosten)}`)
+          : T(`[Zu teuer] ${stueck} Anteile = ${formatEuro(kosten)}`, `[Too expensive] ${stueck} shares = ${formatEuro(kosten)}`),
         callback: () => {
           if (!kannKaufen) { zeigeKaufMenu(); return; }
           kaufeAktie(aktie, stueck, kurs);
@@ -4324,9 +4326,11 @@ function oeffneKaufDialog(aktie) {
 
     oeffneModal(
       `📈 ${aktie.name}`,
-      `Kurs: <strong>${formatEuro(kurs)}</strong> · Konto: <strong>${formatEuro(gs.kontostand)}</strong>${pos}<br>
-       Typ: ${aktie.typ === 'etf' ? '🛡️ ETF (stabil)' : '🎲 Spekulation (riskant)'} · 
-       Rendite: <strong>${Math.round(aktie.renditeMin*100)}%</strong> bis <strong>+${Math.round(aktie.renditeMax*100)}%</strong> pro Monat`,
+      T(`Kurs: <strong>${formatEuro(kurs)}</strong> · Konto: <strong>${formatEuro(gs.kontostand)}</strong>${pos}<br>
+       Typ: ${aktie.typ === 'etf' ? '🛡️ ETF (stabil)' : '🎲 Spekulation (riskant)'} ·
+       Rendite: <strong>${Math.round(aktie.renditeMin*100)}%</strong> bis <strong>+${Math.round(aktie.renditeMax*100)}%</strong> pro Monat`, `Price: <strong>${formatEuro(kurs)}</strong> · Account: <strong>${formatEuro(gs.kontostand)}</strong>${pos}<br>
+       Type: ${aktie.typ === 'etf' ? '🛡️ ETF (stable)' : '🎲 Speculation (risky)'} ·
+       Return: <strong>${Math.round(aktie.renditeMin*100)}%</strong> to <strong>+${Math.round(aktie.renditeMax*100)}%</strong> per month`),
       aktionen
     );
   }
@@ -4337,7 +4341,7 @@ function kaufeAktie(aktie, stueck, kurs) {
   const gs = gameState;
   const kosten = Math.round(stueck * kurs);
   if (gs.kontostand < kosten) {
-    logEvent('⚠️ Nicht genug Geld für Kauf.', 'warn'); return;
+    logEvent(T('⚠️ Nicht genug Geld für Kauf.', '⚠️ Not enough money to buy.'), 'warn'); return;
   }
   gs.kontostand -= kosten;
 
@@ -4367,7 +4371,7 @@ function kaufeAktie(aktie, stueck, kurs) {
     });
   }
 
-  logEvent(`📈 ${stueck}× ${aktie.name} für ${formatEuro(kosten)} gekauft.`, 'good');
+  logEvent(T(`📈 ${stueck}× ${aktie.name} für ${formatEuro(kosten)} gekauft.`, `📈 Bought ${stueck}× ${aktie.name} for ${formatEuro(kosten)}.`), 'good');
   updateHUD();
 }
 
@@ -4375,7 +4379,7 @@ function kaufeAktie(aktie, stueck, kurs) {
 function oeffneDepotVerkaufMenu() {
   const gs = gameState;
   if (gs.depot.length === 0) {
-    oeffneModal('📉 Depot leer', 'Du hast noch keine Wertpapiere.', []);
+    oeffneModal(T('📉 Depot leer', '📉 Empty portfolio'), T('Du hast noch keine Wertpapiere.', 'You do not own any securities yet.'), []);
     return;
   }
 
@@ -4384,16 +4388,17 @@ function oeffneDepotVerkaufMenu() {
     const gewinn = wert - Math.round(pos.anteile * pos.kaufkurs);
     const pfeil  = gewinn >= 0 ? '▲' : '▼';
     return {
-      label: `${pos.name}: ${pos.anteile} Anteile · ${formatEuro(pos.aktuellerKurs)}/Anteil · Ges. ${formatEuro(wert)} · ${pfeil}${formatEuro(Math.abs(gewinn))}`,
+      label: T(`${pos.name}: ${pos.anteile} Anteile · ${formatEuro(pos.aktuellerKurs)}/Anteil · Ges. ${formatEuro(wert)} · ${pfeil}${formatEuro(Math.abs(gewinn))}`, `${pos.name}: ${pos.anteile} shares · ${formatEuro(pos.aktuellerKurs)}/share · Total ${formatEuro(wert)} · ${pfeil}${formatEuro(Math.abs(gewinn))}`),
       callback: () => oeffneTeilverkaufMenu(pos)
     };
   });
 
   const gesamtwert = gs.depot.reduce((s, p) => s + p.anteile * p.aktuellerKurs, 0);
   oeffneModal(
-    '📉 Depot – Position wählen',
-    `Gesamtwert Depot: <strong>${formatEuro(Math.round(gesamtwert))}</strong><br>
-     Wähle eine Position für Teil- oder Vollverkauf:`,
+    T('📉 Depot – Position wählen', '📉 Portfolio – choose a position'),
+    T(`Gesamtwert Depot: <strong>${formatEuro(Math.round(gesamtwert))}</strong><br>
+     Wähle eine Position für Teil- oder Vollverkauf:`, `Total portfolio value: <strong>${formatEuro(Math.round(gesamtwert))}</strong><br>
+     Choose a position for partial or full sale:`),
     aktionen
   );
 }
@@ -4411,7 +4416,7 @@ function oeffneTeilverkaufMenu(pos) {
     { stueck: Math.floor(maxAnz * 0.25), label: '25%' },
     { stueck: Math.floor(maxAnz * 0.50), label: '50%' },
     { stueck: Math.floor(maxAnz * 0.75), label: '75%' },
-    { stueck: maxAnz,                    label: '100% (Alles)' },
+    { stueck: maxAnz,                    label: T('100% (Alles)', '100% (Everything)') },
   ].filter(t => t.stueck > 0);
 
   // Deduplizieren falls maxAnz sehr klein
@@ -4426,7 +4431,7 @@ function oeffneTeilverkaufMenu(pos) {
     const gv     = Math.round(stueck * gewinnPro);
     const gvStr  = (gv >= 0 ? '+' : '') + formatEuro(gv);
     return {
-      label: `${label}: ${stueck} Anteile → ${formatEuro(wert)} (G/V: ${gvStr})`,
+      label: T(`${label}: ${stueck} Anteile → ${formatEuro(wert)} (G/V: ${gvStr})`, `${label}: ${stueck} shares → ${formatEuro(wert)} (P/L: ${gvStr})`),
       callback: () => {
         verkaufeTeilweise(pos, stueck);
         // Menü nach Teilverkauf wieder öffnen wenn noch Anteile vorhanden
@@ -4440,10 +4445,12 @@ function oeffneTeilverkaufMenu(pos) {
   });
 
   oeffneModal(
-    `📉 ${pos.name} verkaufen`,
-    `Kurs: <strong>${formatEuro(kurs)}</strong> · Bestand: <strong>${maxAnz} Anteile</strong><br>
-     Kaufkurs Ø: <strong>${formatEuro(pos.kaufkurs)}</strong> · 
-     Latenter G/V: <strong>${pfeil}${formatEuro(Math.abs(Math.round(maxAnz * gewinnPro)))}</strong>`,
+    T(`📉 ${pos.name} verkaufen`, `📉 Sell ${pos.name}`),
+    T(`Kurs: <strong>${formatEuro(kurs)}</strong> · Bestand: <strong>${maxAnz} Anteile</strong><br>
+     Kaufkurs Ø: <strong>${formatEuro(pos.kaufkurs)}</strong> ·
+     Latenter G/V: <strong>${pfeil}${formatEuro(Math.abs(Math.round(maxAnz * gewinnPro)))}</strong>`, `Price: <strong>${formatEuro(kurs)}</strong> · Holding: <strong>${maxAnz} shares</strong><br>
+     Avg buy price: <strong>${formatEuro(pos.kaufkurs)}</strong> ·
+     Unrealised P/L: <strong>${pfeil}${formatEuro(Math.abs(Math.round(maxAnz * gewinnPro)))}</strong>`),
     aktionen
   );
 }
@@ -4457,7 +4464,7 @@ function verkaufeTeilweise(pos, stueck) {
   gs.kontostand += wert;
   gs.depot[idx].anteile -= stueck;
   if (gs.depot[idx].anteile <= 0) gs.depot.splice(idx, 1);
-  logEvent(`📉 ${pos.name}: ${stueck} Anteile verkauft → +${formatEuro(wert)} (${gewinn >= 0 ? '+' : ''}${formatEuro(gewinn)} G/V).`,
+  logEvent(T(`📉 ${pos.name}: ${stueck} Anteile verkauft → +${formatEuro(wert)} (${gewinn >= 0 ? '+' : ''}${formatEuro(gewinn)} G/V).`, `📉 ${pos.name}: sold ${stueck} shares → +${formatEuro(wert)} (${gewinn >= 0 ? '+' : ''}${formatEuro(gewinn)} P/L).`),
     gewinn >= 0 ? 'good' : 'warn');
   updateHUD();
 }
@@ -4501,7 +4508,7 @@ function aktuelisiereDepotKurse() {
     const pct   = (rendite >= 0 ? '+' : '') + (rendite * 100).toFixed(1);   // "+" bei Gewinn
     const pfeil = rendite >= 0 ? '▲' : '▼';
     meldungen.push(`${pfeil} ${pos.name}: ${pct}% → Kurs ${formatEuro(pos.aktuellerKurs)}`);
-    logEvent(`📊 ${pos.name} ${pfeil}${pct}%`, rendite < 0 ? 'danger' : 'good');
+    logEvent(T(`📊 ${pos.name} ${pfeil}${pct}%`, `📊 ${pos.name} ${pfeil}${pct}%`), rendite < 0 ? 'danger' : 'good');
   });
 
   return meldungen;
@@ -5028,11 +5035,11 @@ function pruefeGameOverBedingungen() {
   if (gesamtLegal >= 1000000 && !gs.millionHinweis) {
     gs.millionHinweis = true;
     soundGut && soundGut();
-    oeffneModal('💰 Du bist Millionär!',
-      'Kontostand + Depot liegen über <strong>1.000.000 €</strong>! 🎉<br><br>' +
-      'Aber so richtig <strong>gewonnen</strong> hast du erst, wenn du dich ins Ausland absetzt. ' +
-      'Geh in deine <strong>Wohnung/Villa → „Ins Ausland absetzen"</strong>.', []);
-    logEvent('💰 Millionär! Jetzt auswandern, um zu gewinnen.', 'good');
+    oeffneModal(T('💰 Du bist Millionär!', '💰 You are a millionaire!'),
+      T('Kontostand + Depot liegen über <strong>1.000.000 €</strong>! 🎉<br><br>', 'Your account + portfolio top <strong>1,000,000 €</strong>! 🎉<br><br>') +
+      T('Aber so richtig <strong>gewonnen</strong> hast du erst, wenn du dich ins Ausland absetzt. ', 'But you have only truly <strong>won</strong> once you skip the country. ') +
+      T('Geh in deine <strong>Wohnung/Villa → „Ins Ausland absetzen"</strong>.', 'Head to your <strong>flat/villa → „Skip the country"</strong>.'), []);
+    logEvent(T('💰 Millionär! Jetzt auswandern, um zu gewinnen.', '💰 Millionaire! Now emigrate to win.'), 'good');
   }
 
   // Gesundheits-Tod
@@ -5047,14 +5054,14 @@ function pruefeGameOverBedingungen() {
     if (gs.kontostand >= behandlung) {
       gs.kontostand -= behandlung;
       gs.gesundheit  = clamp(gs.gesundheit + 20, 0, 100);
-      logEvent('🏥 Notfall-Krankenhaus! -20.000€, Gesundheit +20.', 'danger');
+      logEvent(T('🏥 Notfall-Krankenhaus! -20.000€, Gesundheit +20.', '🏥 Emergency hospital! -20,000€, Health +20.'), 'danger');
       soundAlarm && soundAlarm();
-      oeffneModal('🏥 Notfall!',
-        'Deine Gesundheit ist kritisch!<br><br>'
-        + '<strong>-20.000 €</strong> Krankenhausrechnung.<br>'
-        + '<strong>Gesundheit +20</strong>', []);
+      oeffneModal(T('🏥 Notfall!', '🏥 Emergency!'),
+        T('Deine Gesundheit ist kritisch!<br><br>', 'Your Health is critical!<br><br>')
+        + T('<strong>-20.000 €</strong> Krankenhausrechnung.<br>', '<strong>-20,000 €</strong> hospital bill.<br>')
+        + T('<strong>Gesundheit +20</strong>', '<strong>Health +20</strong>'), []);
     } else {
-      logEvent('🏥 Gesundheit kritisch! Kein Geld für Krankenhaus!', 'danger');
+      logEvent(T('🏥 Gesundheit kritisch! Kein Geld für Krankenhaus!', '🏥 Health critical! No money for the hospital!'), 'danger');
     }
   }
 
@@ -6724,13 +6731,13 @@ class StartSzene extends Phaser.Scene {
     this._menuAktiv = true;
     initAudio();
     // Schwierigkeit = Startkontostand
-    oeffneModal('🎮 Schwierigkeit wählen',
-      'Wie hart soll dein Start ins Sozialbetrüger-Leben werden?<br>' +
-      '(bestimmt deinen <strong>Startkontostand</strong>)',
+    oeffneModal(T('🎮 Schwierigkeit wählen', '🎮 Choose difficulty'),
+      T('Wie hart soll dein Start ins Sozialbetrüger-Leben werden?<br>', 'How rough should your start in the welfare-fraud life be?<br>') +
+      T('(bestimmt deinen <strong>Startkontostand</strong>)', '(sets your <strong>starting account balance</strong>)'),
       [
-        { label: '😊 Einfach – 40.000 € Start', primary: true, callback: () => this._starteSpiel(40000) },
-        { label: '😐 Mittel – 10.000 € Start',                callback: () => this._starteSpiel(10000) },
-        { label: '😈 Hart – 1.000 € Start',     danger: true, callback: () => this._starteSpiel(1000)  },
+        { label: T('😊 Einfach – 40.000 € Start', '😊 Easy – 40,000 € start'), primary: true, callback: () => this._starteSpiel(40000) },
+        { label: T('😐 Mittel – 10.000 € Start', '😐 Medium – 10,000 € start'),                callback: () => this._starteSpiel(10000) },
+        { label: T('😈 Hart – 1.000 € Start', '😈 Hard – 1,000 € start'),     danger: true, callback: () => this._starteSpiel(1000)  },
       ],
       () => { this._menuAktiv = false; }   // abgebrochen → Startmenü wieder bedienbar
     );
@@ -7587,16 +7594,16 @@ class SpielSzene extends Phaser.Scene {
       if (!gs.kuehlschrankWarnung) {
         gs.kuehlschrankWarnung = true;
         gs.supermarktFaellig = true;
-        oeffneModal('🧊 Kühlschrank ist leer!',
-          'Dein Lebensmittel-Vorrat ist <strong>aufgebraucht</strong>.<br><br>' +
-          'Ohne Essen verlierst du jetzt <strong>jeden Tag −5 Gesundheit, −3 Energie</strong> und Laune. ' +
-          'Geh zum <strong>Supermarkt</strong> – ein Einkauf reicht ca. <strong>2 Wochen</strong>!', []);
-        logEvent('🧊 Kühlschrank leer! Ab zum Supermarkt.', 'warn');
+        oeffneModal(T('🧊 Kühlschrank ist leer!', '🧊 The fridge is empty!'),
+          T('Dein Lebensmittel-Vorrat ist <strong>aufgebraucht</strong>.<br><br>', 'Your food supply is <strong>used up</strong>.<br><br>') +
+          T('Ohne Essen verlierst du jetzt <strong>jeden Tag −5 Gesundheit, −3 Energie</strong> und Laune. ', 'With no food you now lose <strong>−5 Health, −3 Energy</strong> and Mood every day. ') +
+          T('Geh zum <strong>Supermarkt</strong> – ein Einkauf reicht ca. <strong>2 Wochen</strong>!', 'Head to the <strong>supermarket</strong> – one shop lasts about <strong>2 weeks</strong>!'), []);
+        logEvent(T('🧊 Kühlschrank leer! Ab zum Supermarkt.', '🧊 Fridge empty! Off to the supermarket.'), 'warn');
       }
       gs.gesundheit       = clamp(gs.gesundheit - 5, 0, 100);
       gs.energie          = clamp(gs.energie - 3, 0, 100);
       gs.happinessSpieler = clamp(gs.happinessSpieler - 3, 0, 100);
-      logEvent('🍽️ Leerer Kühlschrank: −5 Gesundheit, −3 Energie.', 'danger');
+      logEvent(T('🍽️ Leerer Kühlschrank: −5 Gesundheit, −3 Energie.', '🍽️ Empty fridge: −5 Health, −3 Energy.'), 'danger');
       if (gs.gesundheit <= 0) { updateHUD(); triggerGameOver('gesundheit'); return; }
     }
     updateHUD();
@@ -7754,7 +7761,7 @@ class SpielSzene extends Phaser.Scene {
     if (!this._bettlerExists) return;
     this._bettlerMode = 'attack';
     this._bettlerPfad = null; this._bettlerRepath = 0;   // frischen Pfad zum Spieler erzwingen
-    logEvent('🧎 Der Bettler wird aufdringlich und stürzt sich auf dich!', 'warn');
+    logEvent(T('🧎 Der Bettler wird aufdringlich und stürzt sich auf dich!', '🧎 The beggar gets pushy and lunges at you!'), 'warn');
   }
 
   // Neues, zufälliges Wanderziel (begehbare Kachel) wählen.
@@ -7953,7 +7960,7 @@ class SpielSzene extends Phaser.Scene {
     this._raeuberExists = true;
     this._raeuberLebt = 55;            // bleibt ~55 s, dann zieht er ab
     this._raeuberFrame = 0; this._raeuberWalkT = 0;
-    logEvent('🔫 Im Schatten-Viertel lungert ein Räuber herum …', 'warn');
+    logEvent(T('🔫 Im Schatten-Viertel lungert ein Räuber herum …', '🔫 A robber is lurking in the shady district …'), 'warn');
   }
 
   despawnRaeuber() {
@@ -7975,7 +7982,7 @@ class SpielSzene extends Phaser.Scene {
     this._raeuberFreilauf = true;
     this._raeuberLebt = 55;
     this._raeuberFrame = 0; this._raeuberWalkT = 0;
-    logEvent('🔫 (Test) Ein Räuber taucht auf …', 'warn');
+    logEvent(T('🔫 (Test) Ein Räuber taucht auf …', '🔫 (Test) A robber shows up …'), 'warn');
   }
 
   updateRaeuber(dt, dtReal) {
@@ -7983,7 +7990,7 @@ class SpielSzene extends Phaser.Scene {
     this._raeuberLebt -= dtReal;
     if (this._raeuberLebt <= 0) {                // gibt auf und verschwindet
       this.despawnRaeuber();
-      logEvent('Der Räuber ist abgezogen.', '');
+      logEvent(T('Der Räuber ist abgezogen.', 'The robber has cleared off.'), '');
       return;
     }
     const dx = this.spielerX - this._raeuberX, dy = this.spielerY - this._raeuberY;
@@ -8003,7 +8010,7 @@ class SpielSzene extends Phaser.Scene {
       if (this._raeuberAufgeben > 2.5) {
         this._raeuberAufgeben = 0;
         this.despawnRaeuber();
-        logEvent('Der Räuber lässt von dir ab.', '');
+        logEvent(T('Der Räuber lässt von dir ab.', 'The robber gives up on you.'), '');
         return;
       }
     } else {
@@ -8067,41 +8074,53 @@ class SpielSzene extends Phaser.Scene {
   ueberfall() {
     this._raeuberCooldown = 999;        // während des Popups keine Mehrfach-Auslösung
     const bar = gameState.losesBargeld;
-    const html =
+    const html = T(
       `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
       `„<b>Geld oder Leben!</b>" Ein maskierter Räuber stellt dich im Schatten-Viertel.<br>` +
-      `Du hast <b>${formatEuro(bar)}</b> loses Bargeld dabei.</span>`;
-    oeffneModal('🔫 Überfall!', html, [
-      { label: '🙌 Kooperieren – Bargeld abgeben', danger: true, callback: () => {
+      `Du hast <b>${formatEuro(bar)}</b> loses Bargeld dabei.</span>`,
+      `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
+      `„<b>Your money or your life!</b>" A masked robber corners you in the shady district.<br>` +
+      `You are carrying <b>${formatEuro(bar)}</b> in loose cash.</span>`);
+    oeffneModal(T('🔫 Überfall!', '🔫 Mugging!'), html, [
+      { label: T('🙌 Kooperieren – Bargeld abgeben', '🙌 Cooperate – hand over the cash'), danger: true, callback: () => {
         gameState.losesBargeld = 0;
-        logEvent(`🔫 Ausgeraubt! ${formatEuro(bar)} Bargeld weg.`, 'bad');
+        logEvent(T(`🔫 Ausgeraubt! ${formatEuro(bar)} Bargeld weg.`, `🔫 Robbed! ${formatEuro(bar)} loose cash gone.`), 'bad');
         this._raeuberNachspiel();
-        oeffneModal('💸 Ausgeraubt',
-          `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
+        oeffneModal(T('💸 Ausgeraubt', '💸 Robbed'),
+          T(`<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
           `Du hast brav <b>${formatEuro(bar)}</b> Bargeld herausgerückt.<br>` +
-          `Der Räuber zählt grinsend deine Scheine und verschwindet in der Gasse.</span>`, []);
+          `Der Räuber zählt grinsend deine Scheine und verschwindet in der Gasse.</span>`,
+          `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8cfa0;">` +
+          `You meekly handed over <b>${formatEuro(bar)}</b> in cash.<br>` +
+          `The robber counts your notes with a grin and vanishes down the alley.</span>`), []);
       } },
-      { label: gameState.kampfsportGelernt ? '🥊 Kämpfen (75 %)' : '🥊 Kämpfen (50/50)', primary: true, callback: () => {
+      { label: gameState.kampfsportGelernt ? T('🥊 Kämpfen (75 %)', '🥊 Fight (75 %)') : T('🥊 Kämpfen (50/50)', '🥊 Fight (50/50)'), primary: true, callback: () => {
         if (Math.random() < (gameState.kampfsportGelernt ? 0.75 : 0.5)) {
-          logEvent('🥊 Du hast den Räuber verjagt – Bargeld gerettet!', 'good');
+          logEvent(T('🥊 Du hast den Räuber verjagt – Bargeld gerettet!', '🥊 You drove the robber off – cash saved!'), 'good');
           this._raeuberNachspiel();
-          oeffneModal('🥊 Gewonnen!',
-            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#bfe8a0;">` +
+          oeffneModal(T('🥊 Gewonnen!', '🥊 You won!'),
+            T(`<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#bfe8a0;">` +
             `Du hast gewonnen und dem Räuber mal gezeigt, dass er sich nicht mit jedem ` +
-            `dahergelaufenen Arbeitslosen anlegen sollte!<br>Dein Bargeld bleibt bei dir. 💪</span>`, []);
+            `dahergelaufenen Arbeitslosen anlegen sollte!<br>Dein Bargeld bleibt bei dir. 💪</span>`,
+            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#bfe8a0;">` +
+            `You won and showed the robber not to mess with just any ` +
+            `wandering jobless bloke!<br>Your cash stays with you. 💪</span>`), []);
         } else {
           gameState.gesundheit = clamp(gameState.gesundheit - 10, 0, 100);
-          logEvent(`🥊 Verloren! ${formatEuro(bar)} Bargeld weg, −10 Gesundheit.`, 'bad');
+          logEvent(T(`🥊 Verloren! ${formatEuro(bar)} Bargeld weg, −10 Gesundheit.`, `🥊 Lost! ${formatEuro(bar)} loose cash gone, −10 Health.`), 'bad');
           if (gameState.gesundheit <= 0) {
             gameState.losesBargeld = 0;
             updateHUD(); this.despawnRaeuber(); triggerGameOver('gesundheit'); return;
           }
           gameState.losesBargeld = 0;
           this._raeuberNachspiel();
-          oeffneModal('🤕 Verloren',
-            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8a0a0;">` +
+          oeffneModal(T('🤕 Verloren', '🤕 You lost'),
+            T(`<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8a0a0;">` +
             `Du hast verloren, wurdest zusammengeschlagen und hast all dein Bargeld ` +
-            `(<b>${formatEuro(bar)}</b>) verloren.<br>−10 Gesundheit.</span>`, []);
+            `(<b>${formatEuro(bar)}</b>) verloren.<br>−10 Gesundheit.</span>`,
+            `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#e8a0a0;">` +
+            `You lost, got beaten up and lost all your cash ` +
+            `(<b>${formatEuro(bar)}</b>).<br>−10 Health.</span>`), []);
         }
       } },
     ]);
@@ -8161,14 +8180,14 @@ class SpielSzene extends Phaser.Scene {
       // Spieler an der Reihe?
       if (this._amtNummer != null && this._amtFenster <= 0 && this._amtAktuell >= this._amtNummer) {
         this._amtFenster = 90;                       // 1,5 min Zugangsfenster
-        logEvent('🔔 Deine Nummer ' + this._amtNr(this._amtNummer) + ' wird aufgerufen! Schnell zum Amt (1,5 Min).', 'warn');
+        logEvent(T('🔔 Deine Nummer ' + this._amtNr(this._amtNummer) + ' wird aufgerufen! Schnell zum Amt (1,5 Min).', '🔔 Your number ' + this._amtNr(this._amtNummer) + ' is being called! Hurry to the office (1.5 min).'), 'warn');
       }
       this.amtLedUpdate();
     }
     if (this._amtFenster > 0) {
       this._amtFenster -= dt;
       if (this._amtFenster <= 0) {                    // nicht rechtzeitig da gewesen
-        if (this._amtNummer != null) logEvent('⌛ Wartenummer verfallen – du warst nicht rechtzeitig am Amt.', 'bad');
+        if (this._amtNummer != null) logEvent(T('⌛ Wartenummer verfallen – du warst nicht rechtzeitig am Amt.', '⌛ Ticket number expired – you were not at the office in time.'), 'bad');
         this._amtNummer = null;
         this.amtLedUpdate();
       }
@@ -8186,12 +8205,12 @@ class SpielSzene extends Phaser.Scene {
   }
 
   amtZiehPopup() {
-    oeffneModal('🎫 Wartenummer ziehen',
-      'Beim Amt zieht man erst eine Nummer.<br>Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b>.<br>' +
-      'Erst wenn deine Nummer dran ist, kommst du zu den Anträgen & Terminen.',
+    oeffneModal(T('🎫 Wartenummer ziehen', '🎫 Take a ticket number'),
+      T('Beim Amt zieht man erst eine Nummer.<br>Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b>.<br>', 'At the office you take a ticket first.<br>Currently serving: <b>No. ' + this._amtNr(this._amtAktuell) + '</b>.<br>') +
+      T('Erst wenn deine Nummer dran ist, kommst du zu den Anträgen & Terminen.', 'Only when your number is up do you get to the applications & appointments.'),
       [
-        { label: '🎫 Nummer ziehen', primary: true, callback: () => this.amtZiehen() },
-        { label: '💶 Vordrängeln (100 €)', callback: () => this.amtBestechen() },
+        { label: T('🎫 Nummer ziehen', '🎫 Take a number'), primary: true, callback: () => this.amtZiehen() },
+        { label: T('💶 Vordrängeln (100 €)', '💶 Cut the line (100 €)'), callback: () => this.amtBestechen() },
       ]);
   }
 
@@ -8200,27 +8219,27 @@ class SpielSzene extends Phaser.Scene {
     this._amtNummer = this._amtAktuell + vor + 1;
     this._amtFenster = 0;
     this.amtLedUpdate();
-    logEvent('🎫 Nummer ' + this._amtNr(this._amtNummer) + ' gezogen – ' + vor + ' vor dir. Warte auf den Aufruf am LED-Schild.', '');
+    logEvent(T('🎫 Nummer ' + this._amtNr(this._amtNummer) + ' gezogen – ' + vor + ' vor dir. Warte auf den Aufruf am LED-Schild.', '🎫 Number ' + this._amtNr(this._amtNummer) + ' taken – ' + vor + ' ahead of you. Wait for the call on the LED board.'), '');
   }
 
   amtWartePopup() {
     const vor = Math.max(0, this._amtNummer - this._amtAktuell);
-    oeffneModal('⏳ Du wartest auf deinen Aufruf',
-      'Deine Nummer: <b>Nr. ' + this._amtNr(this._amtNummer) + '</b><br>' +
-      'Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b><br>' +
-      'Noch <b>' + vor + '</b> vor dir. Behalte das grüne LED-Schild im Auge.',
-      [ { label: '💶 Vordrängeln (100 €)', callback: () => this.amtBestechen() } ]);
+    oeffneModal(T('⏳ Du wartest auf deinen Aufruf', '⏳ You are waiting to be called'),
+      T('Deine Nummer: <b>Nr. ' + this._amtNr(this._amtNummer) + '</b><br>', 'Your number: <b>No. ' + this._amtNr(this._amtNummer) + '</b><br>') +
+      T('Aktuell aufgerufen: <b>Nr. ' + this._amtNr(this._amtAktuell) + '</b><br>', 'Currently serving: <b>No. ' + this._amtNr(this._amtAktuell) + '</b><br>') +
+      T('Noch <b>' + vor + '</b> vor dir. Behalte das grüne LED-Schild im Auge.', 'Still <b>' + vor + '</b> ahead of you. Keep an eye on the green LED board.'),
+      [ { label: T('💶 Vordrängeln (100 €)', '💶 Cut the line (100 €)'), callback: () => this.amtBestechen() } ]);
   }
 
   amtBestechen() {
     const gs = gameState;
-    if (gs.losesBargeld + gs.kontostand < 100) { logEvent('💶 Keine 100 € fürs Vordrängeln.', 'bad'); return; }
+    if (gs.losesBargeld + gs.kontostand < 100) { logEvent(T('💶 Keine 100 € fürs Vordrängeln.', '💶 No 100 € to cut the line.'), 'bad'); return; }
     let rest = 100;
     const l = Math.min(rest, gs.losesBargeld); gs.losesBargeld -= l; rest -= l;
     gs.kontostand -= rest;
     this._amtFenster = 90;                            // sofort Zugang
     updateHUD();
-    logEvent('💶 100 € gesteckt – du gehst an der Schlange vorbei.', 'warn');
+    logEvent(T('💶 100 € gesteckt – du gehst an der Schlange vorbei.', '💶 Slipped 100 € – you walk straight past the queue.'), 'warn');
     interact('arbeitsamt');                           // öffnet jetzt das Amt-Menü
   }
 
@@ -8388,7 +8407,7 @@ class SpielSzene extends Phaser.Scene {
       this.pfad = []; this.pfadZielOrt = null;
       this.cameras.main.centerOn(this.spielerX, this.spielerY);   // Kamera fixieren → ruhiger Hintergrund
       interact(nah.id);
-    } else logEvent('ℹ️ Näher an ein Gebäude gehen (E).', '');
+    } else logEvent(T('ℹ️ Näher an ein Gebäude gehen (E).', 'ℹ️ Get closer to a building (E).'), '');
   }
 
   /** Überspringt die aktuelle Woche sofort (SPACE-Taste) */
@@ -8397,7 +8416,7 @@ class SpielSzene extends Phaser.Scene {
     gameState.energie = 100;
     // Restzeit der Woche sofort ablaufen lassen
     this.zeitAkku = ECHTZEIT_PRO_WOCHE;
-    logEvent('⏩ Woche übersprungen – ausgeschlafen, Energie voll.', '');
+    logEvent(T('⏩ Woche übersprungen – ausgeschlafen, Energie voll.', '⏩ Week skipped – well rested, Energy full.'), '');
     soundNeutral && soundNeutral();
     updateHUD();
   }
