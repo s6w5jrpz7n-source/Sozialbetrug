@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v118 – Vollständig zweisprachig';
+const BUILD_MARKE = 'v119 – Fix Niete/Kur/Disclaimer-Sprache';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -325,7 +325,7 @@ const ORTE_CONFIG = [
     aktionen: [
       { label: T('📋  Pflichttermin wahrnehmen', '📋 Attend mandatory appointment'),               id: 'pflichttermin' },
       { label: T('📝  Scheinbewerbung einreichen (Risiko -5)', '📝 Submit fake application (Risk -5)'), id: 'scheinbewerbung' },
-      { label: T(T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)'), '🏖️ Apply for spa cure (full recovery)'),         id: 'kur' },
+      { label: T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)'),         id: 'kur' },
       { label: T('🚿  Mehrbedarf Warmwasser (+15 €/M)', '🚿 Hot-water extra benefit (+15 €/mo)'),         id: 'mb_warmwasser' },
       { label: T('👨‍👧  Mehrbedarf Alleinerziehend (+70 €/M)', '👨‍👧 Single-parent extra benefit (+70 €/mo)'),    id: 'mb_alleinerziehend' },
       { label: T('🥗  Ernährungs-Mehrbedarf / Attest (+110 €/M)', '🥗 Dietary extra benefit / certificate (+110 €/mo)'), id: 'mb_ernaehrung' },
@@ -792,6 +792,7 @@ function zeigeDisclaimer(ausInfo) {
         try { localStorage.setItem('disclaimer_ok', '1'); } catch (e) {}
         if (ausInfo) oeffneInfo('disclaimer');
       } },
+    { label: SPRACHE === 'en' ? '🇩🇪 Auf Deutsch lesen' : '🇬🇧 Read in English', callback: () => setSprache(SPRACHE === 'en' ? 'de' : 'en') },
   ]);
 }
 
@@ -1416,8 +1417,14 @@ function _zeigeStempel(elId, anderId) {
   clearTimeout(el._stempelTimer);
   el._stempelTimer = setTimeout(() => el.classList.remove('show'), 1500);
 }
-function zeigeNieteStempel()  { _zeigeStempel('niete-flash',  'gewinn-flash'); }
-function zeigeGewinnStempel() { _zeigeStempel('gewinn-flash', 'niete-flash'); }
+function zeigeNieteStempel()  {
+  const t = document.querySelector('#niete-flash .niete-text'); if (t) t.textContent = T('Niete', 'Blank');
+  _zeigeStempel('niete-flash',  'gewinn-flash');
+}
+function zeigeGewinnStempel() {
+  const t = document.querySelector('#gewinn-flash .gewinn-text'); if (t) t.textContent = T('Gewinn', 'Win');
+  _zeigeStempel('gewinn-flash', 'niete-flash');
+}
 
 // Ein einzelnes Los ziehen → Gewinnbetrag (0 = Niete).
 function rubbellosZiehung() {
@@ -3124,7 +3131,7 @@ function interact(ortId) {
     if (a.id === 'kur') {
       label = gs.monat < gs.kurCooldownMonat
         ? T(`🏖️  Kur (erst wieder ab Monat ${gs.kurCooldownMonat})`, `🏖️ Spa cure (again from month ${gs.kurCooldownMonat})`)
-        : '🏖️  Kur beantragen (volle Erholung)';
+        : T('🏖️  Kur beantragen (volle Erholung)', '🏖️ Apply for spa cure (full recovery)');
     }
     if ((ortId === 'wohnung' || ortId === 'villa') && a.id === 'scheinwg') {
       label = gs.scheinWG
