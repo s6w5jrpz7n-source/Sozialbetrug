@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v132 – Kein Highlight, Klick-Toleranz, zeilenweise Tiefe zurück';
+const BUILD_MARKE = 'v133 – Glow wieder da, Klick-Toleranz';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -8449,11 +8449,27 @@ class SpielSzene extends Phaser.Scene {
   }
 
   aktualisiereHighlight() {
-    // Kein Highlight/Glow mehr – Interaktion per Klick (hinlaufen) bzw. Doppelklick
-    // (hinlaufen + Menü) reicht völlig. Glow/Rahmen waren überflüssig und unschön.
-    if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
-    this._glowSprite = null;
-    if (this.highlightGfx) this.highlightGfx.clear();
+    const nah = this.nahesGebaeude();
+    const sprite = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
+
+    // Aktives Gebäude leuchtet gelb auf (WebGL-Glow). Wechselt nur bei Bedarf.
+    if (sprite !== this._glowSprite) {
+      if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
+      if (sprite && sprite.preFX) sprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
+      this._glowSprite = sprite || null;
+    }
+
+    // Fallback (kein Sprite [z. B. Park] oder kein WebGL): gelber Rahmen
+    this.highlightGfx.clear();
+    if (nah && (!sprite || !sprite.preFX)) {
+      this.highlightGfx.lineStyle(3, 0xffe87a, 0.95);
+      if (sprite) {
+        this.highlightGfx.strokeRect(sprite.x, sprite.y, sprite.displayWidth, sprite.displayHeight);
+      } else {
+        const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+        this.highlightGfx.strokeRect(pos.x - this.tileW * 1.5, pos.y - this.tileH * 3.9, this.tileW * 3, this.tileH * 5.1);
+      }
+    }
   }
 
   versucheInteraktion() {
