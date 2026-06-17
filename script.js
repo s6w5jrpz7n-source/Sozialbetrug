@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v130 – Trigger-Clamp, Nebel & Arbeitsamt-Tiefe gefixt';
+const BUILD_MARKE = 'v131 – Zeilenweise Gebäude-Tiefe (Ecken-Verdeckung weg)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6018,13 +6018,6 @@ const BUILDING_SPRITES = {
   villa:       { file: 'assets/buildings/villa.png',          breite: 2.35, ankerY: 0.78, dy: 0.04 },
 };
 
-// Iso-Tiefenlinie pro Gebäude als Anteil der Sprite-Höhe. Standard 0.85 (= Boden-
-// frontlinie bei normalen Gebäuden). Gebäude mit großem VORPLATZ, bei denen der
-// Aufbau weit HINTEN steht (z. B. Arbeitsamt-Turm: Aufbau bis ~52 % Höhe, dann
-// Vorplatz), brauchen eine HÖHERE Linie (kleinerer Wert) – sonst schaltet „hinter"
-// schon auf dem Vorplatz ein statt erst an der Aufbau-Ecke. Belegt per Sprite-Analyse.
-const GEB_TIEFE_FRAKTION = { arbeitsamt: 0.53 };
-
 // ================================================================
 // HAUPTAUFRUF
 // ================================================================
@@ -6193,17 +6186,31 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-FRONTLINIE des AUFBAUS. Standard 0.85·h (Frontkante bei
-    // normalen Gebäuden). Vorplatz-Gebäude (z. B. Arbeitsamt) nutzen eine höhere
-    // Linie (GEB_TIEFE_FRAKTION), damit „hinter" erst an der Aufbau-Ecke einschaltet
-    // und nicht schon auf dem Vorplatz.
-    const baseY = y + h * (GEB_TIEFE_FRAKTION[o.id] ?? 0.85);
-    const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
-    if (o.type === 'building' && orte[o.id]) {
-      // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
-      img.setInteractive({ pixelPerfect: true });
-      img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
-      scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
+    // Gebäude ZEILENWEISE zeichnen: in waagerechte Streifen schneiden, jeder mit
+    // eigener Iso-Tiefe (= Boden-Y des Streifens). So verdeckt nur der Teil des
+    // Gebäudes, der SÜDLICH (= vor) dem Spieler liegt; die seitlichen Vorflächen-
+    // Ecken (links/rechts) verdecken ihn nicht mehr. Eine einzelne waagerechte
+    // Tiefenlinie konnte das prinzipiell nicht leisten (Ursache der Ecken-Verdeckung).
+    const _tex = scene.textures.get(key).getSourceImage();
+    const _srcW = _tex.width, _srcH = _tex.height;
+    const _scX = w / _srcW, _scY = h / _srcH;     // Quelle → Anzeige
+    const _STRIP = Math.max(8, tileH);            // Streifenhöhe (Anzeige-px) ≈ Kachelhöhe
+    const strips = [];
+    for (let dispTop = 0; dispTop < h; dispTop += _STRIP) {
+      const dispBot = Math.min(h, dispTop + _STRIP);
+      const s = scene.add.image(x, y, key).setOrigin(0, 0).setScale(_scX, _scY);
+      s.setCrop(0, dispTop / _scY, _srcW, (dispBot - dispTop) / _scY);
+      s.setDepth(y + dispBot);                    // Frontkante des Streifens
+      strips.push(s);
+    }
+    if (o.type === 'building' && orte[o.id] && strips.length) {
+      // Nur EIN Streifen klickbar – der pixelgenaue Treffer-Test nutzt die volle
+      // Textur (nicht den Crop), deckt also das ganze Gebäude ab. Spart 200+
+      // interaktive Objekte (Performance) bei gleicher Klickfläche.
+      const klick = strips[0];
+      klick.setInteractive({ pixelPerfect: true });
+      klick.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
+      scene.gebaeudeSprites[o.id] = strips;   // Array der Streifen (für Highlight-Rahmen)
     }
     // Sportplatz/-verein ist ein ganzes Grundstück → Kern nicht betretbar machen
     // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
@@ -6219,7 +6226,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
         color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
-      }).setOrigin(0.5, 1).setDepth(baseY + 0.3);
+      }).setOrigin(0.5, 1).setDepth(y + h + 0.3);   // vor den Gebäude-Streifen (lesbar)
     }
   });
 
@@ -8421,21 +8428,23 @@ class SpielSzene extends Phaser.Scene {
 
   aktualisiereHighlight() {
     const nah = this.nahesGebaeude();
-    const sprite = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
-
-    // Aktives Gebäude leuchtet gelb auf (WebGL-Glow). Wechselt nur bei Bedarf.
-    if (sprite !== this._glowSprite) {
+    const g = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
+    // Glow nur für Einzel-Sprites (z. B. Park). Streifen-Gebäude (Array) bekommen
+    // einen Rahmen, weil ein Glow pro Streifen hässliche Trennlinien erzeugen würde.
+    const glowSprite = (g && !Array.isArray(g) && g.preFX) ? g : null;
+    if (glowSprite !== this._glowSprite) {
       if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
-      if (sprite && sprite.preFX) sprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
-      this._glowSprite = sprite || null;
+      if (glowSprite) glowSprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
+      this._glowSprite = glowSprite;
     }
 
-    // Fallback (kein Sprite [z. B. Park] oder kein WebGL): gelber Rahmen
+    // Rahmen für Streifen-Gebäude / Fallback (Park ohne WebGL)
     this.highlightGfx.clear();
-    if (nah && (!sprite || !sprite.preFX)) {
+    if (nah && !glowSprite) {
       this.highlightGfx.lineStyle(3, 0xffe87a, 0.95);
-      if (sprite) {
-        this.highlightGfx.strokeRect(sprite.x, sprite.y, sprite.displayWidth, sprite.displayHeight);
+      if (Array.isArray(g) && g.length) {
+        const s0 = g[0];   // alle Streifen teilen x/y und Anzeigegröße
+        this.highlightGfx.strokeRect(s0.x, s0.y, s0.displayWidth, s0.displayHeight);
       } else {
         const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
         this.highlightGfx.strokeRect(pos.x - this.tileW * 1.5, pos.y - this.tileH * 3.9, this.tileW * 3, this.tileH * 5.1);
