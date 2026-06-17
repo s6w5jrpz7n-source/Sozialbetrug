@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v128 – Build-Nummer im Spiel sichtbar';
+const BUILD_MARKE = 'v129 – Feines Raster 48×48 (9-fach), präzise Kollision';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -29,7 +29,7 @@ window.T = T; window.setSprache = setSprache;
 
 // Begehbares Gitter: Spieldiamant 0..15 + ein Ring (−1 und 16) rundherum, damit
 // man um den Diamanten herumlaufen kann (außen auf dem gemalten Gehsteig).
-const GEH_MIN = -1, GEH_MAX = 16;
+const GEH_MIN = -3, GEH_MAX = 50;   // feines Raster 0..47 + Laufweg-Ring (3 Felder = 1 alte Kachel)
 
 // Einheitliche Anzeigehöhen der Figuren (px). Werden auf jede Pose angewandt,
 // damit Front-/Seiten-Sheets gleich groß wirken (unabhängig von der Sheet-Höhe).
@@ -492,7 +492,7 @@ const ORTE_CONFIG = [
     ]
   },
   {
-    id: 'dealer', name: T('🌳  Park', '🌳 Park'), col: 1, row: 11,
+    id: 'dealer', name: T('🌳  Park', '🌳 Park'), col: 4, row: 34,
     farbe: 0x3a6a2a, dachFarbe: 0x2a4a1a,
     beschreibung: T('Ein Park mit Bänken und Bäumen – und einer zwielichtigen Gestalt im Gebüsch.', 'A park with benches and trees – and a shady figure in the bushes.'),
     aktionen: [
@@ -6022,7 +6022,7 @@ const BUILDING_SPRITES = {
 // HAUPTAUFRUF
 // ================================================================
 function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
-  const COLS = 16, ROWS = 16;
+  const COLS = 48, ROWS = 48;
   const feldW = (COLS + ROWS) * tileW / 2;   // 1920
   const feldH = (COLS + ROWS) * tileH / 2;   // 960
 
@@ -6224,7 +6224,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     const pos = isoToScreen(dealer.col + 0.5, dealer.row + 0.5, tileW, tileH, offsetX, offsetY);
     // ===== Park + Dealer – Werte aus dem Layout-Editor (layout/editor.html) =====
     // Diese Konstanten kannst du direkt aus dem Editor-Export übernehmen.
-    const PARK_KACHELN = 2.36;       // Park-Breite in Kacheln (kleiner = kleiner)
+    const PARK_KACHELN = 7.08;       // Park-Breite in Kacheln (=2.36 alt ×3 feines Raster; Weltgröße unverändert)
     const PARK_DX = 110.2, PARK_DY = -38.9;     // Park-Versatz vom Kachel-Mittelpunkt (px)
     const DEALER_SCALE = 0.293;                 // Dealer-Größe
     const DEALER_DX = 84.0, DEALER_DY = -35.5;  // Dealer-Versatz (px)
@@ -6256,7 +6256,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
           frames: scene.anims.generateFrameNumbers('dealer', { start: 0, end: 6 }),
           frameRate: 1.5, repeat: -1 });   // 1/4 der vorherigen Geschwindigkeit
       }
-      scene.dealerSprite = scene.add.sprite(pos.x + DEALER_DX, pos.y + tileH * 0.15 + DEALER_DY, 'dealer')
+      scene.dealerSprite = scene.add.sprite(pos.x + DEALER_DX, pos.y + tileH * 0.45 + DEALER_DY, 'dealer')
         .setOrigin(0.5, 1).setScale(DEALER_SCALE).setDepth(pos.y + 2);
       scene.dealerSprite.play('dealer_anim');
     }
@@ -6960,14 +6960,17 @@ class StartSzene extends Phaser.Scene {
 class SpielSzene extends Phaser.Scene {
   constructor() {
     super({ key: 'SpielSzene' });
-    this.tileW   = 120;
-    this.tileH   = 60;
+    // Feines Logik-Raster: 48×48 statt 16×16 (3× pro Achse = 9× Felder). Die
+    // Spielfläche bleibt EXAKT gleich groß (feldW=1920, feldH=960), nur die
+    // Kacheln sind 1/3 so groß (40×20) → präzise Kollision/Standflächen.
+    this.tileW   = 40;
+    this.tileH   = 20;
     // offsetX/Y werden in create() dynamisch berechnet (Zentrierung)
     this.offsetX = 400;
     this.offsetY = 120;
 
-    this.spielerCol  = 4;   // Startposition auf Kreuzung (Straße)
-    this.spielerRow  = 4;
+    this.spielerCol  = 12;  // Startposition auf Kreuzung (Straße) – 4×3 im feinen Raster
+    this.spielerRow  = 12;
 
     // Laufanimation
     this.walkFrame   = 0;
@@ -7044,7 +7047,7 @@ class SpielSzene extends Phaser.Scene {
     // Kartengrenzen in ISO-Koordinaten:
     //   rechts: (COLS + ROWS) * tileW/2     links: -(ROWS) * tileW/2
     //   unten:  (COLS + ROWS) * tileH/2     oben:  0
-    const COLS = 16, ROWS = 16;
+    const COLS = 48, ROWS = 48;
     const karteBreite = (COLS + ROWS) * this.tileW / 2;
     const karteHoehe  = (COLS + ROWS) * this.tileH / 2;
     // Karte horizontal und vertikal zentrieren
@@ -7112,7 +7115,7 @@ class SpielSzene extends Phaser.Scene {
     // Startposition: direkt vor der eigenen Wohnung (erste begehbare Nachbarkachel)
     const _woh = ORTE_CONFIG.find(o => o.id === 'wohnung');
     if (_woh) {
-      const kandidaten = [[1, 1], [0, 1], [1, 0], [-1, 1], [1, -1], [0, 2], [2, 0], [-1, 0], [0, -1]];
+      const kandidaten = [[3, 3], [0, 3], [3, 0], [-3, 3], [3, -3], [0, 6], [6, 0], [-3, 0], [0, -3]];
       for (const [dc, dr] of kandidaten) {
         const c = _woh.col + dc, r = _woh.row + dr;
         if (this.begehbar(c, r)) { this.spielerCol = c; this.spielerRow = r; break; }
@@ -8280,7 +8283,7 @@ class SpielSzene extends Phaser.Scene {
 
   // Sichtlinie zwischen zwei Weltpunkten komplett begehbar?
   hatSicht(x1, y1, x2, y2) {
-    const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 22));
+    const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 10));
     for (let i = 0; i <= n; i++) {
       if (!this.weltBegehbar(x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n)) return false;
     }
@@ -8357,7 +8360,7 @@ class SpielSzene extends Phaser.Scene {
     const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
     const istVorne = (c, r) => {
       const s = (c - ort.col) + (r - ort.row);          // >0 = südlich = vor dem Gebäude
-      return s >= 1 && s <= 3 && Math.abs(c - ort.col) <= 2 && Math.abs(r - ort.row) <= 2;
+      return s >= 1 && s <= 9 && Math.abs(c - ort.col) <= 6 && Math.abs(r - ort.row) <= 6;
     };
     if (istVorne(start.col, start.row)) return [];        // steht schon sichtbar davor
     let tp = this.bfs(start.col, start.row, istVorne);
@@ -8406,7 +8409,7 @@ class SpielSzene extends Phaser.Scene {
     let best = null, bestD = 99;
     this.ortRects.forEach(o => {
       const d = Math.max(Math.abs(o.col - this.spielerCol), Math.abs(o.row - this.spielerRow));
-      if (d <= 2 && d < bestD) { bestD = d; best = o; }
+      if (d <= 6 && d < bestD) { bestD = d; best = o; }
     });
     return best;
   }
@@ -8509,7 +8512,7 @@ window.addEventListener('resize', () => {
   if (scene && scene.sys.isActive()) {
     const W = scene.scale.width;
     const H = scene.scale.height;
-    const COLS = 16, ROWS = 16;
+    const COLS = 48, ROWS = 48;
     scene.offsetX = W / 2 - (COLS - ROWS) * scene.tileW / 4;
     scene.offsetY = Math.max(40, (H - (COLS + ROWS) * scene.tileH / 2) / 2 + 20);
   }
