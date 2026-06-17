@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v129 – Feines Raster 48×48 (9-fach), präzise Kollision';
+const BUILD_MARKE = 'v130 – Trigger-Clamp, Nebel & Arbeitsamt-Tiefe gefixt';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6018,6 +6018,13 @@ const BUILDING_SPRITES = {
   villa:       { file: 'assets/buildings/villa.png',          breite: 2.35, ankerY: 0.78, dy: 0.04 },
 };
 
+// Iso-Tiefenlinie pro Gebäude als Anteil der Sprite-Höhe. Standard 0.85 (= Boden-
+// frontlinie bei normalen Gebäuden). Gebäude mit großem VORPLATZ, bei denen der
+// Aufbau weit HINTEN steht (z. B. Arbeitsamt-Turm: Aufbau bis ~52 % Höhe, dann
+// Vorplatz), brauchen eine HÖHERE Linie (kleinerer Wert) – sonst schaltet „hinter"
+// schon auf dem Vorplatz ein statt erst an der Aufbau-Ecke. Belegt per Sprite-Analyse.
+const GEB_TIEFE_FRAKTION = { arbeitsamt: 0.53 };
+
 // ================================================================
 // HAUPTAUFRUF
 // ================================================================
@@ -6174,8 +6181,8 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     const by = fieldTop  + (o.fy + o.fh * 0.85) * feldH;
     const dc = (bx - offsetX) / (tileW / 2);            // col - row
     const sr = (by - offsetY) / (tileH / 2) - 1;        // col + row
-    orte[o.id].col = clamp(Math.round((sr + dc) / 2), 0, 15);
-    orte[o.id].row = clamp(Math.round((sr - dc) / 2), 0, 15);
+    orte[o.id].col = clamp(Math.round((sr + dc) / 2), 0, 47);
+    orte[o.id].row = clamp(Math.round((sr - dc) / 2), 0, 47);
   });
 
   // 2) Objekte zeichnen (nach Boden-Y sortiert → hinten zuerst)
@@ -6186,13 +6193,11 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-FRONTLINIE der Gebäude-Standfläche (fy + fh*0.85 → exakt
-    // die Linie, die auch Trigger/Kollision benutzen). Da die Standflächen jetzt
-    // gesperrt sind, kann der Spieler nur noch SÜDLICH (davor → sichtbar) oder
-    // seitlich/nördlich (dahinter → verdeckt) stehen. Mit 0.85 deckt sich die
-    // Tiefe exakt mit der Frontkante → keine Figur läuft mehr über die Kante,
-    // und niemand wird fälschlich verdeckt (analytisch 0 Fehlfälle).
-    const baseY = y + h * 0.85;
+    // Iso-Tiefe = Boden-FRONTLINIE des AUFBAUS. Standard 0.85·h (Frontkante bei
+    // normalen Gebäuden). Vorplatz-Gebäude (z. B. Arbeitsamt) nutzen eine höhere
+    // Linie (GEB_TIEFE_FRAKTION), damit „hinter" erst an der Aufbau-Ecke einschaltet
+    // und nicht schon auf dem Vorplatz.
+    const baseY = y + h * (GEB_TIEFE_FRAKTION[o.id] ?? 0.85);
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
@@ -6261,7 +6266,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       scene.dealerSprite.play('dealer_anim');
     }
     // anklickbare Zone über dem Park (größer)
-    scene.add.zone(pos.x, pos.y - tileH * 0.4, tileW * 2.2, tileH * 2.6)
+    scene.add.zone(pos.x, pos.y - tileH * 1.2, tileW * 6.6, tileH * 7.8)
       .setInteractive()
       .on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt('dealer'); });
     // Label direkt unter die (versetzte) Park-Grafik setzen: x = Park-Mitte,
@@ -7075,7 +7080,7 @@ class SpielSzene extends Phaser.Scene {
       ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
       const _layout = (this.cache && this.cache.json && this.cache.json.exists('layout'))
         ? this.cache.json.get('layout') : null;
-      const _fW = (16 + 16) * this.tileW / 2, _fH = (16 + 16) * this.tileH / 2;
+      const _fW = (48 + 48) * this.tileW / 2, _fH = (48 + 48) * this.tileH / 2;
       const _left = this.offsetX - _fW / 2, _top = this.offsetY;
       if (_layout && Array.isArray(_layout.objects)) {
         _layout.objects.filter(o => o.type === 'building').forEach(o => {
@@ -7150,7 +7155,7 @@ class SpielSzene extends Phaser.Scene {
 
     // ---- Kamera folgt dem Spieler (Stadt scrollt mit) ----
     this.camTarget = this.add.zone(this.spielerX, this.spielerY, 1, 1);  // unsichtbares Folgeziel
-    const fW = (16 + 16) * this.tileW / 2, fH = (16 + 16) * this.tileH / 2;
+    const fW = (48 + 48) * this.tileW / 2, fH = (48 + 48) * this.tileH / 2;
     // Grenzen großzügig im gekachelten Stadtbereich → nie schwarzer Rand
     this.cameras.main.setBounds(
       this.offsetX - fW / 2 - 1.5 * fW, this.offsetY - 1.5 * fH,
@@ -7303,7 +7308,7 @@ class SpielSzene extends Phaser.Scene {
     const amtOrt = ORTE_CONFIG.find(o => o.id === 'arbeitsamt');
     if (amtOrt) {
       const p = isoToScreen(amtOrt.col + 0.5, amtOrt.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-      const sx = p.x, sy = p.y - this.tileH * 2.2;    // über dem Eingang
+      const sx = p.x, sy = p.y - this.tileH * 6.6;    // über dem Eingang (×3 feines Raster = 132 px wie zuvor)
       this.amtLedBg = this.add.rectangle(sx, sy, 74, 30, 0x0a0f08).setStrokeStyle(2, 0x214a21).setDepth(80000);
       this.amtLedText = this.add.text(sx, sy, 'Nr ' + this._amtNr(this._amtAktuell), {
         fontFamily: '"Share Tech Mono", monospace', fontSize: '18px', fontStyle: 'bold', color: '#39ff14',
@@ -7955,7 +7960,7 @@ class SpielSzene extends Phaser.Scene {
     [k, bk].forEach(o => {
       if (!o) return;
       const p = isoToScreen(o.col + 0.5, o.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-      minY = Math.max(minY, p.y + this.tileH * 1.0);   // eine Reihe unter dem Gebäude
+      minY = Math.max(minY, p.y + this.tileH * 3.0);   // eine (alte) Reihe unter dem Gebäude (×3 feines Raster)
     });
     this._revier = {
       cx: (pa.x + pb.x) / 2, cy: (pa.y + pb.y) / 2,
@@ -8433,7 +8438,7 @@ class SpielSzene extends Phaser.Scene {
         this.highlightGfx.strokeRect(sprite.x, sprite.y, sprite.displayWidth, sprite.displayHeight);
       } else {
         const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-        this.highlightGfx.strokeRect(pos.x - this.tileW * 0.5, pos.y - this.tileH * 1.3, this.tileW, this.tileH * 1.7);
+        this.highlightGfx.strokeRect(pos.x - this.tileW * 1.5, pos.y - this.tileH * 3.9, this.tileW * 3, this.tileH * 5.1);
       }
     }
   }
