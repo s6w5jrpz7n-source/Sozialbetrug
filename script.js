@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v125 – Kollision aus handmarkierten Gebäude-Standflächen';
+const BUILD_MARKE = 'v126 – Tiefenlinie auf Standflächen-Frontkante (0.85)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6174,11 +6174,13 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-Y der GEBÄUDE-STANDFLÄCHE. Muss zur Kollisions-/Trigger-
-    // Grundlinie passen (oben: fy + fh*0.85), sonst sortieren v. a. HOHE Gebäude zu
-    // flach → Charaktere DAHINTER werden über die Dachkante gezeichnet. 0.82 = knapp
-    // über der Standlinie (kleiner Puffer, damit Figuren direkt davor nicht verschwinden).
-    const baseY = y + h * 0.78;   // Tiefenlinie etwas höher → Figuren vorn/seitlich (z. B. Penner an der Arztpraxis-Ecke) werden nicht mehr verdeckt; nördlich stehende bleiben dahinter
+    // Iso-Tiefe = Boden-FRONTLINIE der Gebäude-Standfläche (fy + fh*0.85 → exakt
+    // die Linie, die auch Trigger/Kollision benutzen). Da die Standflächen jetzt
+    // gesperrt sind, kann der Spieler nur noch SÜDLICH (davor → sichtbar) oder
+    // seitlich/nördlich (dahinter → verdeckt) stehen. Mit 0.85 deckt sich die
+    // Tiefe exakt mit der Frontkante → keine Figur läuft mehr über die Kante,
+    // und niemand wird fälschlich verdeckt (analytisch 0 Fehlfälle).
+    const baseY = y + h * 0.85;
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
