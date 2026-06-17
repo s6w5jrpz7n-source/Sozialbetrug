@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v120 – Front-Häuser-Maske';
+const BUILD_MARKE = 'v121 – i18n HUD/Bubbles, Räuber-Fix, Sprachwechsel';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2576,12 +2576,16 @@ function updateHUD() {
   _pillShow('pill-depot',    depotWertLive > 0);
   _pillShow('pill-schulden', schulden > 0);
   _set('tb-staat',   formatEuro(gs.vomStaatGesamt || 0));
-  _set('tb-zeit',    `M${gs.monat} W${gs.woche} T${gs.tag}`);
-  _set('tb-status',  gs.status === 'ALG1' ? 'ALG I' : 'ALG II');
+  _set('tb-zeit',    T(`M${gs.monat} W${gs.woche} T${gs.tag}`, `M${gs.monat} W${gs.woche} D${gs.tag}`));
+  _set('tb-status',  gs.status === 'ALG1' ? T('ALG I', 'Welfare I') : T('ALG II', 'Welfare II'));
   const amtTage = Math.max(0, Math.round(gs.naechsterAmtsBesuch * 7 - (gs.tag - 1)));
-  _set('tb-amt',     amtTage + 'T');
+  _set('tb-amt',     amtTage + T('T', 'd'));
   const essenTage = gs.lebensmittelTageRest || 0;
-  _set('tb-essen',   essenTage > 0 ? essenTage + 'T' : 'leer');
+  _set('tb-essen',   essenTage > 0 ? essenTage + T('T', 'd') : T('leer', 'empty'));
+  // Statische HUD-Labels (in der index.html deutsch) zur Laufzeit übersetzen
+  const _setLbl = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
+  _setLbl('.tb-staat-label', T('💀 VOM STAAT KASSIERT', '💀 MILKED FROM THE STATE'));
+  _setLbl('#hud-vom-staat-label', T('💸 Vom Staat kassiert', '💸 Milked from the state'));
 
   // ---- Spielzeit (mm:ss / h:mm:ss) – wird bei neuem Spiel zurückgesetzt ----
   const sek = Math.floor(window._spielzeitSek || 0);
@@ -2607,9 +2611,9 @@ function updateHUD() {
 
   // ---- Zeit (Monat / Woche / Tag) ----
   const zeitEl = document.getElementById('hud-zeit');
-  if (zeitEl) zeitEl.textContent = `M${gs.monat}  W${gs.woche}  T${gs.tag}`;
+  if (zeitEl) zeitEl.textContent = T(`M${gs.monat}  W${gs.woche}  T${gs.tag}`, `M${gs.monat}  W${gs.woche}  D${gs.tag}`);
   const clock = document.getElementById('header-clock');
-  if (clock) clock.textContent = `Monat ${gs.monat} · Woche ${gs.woche} · Tag ${gs.tag}`;
+  if (clock) clock.textContent = T(`Monat ${gs.monat} · Woche ${gs.woche} · Tag ${gs.tag}`, `Month ${gs.monat} · Week ${gs.woche} · Day ${gs.tag}`);
 
   // ---- "Vom Staat kassiert"-Counter ----
   const staatEl = document.getElementById('hud-vom-staat');
@@ -7218,7 +7222,7 @@ class SpielSzene extends Phaser.Scene {
     }
     this.bettlerSprite = this.add.sprite(-9999, -9999, 'bettler_stand')
       .setOrigin(0.5, 1).setScale(BETTLER_H / 176).setVisible(false);   // Höhe wird je Pose einheitlich gesetzt
-    this.bettlerBubble = this.add.text(0, 0, "Haste mal 'n Euro?", {
+    this.bettlerBubble = this.add.text(0, 0, T("Haste mal 'n Euro?", "Got a spare quid?"), {
       fontFamily: '"Share Tech Mono", "Courier New", monospace', fontSize: '18px', fontStyle: 'bold',
       color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 9, y: 6 },
       // hohe Auflösung → auch bei rausgezoomter Kamera scharf/lesbar
@@ -7255,7 +7259,7 @@ class SpielSzene extends Phaser.Scene {
       this.raeuberSprite = this.add.sprite(-9999, -9999, 'raeuber').setOrigin(0.5, 1).setVisible(false);
     }
     // Sprechblase über dem Räuber – schwarz auf hell, wie beim Bettler
-    this.raeuberBubble = this.add.text(0, 0, 'Geld oder Leben!', {
+    this.raeuberBubble = this.add.text(0, 0, T('Geld oder Leben!', 'Your money or your life!'), {
       fontFamily: '"Share Tech Mono", "Courier New", monospace', fontSize: '18px', fontStyle: 'bold',
       color: '#1a1a1a', backgroundColor: '#f5f0d8', padding: { x: 9, y: 6 },
       resolution: Math.max(2, Math.min(window.devicePixelRatio || 2, 3)),
@@ -8053,29 +8057,21 @@ class SpielSzene extends Phaser.Scene {
           this._raeuberPfad = [];   // blockiert/außer Revier → neu planen
         }
       }
-    } else if (!this._raeuberSteht && !this._raeuberFreilauf && this._revier) {
-      // Spieler außerhalb des Reviers → nicht am Rand kleben, sondern zurück ins
-      // Revier wandern (Richtung Revier-Mitte).
-      const z = this._revier;
-      if (Phaser.Math.Distance.Between(this._raeuberX, this._raeuberY, z.cx, z.cy) > 60) {
-        this._raeuberRepath = (this._raeuberRepath || 0) - dt;
-        if (this._raeuberRepath <= 0 || !this._raeuberPfad || !this._raeuberPfad.length) {
-          this._raeuberPfad = this.npcPfad(this._raeuberX, this._raeuberY, z.cx, z.cy) || [];
-          this._raeuberRepath = 0.6;
-        }
-        if (this._raeuberPfad.length) {
-          const np = this.folgePfad(this._raeuberX, this._raeuberY, this._raeuberPfad, 70, dt);
-          if (this.imRevier(np.x, np.y) && this.weltBegehbar(np.x, np.y)) {
-            if (Math.abs(np.x - this._raeuberX) > 0.05) this._raeuberDX = np.x - this._raeuberX;
-            this._raeuberX = np.x; this._raeuberY = np.y;
-          } else { this._raeuberPfad = []; }
-        }
-      } else {
-        this._raeuberPfad = [];   // schon im Revier → stehen/warten
-      }
+    } else if (!this._raeuberSteht && !this._raeuberFreilauf && this._revier
+               && !this.imRevier(this.spielerX, this.spielerY)) {
+      // Spieler hat das Schatten-Viertel verlassen → der Räuber gibt die
+      // Verfolgung auf und verschwindet (statt am Rand „auf der Stelle" zu laufen).
+      this.despawnRaeuber();
+      logEvent(T('Der Räuber gibt die Verfolgung auf.', 'The robber breaks off the chase.'), '');
+      return;
     } else {
-      this._raeuberPfad = [];   // erreicht → nicht verfolgen
+      this._raeuberPfad = [];   // erreicht/wartet → nicht verfolgen
     }
+    // Läuft er tatsächlich? (sonst Laufanimation aus → kein „Laufen auf der Stelle")
+    this._raeuberBewegt = Math.hypot(
+      this._raeuberX - (this._raeuberPrevX ?? this._raeuberX),
+      this._raeuberY - (this._raeuberPrevY ?? this._raeuberY)) > 0.3;
+    this._raeuberPrevX = this._raeuberX; this._raeuberPrevY = this._raeuberY;
     // Sprechblase „Geld oder Leben!" wenn er sich nähert
     if (this.raeuberBubble) {
       const nah = dist < 150;
@@ -8164,8 +8160,9 @@ class SpielSzene extends Phaser.Scene {
       // Sheet läuft nach rechts → bei Links-Lauf spiegeln
       if (this._raeuberDX < -0.05) s.setFlipX(true);
       else if (this._raeuberDX > 0.05) s.setFlipX(false);
-      // Steht er (Spieler erreicht), Animation anhalten; sonst laufen.
-      if (this._raeuberSteht) { s.anims.stop(); s.setFrame(0); }
+      // Steht er (Spieler erreicht) oder bewegt er sich nicht → Animation anhalten;
+      // nur bei tatsächlicher Bewegung laufen (kein „Laufen auf der Stelle").
+      if (this._raeuberSteht || !this._raeuberBewegt) { s.anims.stop(); s.setFrame(0); }
       else if (this.anims.exists('raeuber_walk')) s.play('raeuber_walk', true);
     }
   }

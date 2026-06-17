@@ -896,7 +896,7 @@
 
       <!-- VOM STAAT KASSIERT (großer roter Zähler) -->
       <div id="staat-counter-box" style="text-align:center; padding:12px 8px; border-bottom:2px solid rgba(232,75,75,0.5); background:rgba(232,75,75,0.10);">
-        <div style="font-size:0.58rem; letter-spacing:1.5px; color:var(--danger); text-transform:uppercase; font-family:var(--mono); opacity:0.9;">💸 Vom Staat kassiert</div>
+        <div id="hud-vom-staat-label" style="font-size:0.58rem; letter-spacing:1.5px; color:var(--danger); text-transform:uppercase; font-family:var(--mono); opacity:0.9;">💸 Vom Staat kassiert</div>
         <div id="hud-vom-staat" style="font-size:1.7rem; font-weight:bold; color:var(--danger); font-family:var(--mono); text-shadow:0 0 10px rgba(232,75,75,0.5); margin-top:2px;">0 €</div>
       </div>
 
@@ -1157,6 +1157,8 @@
         { label: T('🏠 Hauptmenü / Neues Spiel', '🏠 Main menu / New game'), callback: () => hauptmenueBtn() },
         { label: T('❤️ Spenden / Unterstützen', '❤️ Donate / Support'), callback: () => { if (typeof oeffneSpendenModal === 'function') oeffneSpendenModal(); } },
         { label: (_musikAn ? T('🔊 Musik aus', '🔊 Music off') : T('🔇 Musik an', '🔇 Music on')), callback: () => toggleMusik() },
+        { label: (typeof SPRACHE !== 'undefined' && SPRACHE === 'en') ? '🇩🇪 Sprache: Deutsch' : '🇬🇧 Language: English',
+          callback: () => { if (typeof setSprache === 'function') setSprache((typeof SPRACHE !== 'undefined' && SPRACHE === 'en') ? 'de' : 'en'); } },
       ]);
     }
 
