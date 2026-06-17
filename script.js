@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v131 – Zeilenweise Gebäude-Tiefe (Ecken-Verdeckung weg)';
+const BUILD_MARKE = 'v132 – Kein Highlight, Klick-Toleranz, zeilenweise Tiefe zurück';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6018,6 +6018,13 @@ const BUILDING_SPRITES = {
   villa:       { file: 'assets/buildings/villa.png',          breite: 2.35, ankerY: 0.78, dy: 0.04 },
 };
 
+// Iso-Tiefenlinie pro Gebäude als Anteil der Sprite-Höhe. Standard 0.85 (= Boden-
+// frontlinie bei normalen Gebäuden). Gebäude mit großem VORPLATZ, bei denen der
+// Aufbau weit HINTEN steht (z. B. Arbeitsamt-Turm: Aufbau bis ~52 % Höhe, dann
+// Vorplatz), brauchen eine HÖHERE Linie (kleinerer Wert) – sonst schaltet „hinter"
+// schon auf dem Vorplatz ein statt erst an der Aufbau-Ecke. Belegt per Sprite-Analyse.
+const GEB_TIEFE_FRAKTION = { arbeitsamt: 0.53 };
+
 // ================================================================
 // HAUPTAUFRUF
 // ================================================================
@@ -6186,31 +6193,17 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Gebäude ZEILENWEISE zeichnen: in waagerechte Streifen schneiden, jeder mit
-    // eigener Iso-Tiefe (= Boden-Y des Streifens). So verdeckt nur der Teil des
-    // Gebäudes, der SÜDLICH (= vor) dem Spieler liegt; die seitlichen Vorflächen-
-    // Ecken (links/rechts) verdecken ihn nicht mehr. Eine einzelne waagerechte
-    // Tiefenlinie konnte das prinzipiell nicht leisten (Ursache der Ecken-Verdeckung).
-    const _tex = scene.textures.get(key).getSourceImage();
-    const _srcW = _tex.width, _srcH = _tex.height;
-    const _scX = w / _srcW, _scY = h / _srcH;     // Quelle → Anzeige
-    const _STRIP = Math.max(8, tileH);            // Streifenhöhe (Anzeige-px) ≈ Kachelhöhe
-    const strips = [];
-    for (let dispTop = 0; dispTop < h; dispTop += _STRIP) {
-      const dispBot = Math.min(h, dispTop + _STRIP);
-      const s = scene.add.image(x, y, key).setOrigin(0, 0).setScale(_scX, _scY);
-      s.setCrop(0, dispTop / _scY, _srcW, (dispBot - dispTop) / _scY);
-      s.setDepth(y + dispBot);                    // Frontkante des Streifens
-      strips.push(s);
-    }
-    if (o.type === 'building' && orte[o.id] && strips.length) {
-      // Nur EIN Streifen klickbar – der pixelgenaue Treffer-Test nutzt die volle
-      // Textur (nicht den Crop), deckt also das ganze Gebäude ab. Spart 200+
-      // interaktive Objekte (Performance) bei gleicher Klickfläche.
-      const klick = strips[0];
-      klick.setInteractive({ pixelPerfect: true });
-      klick.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
-      scene.gebaeudeSprites[o.id] = strips;   // Array der Streifen (für Highlight-Rahmen)
+    // Iso-Tiefe = Boden-FRONTLINIE des AUFBAUS. Standard 0.85·h (Frontkante bei
+    // normalen Gebäuden). Vorplatz-Gebäude (z. B. Arbeitsamt) nutzen eine höhere
+    // Linie (GEB_TIEFE_FRAKTION), damit „hinter" erst an der Aufbau-Ecke einschaltet
+    // und nicht schon auf dem Vorplatz.
+    const baseY = y + h * (GEB_TIEFE_FRAKTION[o.id] ?? 0.85);
+    const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
+    if (o.type === 'building' && orte[o.id]) {
+      // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
+      img.setInteractive({ pixelPerfect: true });
+      img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
+      scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
     }
     // Sportplatz/-verein ist ein ganzes Grundstück → Kern nicht betretbar machen
     // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
@@ -6226,7 +6219,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
         color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
-      }).setOrigin(0.5, 1).setDepth(y + h + 0.3);   // vor den Gebäude-Streifen (lesbar)
+      }).setOrigin(0.5, 1).setDepth(baseY + 0.3);
     }
   });
 
@@ -8350,16 +8343,45 @@ class SpielSzene extends Phaser.Scene {
     return { x, y };
   }
 
-  // Klick auf Boden → exakt dorthin laufen (flüssiger, geglätteter Pfad)
+  // Nächstes begehbares Feld zu einem Weltpunkt (spiralförmige Suche). Liefert
+  // {col,row} oder null. Damit muss man nicht exakt auf den Laufweg klicken.
+  naechstesBegehbarFeld(x, y) {
+    const dcr = (x - this.offsetX) / (this.tileW / 2);
+    const scr = (y - this.offsetY) / (this.tileH / 2) - 1;
+    const c0 = Math.round((scr + dcr) / 2), r0 = Math.round((scr - dcr) / 2);
+    if (this.begehbar(c0, r0)) return { col: c0, row: r0 };
+    let best = null, bestD = Infinity;
+    for (let rad = 1; rad <= 12 && !best; rad++) {       // bis ~4 alte Kacheln nach außen
+      for (let dc = -rad; dc <= rad; dc++)
+        for (let dr = -rad; dr <= rad; dr++) {
+          if (Math.max(Math.abs(dc), Math.abs(dr)) !== rad) continue;  // nur Ring
+          const c = c0 + dc, r = r0 + dr;
+          if (!this.begehbar(c, r)) continue;
+          const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+          const d = Math.hypot(p.x - x, p.y - y);
+          if (d < bestD) { bestD = d; best = { col: c, row: r }; }
+        }
+    }
+    return best;
+  }
+
+  // Klick auf Boden → dorthin laufen. Klickt man daneben (Gebäude/Sperre/außerhalb),
+  // wird automatisch das NÄCHSTGELEGENE begehbare Feld angesteuert (nicht mehr fummelig).
   geheZuWelt(x, y) {
-    const ziel = this.screenZuTile(x, y);
-    if (!ziel || !this.begehbar(ziel.col, ziel.row)) return;
+    let ziel = this.screenZuTile(x, y);
+    let zx = x, zy = y;
+    if (!ziel || !this.begehbar(ziel.col, ziel.row)) {
+      ziel = this.naechstesBegehbarFeld(x, y);
+      if (!ziel) return;
+      const p = isoToScreen(ziel.col + 0.5, ziel.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
+      zx = p.x; zy = p.y;   // exaktes Ziel = Mitte des nächsten begehbaren Feldes
+    }
     const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
     const tp = this.bfs(start.col, start.row, (c, r) => c === ziel.col && r === ziel.row);
     if (!tp) return;
     let pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
-    if (pts.length) pts[pts.length - 1] = { x, y };   // exakter Klickpunkt als Ziel
-    else pts = [{ x, y }];
+    if (pts.length) pts[pts.length - 1] = { x: zx, y: zy };   // exakter Zielpunkt
+    else pts = [{ x: zx, y: zy }];
     this.pfad = this.vereinfachePfad(pts);
     this.pfadZielOrt = null;
   }
@@ -8427,29 +8449,11 @@ class SpielSzene extends Phaser.Scene {
   }
 
   aktualisiereHighlight() {
-    const nah = this.nahesGebaeude();
-    const g = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
-    // Glow nur für Einzel-Sprites (z. B. Park). Streifen-Gebäude (Array) bekommen
-    // einen Rahmen, weil ein Glow pro Streifen hässliche Trennlinien erzeugen würde.
-    const glowSprite = (g && !Array.isArray(g) && g.preFX) ? g : null;
-    if (glowSprite !== this._glowSprite) {
-      if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
-      if (glowSprite) glowSprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
-      this._glowSprite = glowSprite;
-    }
-
-    // Rahmen für Streifen-Gebäude / Fallback (Park ohne WebGL)
-    this.highlightGfx.clear();
-    if (nah && !glowSprite) {
-      this.highlightGfx.lineStyle(3, 0xffe87a, 0.95);
-      if (Array.isArray(g) && g.length) {
-        const s0 = g[0];   // alle Streifen teilen x/y und Anzeigegröße
-        this.highlightGfx.strokeRect(s0.x, s0.y, s0.displayWidth, s0.displayHeight);
-      } else {
-        const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-        this.highlightGfx.strokeRect(pos.x - this.tileW * 1.5, pos.y - this.tileH * 3.9, this.tileW * 3, this.tileH * 5.1);
-      }
-    }
+    // Kein Highlight/Glow mehr – Interaktion per Klick (hinlaufen) bzw. Doppelklick
+    // (hinlaufen + Menü) reicht völlig. Glow/Rahmen waren überflüssig und unschön.
+    if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
+    this._glowSprite = null;
+    if (this.highlightGfx) this.highlightGfx.clear();
   }
 
   versucheInteraktion() {
