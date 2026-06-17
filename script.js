@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v126 – Tiefenlinie auf Standflächen-Frontkante (0.85)';
+const BUILD_MARKE = 'v127 – Anlauf: Spieler stoppt sichtbar VOR dem Gebäude';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -8337,6 +8337,23 @@ class SpielSzene extends Phaser.Scene {
     this.pfadZielOrt = null;
   }
 
+  // Anlauf-Feld VOR (südlich) dem Gebäude finden – ein begehbares Straßenfeld,
+  // auf dem der Spieler SICHTBAR steht (nicht hinter/seitlich/unter der Grafik).
+  // "südlich/vorne" = größere (col+row) als das Gebäude. Liefert BFS-Pfad dorthin
+  // (leer = schon davor) oder null (unerreichbar). Fallback: Feld in Reichweite 1.
+  _anlaufPfad(ort) {
+    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
+    const istVorne = (c, r) => {
+      const s = (c - ort.col) + (r - ort.row);          // >0 = südlich = vor dem Gebäude
+      return s >= 1 && s <= 3 && Math.abs(c - ort.col) <= 2 && Math.abs(r - ort.row) <= 2;
+    };
+    if (istVorne(start.col, start.row)) return [];        // steht schon sichtbar davor
+    let tp = this.bfs(start.col, start.row, istVorne);
+    if (!tp) tp = this.bfs(start.col, start.row,          // Fallback: irgendein Nachbarfeld
+      (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
+    return tp;   // null wenn unerreichbar, sonst Pfad (evtl. leer)
+  }
+
   // Klick auf Gebäude → davorlaufen. Einfachklick = nur hin; Doppelklick = hin + Menü.
   klickAufOrt(id) {
     const ort = ORTE_CONFIG.find(o => o.id === id);
@@ -8346,22 +8363,16 @@ class SpielSzene extends Phaser.Scene {
                    (now - this._letzterOrtKlick.t) < 350;
     this._letzterOrtKlick = { id, t: now };
 
-    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
-    const cheb = Math.max(Math.abs(ort.col - start.col), Math.abs(ort.row - start.row));
-    if (cheb <= 2) {                       // schon nah genug
+    const tp = this._anlaufPfad(ort);
+    if (tp == null) { if (doppel) interact(id); return; }   // unerreichbar → trotzdem öffnen
+    if (tp.length === 0) {                                   // schon sichtbar davor
       this.pfad = [];
       if (doppel) { this.cameras.main.centerOn(this.spielerX, this.spielerY); interact(id); }
       return;
     }
-    const tp = this.bfs(start.col, start.row,
-      (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
-    if (tp && tp.length) {
-      const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
-      this.pfad = this.vereinfachePfad(pts);
-      this.pfadZielOrt = doppel ? id : null;   // nur Doppelklick öffnet bei Ankunft
-    } else if (doppel) {
-      interact(id);   // unerreichbar → trotzdem öffnen
-    }
+    const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
+    this.pfad = this.vereinfachePfad(pts);
+    this.pfadZielOrt = doppel ? id : null;   // nur Doppelklick öffnet bei Ankunft
   }
 
   // Spieler zu einem Gebäude schicken und bei Ankunft das Menü öffnen
@@ -8369,18 +8380,12 @@ class SpielSzene extends Phaser.Scene {
   geheZuGebaeude(id) {
     const ort = ORTE_CONFIG.find(o => o.id === id);
     if (!ort) return;
-    const start = this.screenZuTile(this.spielerX, this.spielerY) || { col: this.spielerCol, row: this.spielerRow };
-    const cheb = Math.max(Math.abs(ort.col - start.col), Math.abs(ort.row - start.row));
-    if (cheb <= 2) { this.pfad = []; interact(id); return; }
-    const tp = this.bfs(start.col, start.row,
-      (c, r) => Math.max(Math.abs(c - ort.col), Math.abs(r - ort.row)) <= 1);
-    if (tp && tp.length) {
-      const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
-      this.pfad = this.vereinfachePfad(pts);
-      this.pfadZielOrt = id;     // bei Ankunft Menü öffnen
-    } else {
-      interact(id);
-    }
+    const tp = this._anlaufPfad(ort);
+    if (tp == null) { interact(id); return; }
+    if (tp.length === 0) { this.pfad = []; interact(id); return; }
+    const pts = tp.map(t => { const p = isoToScreen(t.col + 0.5, t.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY); return { x: p.x, y: p.y }; });
+    this.pfad = this.vereinfachePfad(pts);
+    this.pfadZielOrt = id;     // bei Ankunft Menü öffnen
   }
 
   // Nächstgelegenes Gebäude in Reichweite (Chebyshev ≤ 2) – Gebäude liegen
