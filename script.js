@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v127 – Anlauf: Spieler stoppt sichtbar VOR dem Gebäude';
+const BUILD_MARKE = 'v128 – Build-Nummer im Spiel sichtbar';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -40,6 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
   console.log('[Sozialbetrug] script.js BUILD', BUILD_MARKE);
+  // Dauerhaft sichtbares Build-Abzeichen (auch IM Spiel) – zum Prüfen, ob die
+  // getestete Version aktuell ist. Zeigt nur das Versions-Kürzel (z. B. "v127").
+  if (!document.getElementById('build-badge')) {
+    const b = document.createElement('div');
+    b.id = 'build-badge';
+    b.textContent = BUILD_MARKE.split('–')[0].trim();
+    b.style.cssText = 'position:fixed;left:6px;top:4px;z-index:100000;' +
+      'font:bold 11px "Share Tech Mono",monospace;color:#9ff;' +
+      'background:rgba(0,0,0,.6);padding:1px 6px;border-radius:7px;' +
+      'pointer-events:none;letter-spacing:.5px;';
+    document.body.appendChild(b);
+  }
 });
 
 // ================================================================
