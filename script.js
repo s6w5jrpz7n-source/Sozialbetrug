@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v122 – Front-Maske vordere Hälfte (links+unten)';
+const BUILD_MARKE = 'v123 – Maske nur Dächer, Begehbarkeit wiederhergestellt';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -7052,13 +7052,9 @@ class SpielSzene extends Phaser.Scene {
     if (this.cache && this.cache.json && this.cache.json.exists('collision')) {
       // Pixelgenaue Standflächen (offline aus den PNGs berechnet) – exakt.
       this.cache.json.get('collision').forEach(s => this.blockierteFelder.add(s));
-    }
-    // Gebäude-Grundflächen aus dem AKTUELLEN Layout blockieren – breiter abgetastet
-    // (auch die seitlichen West-/Ost-Ecken, u ab 0.15), damit der Spieler nicht auf
-    // die linke Gebäudeecke läuft und dort von der Dachkante verdeckt wird. Läuft
-    // IMMER (auch mit collision.json), um genau diese seitlichen Lücken zu füllen.
-    // v bleibt ≤0.85 (= vordere Standlinie), damit das Anlauf-Feld davor frei bleibt.
-    {
+    } else {
+      // Fallback: grobe Schätzung aus dem Layout-Rechteck (nur Standlinien-Mitte,
+      // damit die Straßenlücken zwischen Nachbargebäuden frei bleiben).
       ORTE_CONFIG.forEach(o => this.blockierteFelder.add(o.col + ',' + o.row));
       const _layout = (this.cache && this.cache.json && this.cache.json.exists('layout'))
         ? this.cache.json.get('layout') : null;
@@ -7066,8 +7062,8 @@ class SpielSzene extends Phaser.Scene {
       const _left = this.offsetX - _fW / 2, _top = this.offsetY;
       if (_layout && Array.isArray(_layout.objects)) {
         _layout.objects.filter(o => o.type === 'building').forEach(o => {
-          for (let u = 0.15; u <= 0.85; u += 0.14) {
-            for (let v = 0.55; v <= 0.85; v += 0.10) {
+          for (let u = 0.35; u <= 0.65; u += 0.15) {
+            for (let v = 0.58; v <= 0.86; v += 0.14) {
               const t = this.screenZuTile(_left + (o.fx + u * o.fw) * _fW, _top + (o.fy + v * o.fh) * _fH);
               if (t) this.blockierteFelder.add(t.col + ',' + t.row);
             }
@@ -7077,23 +7073,6 @@ class SpielSzene extends Phaser.Scene {
     }
     // Zusätzliche Sperrflächen aus dem Layout (Park, Sportplatz) – nicht betretbar
     if (this._sperrTiles) this._sperrTiles.forEach(s => this.blockierteFelder.add(s));
-
-    // Sicherheit: jedes Gebäude muss erreichbar bleiben → mind. ein begehbares
-    // Anlauf-Feld in Chebyshev-Reichweite ≤1 um den Trigger. Falls die (breitere)
-    // Grundflächen-Sperre alle Nachbarn zugemacht hat, das vordere (südliche) Feld
-    // wieder freigeben.
-    ORTE_CONFIG.forEach(o => {
-      if (o.col == null || o.row == null) return;
-      let frei = false;
-      for (let dc = -1; dc <= 1 && !frei; dc++)
-        for (let dr = -1; dr <= 1 && !frei; dr++) {
-          if (dc === 0 && dr === 0) continue;
-          const c = o.col + dc, r = o.row + dr;
-          if (c < GEH_MIN || c > GEH_MAX || r < GEH_MIN || r > GEH_MAX) continue;
-          if (!this.blockierteFelder.has(c + ',' + r)) frei = true;
-        }
-      if (!frei) this.blockierteFelder.delete((o.col + 1) + ',' + (o.row + 1));   // vorne (südl.) öffnen
-    });
 
     // Sicherheit: Startfeld des Spielers immer begehbar lassen
     this.blockierteFelder.delete(this.spielerCol + ',' + this.spielerRow);
