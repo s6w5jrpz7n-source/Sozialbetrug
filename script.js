@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v136 – Streifen-Tiefe an Standlinie verankert (vorne+Ecken)';
+const BUILD_MARKE = 'v137 – Schlafen/ALG/Räuber/Klick-Fixes';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3256,8 +3256,9 @@ function aktionAusfuehren(ortId, aktionsId) {
   const gs = gameState;
 
   // ---- ENERGIE-CHECK: Bei 0 Energie nur Schlafen erlaubt ----
-  const istSchlafen = (ortId === 'wohnung' && aktionsId === 'schlafen')
-                   || (ortId === 'villa'   && aktionsId === 'villa_schlafen');
+  // (In der bewohnten Villa kommt die Schlafen-Aktion von der Wohnung → id 'schlafen';
+  //  daher beide Schlaf-IDs erlauben, unabhängig vom Ort.)
+  const istSchlafen = aktionsId === 'schlafen' || aktionsId === 'villa_schlafen';
   if (gs.energie <= 0 && !istSchlafen) {
     oeffneModal(T('😴 Völlig erschöpft!', '😴 Completely exhausted!'),
       T('Du hast <strong>0 Energie</strong> und kannst nichts mehr tun.<br><br>', 'You have <strong>0 energy</strong> and cannot do anything.<br><br>') +
@@ -3751,14 +3752,14 @@ function aktionAusfuehren(ortId, aktionsId) {
     if (aktionsId === 'kredit_klein') {
       gs.losesBargeld   += 1000;
       gs.loanSharkSchuld += 1000;
-      gs.risikoRaster    = clamp(gs.risikoRaster + 15, 0, 100);
-      logEvent(T('🦈 Kredit 1.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +15.', '🦈 Loan 1,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +15.'), 'danger');
+      gs.risikoRaster    = clamp(gs.risikoRaster + 8, 0, 100);   // halbe Aufmerksamkeit (war 15)
+      logEvent(T('🦈 Kredit 1.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +8.', '🦈 Loan 1,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +8.'), 'danger');
     }
     if (aktionsId === 'kredit_gross') {
       gs.losesBargeld   += 3000;
       gs.loanSharkSchuld += 3000;
-      gs.risikoRaster    = clamp(gs.risikoRaster + 25, 0, 100);
-      logEvent(T('🦈 Kredit 3.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +25.', '🦈 Loan 3,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +25.'), 'danger');
+      gs.risikoRaster    = clamp(gs.risikoRaster + 13, 0, 100);  // halbe Aufmerksamkeit (war 25)
+      logEvent(T('🦈 Kredit 3.000 € vom Hai. Schulden: ' + formatEuro(gs.loanSharkSchuld) + '. Risiko +13.', '🦈 Loan 3,000 € from the shark. Debt: ' + formatEuro(gs.loanSharkSchuld) + '. Risk +13.'), 'danger');
     }
     if (aktionsId === 'schulden_zahlen') {
       if (gs.loanSharkSchuld <= 0) { logEvent(T('ℹ️ Keine Schulden beim Kredithai.', 'ℹ️ No debt with the loan shark.'), ''); return; }
@@ -4563,6 +4564,7 @@ function monatsAbschluss() {
 
   gs.monat++;
   let meldungen = [];
+  const warAlg1 = gs.status === 'ALG1';   // für ALG I → II Umstellungs-Hinweis
 
   // Hilfsfunktion: nicht zahlbarer Betrag → Zahlungsrückstand
   const fehlt = (betrag, was) => {
@@ -4572,8 +4574,8 @@ function monatsAbschluss() {
     logEvent(T(`❗ Rückstand +${formatEuro(betrag)} (${was}).`, `❗ Arrears +${formatEuro(betrag)} (${was}).`), 'danger');
   };
 
-  // ALG1 → ALG2 Wechsel
-  if (gs.monat > 12 && gs.status === 'ALG1') {
+  // ALG1 → ALG2 Wechsel (ALG I läuft 4 Monate)
+  if (gs.monat > 4 && gs.status === 'ALG1') {
     gs.status = 'ALG2';
     meldungen.push(T('⚠️ ALG I ausgelaufen – jetzt Bürgergeld!', '⚠️ ALG I expired – now on welfare!'));
     logEvent(T('⚠️ ALG I → Bürgergeld.', '⚠️ ALG I → welfare.'), 'danger');
@@ -4590,14 +4592,17 @@ function monatsAbschluss() {
     : 0;
 
   // ALG-Zahlung (Grundleistung, danach Einkommens-Anrechnung)
+  const kinderN = (gs.kindergeldKinder || []).length;
   if (gs.status === 'ALG1') {
     if (gs.algGesperrt) {
       meldungen.push(T('🛑 ALG I gesperrt! Besuche das Arbeitsamt um die Sperre aufzuheben.', '🛑 ALG I suspended! Visit the job centre to lift the suspension.'));
       logEvent(T('🛑 ALG I gesperrt – kein Geld!', '🛑 ALG I suspended – no money!'), 'danger');
     } else {
-      const auszahlung = Math.max(0, ALG1_ZAHLUNG - minijobAnrechenbar);
+      // ALG I: 1.440 €/Monat, mit mind. einem Kind 1.608 €/Monat
+      const alg1Basis  = kinderN > 0 ? 1608 : 1440;
+      const auszahlung = Math.max(0, alg1Basis - minijobAnrechenbar);
       gs.kontostand += auszahlung; staatGibt(auszahlung);
-      meldungen.push(T(`✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ ALG I: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
+      meldungen.push(T(`✅ ALG I: +${formatEuro(auszahlung)}${kinderN > 0 ? ` (inkl. Kinderzuschlag)` : ''}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ ALG I: +${formatEuro(auszahlung)}${kinderN > 0 ? ` (incl. child supplement)` : ''}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
       logEvent(T(`✅ ALG I +${formatEuro(auszahlung)}.`, `✅ ALG I +${formatEuro(auszahlung)}.`), 'good');
     }
   } else {
@@ -4611,9 +4616,13 @@ function monatsAbschluss() {
       meldungen.push(T(`🛑 Vermögensprüfung (alle 3 Monate): Konto + sichtbares Depot = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. Kein Bürgergeld diesen Monat!`, `🛑 Asset check (every 3 months): account + visible portfolio = ${formatEuro(pruefVermoegen)} > ${formatEuro(ALG2_VERMOEGENS_GRENZE)}. No welfare this month!`));
       logEvent(T('🛑 Vermögensprüfung: zu viel sichtbares Vermögen.', '🛑 Asset check: too much visible wealth.'), 'danger');
     } else {
-      const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar);
+      // Bürgergeld-Grundleistung + pro Kind 390 € Regelsatz, davon wird das
+      // Kindergeld (300 €/Kind) angerechnet → netto +90 €/Kind.
+      const kinderRegel = kinderN * 390, kinderKgAbzug = kinderN * 300;
+      const kinderNetto = Math.max(0, kinderRegel - kinderKgAbzug);
+      const auszahlung = Math.max(0, ALG2_ZAHLUNG - minijobAnrechenbar) + kinderNetto;
       gs.kontostand += auszahlung; staatGibt(auszahlung);
-      meldungen.push(T(`✅ Bürgergeld: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ Welfare: +${formatEuro(auszahlung)}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
+      meldungen.push(T(`✅ Bürgergeld: +${formatEuro(auszahlung)}${kinderN > 0 ? ` (inkl. ${kinderN}× Kind-Regelsatz 390 € − Kindergeld 300 €)` : ''}${minijobAnrechenbar > 0 ? ` (nach Anrechnung ${formatEuro(minijobAnrechenbar)} Minijob)` : ''}`, `✅ Welfare: +${formatEuro(auszahlung)}${kinderN > 0 ? ` (incl. ${kinderN}× child rate 390 € − child benefit 300 €)` : ''}${minijobAnrechenbar > 0 ? ` (after deducting ${formatEuro(minijobAnrechenbar)} minijob)` : ''}`));
       logEvent(T(`✅ Bürgergeld +${formatEuro(auszahlung)}.`, `✅ Welfare +${formatEuro(auszahlung)}.`), 'good');
     }
   }
@@ -5042,6 +5051,25 @@ function monatsAbschluss() {
         updateHUD();
       }
     });
+  }
+  // ---- ALG I → Bürgergeld (ALG II): prominenter Umstellungs-Hinweis oben ----
+  if (warAlg1 && gs.status === 'ALG2') {
+    const kinderHat = (gs.kindergeldKinder || []).length > 0;
+    const alg1Betrag = kinderHat ? '1.608 €' : '1.440 €';
+    meldungen.unshift(T(
+      '🔴 <strong>Umstellung auf Bürgergeld (ALG II)</strong><br>' +
+      'Dein ALG I ist beendet. Ab jetzt gelten neue Konditionen:<br>' +
+      `• Leistung: <strong>${alg1Betrag}</strong> → <strong>563 €</strong>/Monat${kinderHat ? ' (+90 €/Kind: 390 € Regelsatz − 300 € Kindergeld)' : ''}<br>` +
+      '• Miete: <strong>650 € selbst</strong> → <strong>0 € (Amt zahlt die Miete)</strong><br>' +
+      '• NEU: <strong>Vermögensgrenze 50.000 €</strong> – Konto + sichtbares Depot, Prüfung alle 3 Monate. Darüber gibt es in dem Monat kein Geld.<br>' +
+      '• Tipp: Vermögen verstecken (Schwarzkasse, Gold, verschleiertes Depot) zählt nicht mit.',
+      '🔴 <strong>Switched to welfare (ALG II)</strong><br>' +
+      'Your ALG I has ended. New conditions from now on:<br>' +
+      `• Benefit: <strong>${kinderHat ? '1,608 €' : '1,440 €'}</strong> → <strong>563 €</strong>/month${kinderHat ? ' (+90 €/child: 390 € rate − 300 € child benefit)' : ''}<br>` +
+      '• Rent: <strong>650 € yourself</strong> → <strong>0 € (office pays the rent)</strong><br>' +
+      '• NEW: <strong>asset limit 50,000 €</strong> – account + visible portfolio, checked every 3 months. Above it, no money that month.<br>' +
+      '• Tip: hidden wealth (slush fund, gold, disguised portfolio) does not count.'
+    ));
   }
   oeffneModal(T(`📅 Monatsabschluss – Monat ${gs.monat}`, `📅 Month-end report – Month ${gs.monat}`), meldungen.join('<br><br>'), summaryAktionen);
   pruefeGameOverBedingungen();
@@ -6226,18 +6254,23 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
     // Flacher Sockel (falls gesplittet) UNTER dem Spieler → verdeckt nie.
+    let sockelImg = null;
     if (scene.textures.exists('sok_' + o.id)) {
-      scene.add.image(x, y, 'sok_' + o.id).setOrigin(0, 0).setDisplaySize(w, h).setDepth(SOCKEL_TIEFE);
+      sockelImg = scene.add.image(x, y, 'sok_' + o.id).setOrigin(0, 0).setDisplaySize(w, h).setDepth(SOCKEL_TIEFE);
     }
     // Aufbau als SENKRECHTE Streifen (pro Spalte Boden-Kontakt-Tiefe) → korrekte
     // Sortierung auch an der schrägen Vorderkante (links/rechts) und beim Dach.
     const strips = zeichneAufbauStreifen(scene, key, x, y, w, h, o.id);
     if (o.type === 'building' && orte[o.id] && strips.length) {
-      // Nur EIN Streifen klickbar – pixelPerfect nutzt die volle Textur (ganze
-      // Gebäudefläche), kein Doppel-Feuern.
+      const klick = () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); };
+      // Aufbau klickbar (pixelPerfect nutzt die volle Textur = ganze Aufbaufläche)
       strips[0].setInteractive({ pixelPerfect: true });
-      strips[0].on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
-      scene.gebaeudeSprites[o.id] = strips;   // Array (für Highlight-Tönung)
+      strips[0].on('pointerdown', klick);
+      // Sockel/Vorfläche ebenfalls klickbar → ganzes Grundstück anklickbar
+      // (z. B. Sportverein-Feld). Eigene Textur, überlappt den Aufbau nicht → kein Doppel-Feuern.
+      if (sockelImg) { sockelImg.setInteractive({ pixelPerfect: true }); sockelImg.on('pointerdown', klick); }
+      // Highlight-Gruppe = Aufbau-Streifen + Sockel → ganzes Grundstück leuchtet auf
+      scene.gebaeudeSprites[o.id] = sockelImg ? strips.concat(sockelImg) : strips;
     }
     // Sportplatz/-verein ist ein ganzes Grundstück → Kern nicht betretbar machen
     // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
@@ -8039,8 +8072,8 @@ class SpielSzene extends Phaser.Scene {
   spawnRaeuber() {
     if (this._raeuberExists || !this._revier) return;
     let best = null, bestD = 1e9;
-    for (let i = 0; i < 50; i++) {
-      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+    for (let i = 0; i < 80; i++) {
+      const c = Phaser.Math.Between(0, 47), r = Phaser.Math.Between(0, 47);
       if (!this.begehbar(c, r)) continue;
       const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
       if (!this.imRevier(p.x, p.y)) continue;
