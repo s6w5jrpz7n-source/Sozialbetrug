@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v134 – Sockel-Ebene: Vorflächen unter Spieler (keine Ecken-Verdeckung)';
+const BUILD_MARKE = 'v135 – Senkrechte Streifen-Tiefe (Ecken korrekt) + Sockel';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6170,6 +6170,30 @@ function zeichneAlleGebaeude(scene, tileW, tileH, offsetX, offsetY) {
   });
 }
 
+// Zeichnet eine Gebäude-Textur als SENKRECHTE Streifen, jeder mit der Iso-Tiefe
+// seines Boden-Kontaktpunkts (aus layout/geb_streifen.json). So sortiert jede
+// Spalte korrekt: an der schrägen Vorderkante steht der Spieler vorne-links/rechts
+// SICHTBAR davor; das Dach-Problem (waagerechte Streifen) tritt nicht auf, weil
+// jeder Streifen voll hoch ist und nach seinem Fußpunkt sortiert. Liefert die Streifen.
+function zeichneAufbauStreifen(scene, key, x, y, w, h, id) {
+  const tex = scene.textures.exists(key) ? scene.textures.get(key).getSourceImage() : null;
+  const info = (scene.cache.json && scene.cache.json.exists('geb_streifen'))
+    ? scene.cache.json.get('geb_streifen')[id] : null;
+  if (!tex || !info) {   // Fallback: ein Bild, Tiefe an der Standlinie
+    return [scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(y + h * 0.85)];
+  }
+  const srcW = tex.width, srcH = tex.height, n = info.n, dep = info.depth;
+  const scX = w / srcW, scY = h / srcH, strips = [];
+  for (let i = 0; i < n; i++) {
+    const sx0 = Math.floor(i * srcW / n), sx1 = Math.max(sx0 + 1, Math.floor((i + 1) * srcW / n));
+    const s = scene.add.image(x, y, key).setOrigin(0, 0).setScale(scX, scY);
+    s.setCrop(sx0, 0, sx1 - sx0, srcH);
+    s.setDepth(y + (dep[i] || 0.85) * h);   // Fußpunkt-Tiefe dieser Spalte
+    strips.push(s);
+  }
+  return strips;
+}
+
 // ================================================================
 // Manuelles Layout anwenden (aus dem Browser-Editor / layout.json).
 //   Jedes Objekt hat fx,fy,fw,fh relativ zum zentralen Feld (feldW×feldH).
@@ -6201,21 +6225,19 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     if (!scene.textures.exists(key)) return;
     const x = fieldLeft + o.fx * feldW, y = fieldTop + o.fy * feldH;
     const w = o.fw * feldW, h = o.fh * feldH;
-    // Iso-Tiefe = Boden-FRONTLINIE des AUFBAUS. Standard 0.85·h (Frontkante bei
-    // normalen Gebäuden). Vorplatz-Gebäude (z. B. Arbeitsamt) nutzen eine höhere
-    // Linie (GEB_TIEFE_FRAKTION), damit „hinter" erst an der Aufbau-Ecke einschaltet
-    // und nicht schon auf dem Vorplatz.
-    const baseY = y + h * (GEB_TIEFE_FRAKTION[o.id] ?? 0.85);
     // Flacher Sockel (falls gesplittet) UNTER dem Spieler → verdeckt nie.
     if (scene.textures.exists('sok_' + o.id)) {
       scene.add.image(x, y, 'sok_' + o.id).setOrigin(0, 0).setDisplaySize(w, h).setDepth(SOCKEL_TIEFE);
     }
-    const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
-    if (o.type === 'building' && orte[o.id]) {
-      // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
-      img.setInteractive({ pixelPerfect: true });
-      img.on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
-      scene.gebaeudeSprites[o.id] = img;   // für Highlight-Glow
+    // Aufbau als SENKRECHTE Streifen (pro Spalte Boden-Kontakt-Tiefe) → korrekte
+    // Sortierung auch an der schrägen Vorderkante (links/rechts) und beim Dach.
+    const strips = zeichneAufbauStreifen(scene, key, x, y, w, h, o.id);
+    if (o.type === 'building' && orte[o.id] && strips.length) {
+      // Nur EIN Streifen klickbar – pixelPerfect nutzt die volle Textur (ganze
+      // Gebäudefläche), kein Doppel-Feuern.
+      strips[0].setInteractive({ pixelPerfect: true });
+      strips[0].on('pointerdown', () => { if (!scene._menuAktiv && !modalOffen) scene.klickAufOrt(o.id); });
+      scene.gebaeudeSprites[o.id] = strips;   // Array (für Highlight-Tönung)
     }
     // Sportplatz/-verein ist ein ganzes Grundstück → Kern nicht betretbar machen
     // (eng gefasst, damit die angrenzenden Straßen begehbar bleiben)
@@ -6231,7 +6253,7 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
       scene.add.text(x + w / 2, y + h, orte[o.id].name, {
         fontSize: '15px', fontStyle: 'bold', fontFamily: '"Share Tech Mono", "Courier New", monospace', resolution: 2,
         color: '#ffe9b0', stroke: '#000000', strokeThickness: 5,
-      }).setOrigin(0.5, 1).setDepth(baseY + 0.3);
+      }).setOrigin(0.5, 1).setDepth(y + h + 0.3);   // Label vor den Aufbau-Streifen
     }
   });
 
@@ -7055,6 +7077,7 @@ class SpielSzene extends Phaser.Scene {
     // Manuelles Layout (aus dem Editor) – fehlt es, fällt alles auf Standard zurück
     this.load.json('layout', 'layout/layout.json');
     this.load.json('collision', 'layout/collision.json');   // pixelgenaue Standflächen
+    this.load.json('geb_streifen', 'layout/geb_streifen.json'); // Senkrecht-Streifen-Tiefen pro Gebäude
     // Bettler-Animationen (4 Frames Stehen/Betteln, 8 Frames Gehen im Profil)
     this.load.spritesheet('bettler_stand', 'assets/bettler_stand.png', { frameWidth: 96,  frameHeight: 176 });
     this.load.spritesheet('bettler_walk',  'assets/bettler_walk.png',  { frameWidth: 108, frameHeight: 171 });
@@ -8475,26 +8498,21 @@ class SpielSzene extends Phaser.Scene {
 
   aktualisiereHighlight() {
     const nah = this.nahesGebaeude();
-    const sprite = (nah && this.gebaeudeSprites) ? this.gebaeudeSprites[nah.id] : null;
-
-    // Aktives Gebäude leuchtet gelb auf (WebGL-Glow). Wechselt nur bei Bedarf.
-    if (sprite !== this._glowSprite) {
-      if (this._glowSprite && this._glowSprite.preFX) this._glowSprite.preFX.clear();
-      if (sprite && sprite.preFX) sprite.preFX.addGlow(0xffe87a, 6, 0, false, 0.1, 18);
-      this._glowSprite = sprite || null;
+    const id = nah ? nah.id : null;
+    // Aktives Gebäude wird gelb getönt (seam-frei – ein Glow pro Streifen würde
+    // Trennlinien zeigen). gebaeudeSprites[id] ist ein Streifen-Array oder (Park)
+    // ein Einzel-Sprite. Wechselt nur bei Bedarf.
+    if (id !== this._tintId) {
+      const toenen = (g, on) => {
+        if (!g) return;
+        const arr = Array.isArray(g) ? g : [g];
+        arr.forEach(s => { if (s && s.setTint) { on ? s.setTint(0xffe87a) : s.clearTint(); } });
+      };
+      if (this._tintId && this.gebaeudeSprites) toenen(this.gebaeudeSprites[this._tintId], false);
+      if (id && this.gebaeudeSprites) toenen(this.gebaeudeSprites[id], true);
+      this._tintId = id;
     }
-
-    // Fallback (kein Sprite [z. B. Park] oder kein WebGL): gelber Rahmen
-    this.highlightGfx.clear();
-    if (nah && (!sprite || !sprite.preFX)) {
-      this.highlightGfx.lineStyle(3, 0xffe87a, 0.95);
-      if (sprite) {
-        this.highlightGfx.strokeRect(sprite.x, sprite.y, sprite.displayWidth, sprite.displayHeight);
-      } else {
-        const pos = isoToScreen(nah.col + 0.5, nah.row + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
-        this.highlightGfx.strokeRect(pos.x - this.tileW * 1.5, pos.y - this.tileH * 3.9, this.tileW * 3, this.tileH * 5.1);
-      }
-    }
+    if (this.highlightGfx) this.highlightGfx.clear();
   }
 
   versucheInteraktion() {

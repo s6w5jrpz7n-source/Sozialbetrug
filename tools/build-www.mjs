@@ -39,7 +39,7 @@ for (const f of readdirSync('.')) {
 
 // 4) Layout-JSONs (werden zur Laufzeit geladen)
 mkdirSync(`${OUT}/layout`, { recursive: true });
-for (const f of ['layout/layout.json', 'layout/collision.json']) {
+for (const f of ['layout/layout.json', 'layout/collision.json', 'layout/geb_streifen.json']) {
   if (existsSync(f)) cpSync(f, `${OUT}/${f}`);
 }
 
