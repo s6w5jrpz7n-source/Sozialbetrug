@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v139 – Sprachwahl beim Erststart';
+const BUILD_MARKE = 'v140 – Titel-Banner (kein Doppel-Menü) + Splash füllend';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6594,6 +6594,7 @@ class StartSzene extends Phaser.Scene {
   // ---- NEU: Bild extern laden statt addBase64 ----
   preload() {
     this.load.image('startbg', 'startbg.png');
+    this.load.image('titelbild', 'startbg_titel.png');   // Titel ohne Menü (Buttons darunter)
   }
 
   create() {
@@ -6710,15 +6711,18 @@ class StartSzene extends Phaser.Scene {
     langTxt.on('pointerdown', () => setSprache(SPRACHE === 'en' ? 'de' : 'en'));
     this._startObjekte.push(langTxt);
 
-    // ===== HOCHFORMAT (Handy): Titelbild oben + große Tipp-Buttons darunter =====
-    if (H > W * 1.05 && this.textures.exists('startbg')) {
+    // ===== HOCHFORMAT: Titel-Banner (ohne Menü) oben + große Buttons darunter =====
+    // (Drehung ist gesperrt → immer Hochformat. Titelbild = 'titelbild' ohne Menü,
+    //  damit das Menü nicht doppelt erscheint.)
+    if (H > W * 1.05 && (this.textures.exists('titelbild') || this.textures.exists('startbg'))) {
       const bgFill = this.add.graphics().setDepth(0);
       bgFill.fillStyle(0x080b14, 1); bgFill.fillRect(0, 0, W, H);
       this._startObjekte.push(bgFill);
 
-      const bg = this.add.image(W / 2, 8, 'startbg').setOrigin(0.5, 0).setDepth(1);
-      let s = W / bg.width;
-      if (bg.height * s > H * 0.45) s = (H * 0.45) / bg.height;   // Titel max. 45% Höhe
+      const titelKey = this.textures.exists('titelbild') ? 'titelbild' : 'startbg';
+      const bg = this.add.image(W / 2, 8, titelKey).setOrigin(0.5, 0).setDepth(1);
+      let s = W / bg.width;   // volle Breite ausfüllen
+      if (bg.height * s > H * 0.5) s = (H * 0.5) / bg.height;   // Titel max. 50% Höhe
       bg.setScale(s);
       this._startObjekte.push(bg);
 
