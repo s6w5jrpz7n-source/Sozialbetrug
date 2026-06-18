@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v138 – Bettler-Raster-Fix + Sportverein-Sperre';
+const BUILD_MARKE = 'v139 – Sprachwahl beim Erststart';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -25,6 +25,35 @@ function setSprache(l) {
   location.reload();   // Neustart in der neuen Sprache (am Startbildschirm geht nichts verloren)
 }
 window.T = T; window.setSprache = setSprache;
+
+// Erststart: Sprache wählen, BEVOR irgendetwas vom Spiel sichtbar ist.
+// Greift nur, wenn noch keine Sprache gespeichert wurde (localStorage 'lang' leer).
+function ersteSprachwahlNoetig() {
+  try { return !localStorage.getItem('lang'); } catch (e) { return false; }
+}
+function zeigeSprachwahl() {
+  if (document.getElementById('lang-overlay')) return;
+  const ov = document.createElement('div');
+  ov.id = 'lang-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:200000;background:#12151c;' +
+    'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;' +
+    'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f0e9d6;padding:24px;text-align:center;';
+  const titel = document.createElement('div');
+  titel.textContent = 'Sprache wählen · Choose language';
+  titel.style.cssText = 'font-size:22px;font-weight:bold;letter-spacing:.5px;';
+  ov.appendChild(titel);
+  const mk = (label, lang) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'font-size:21px;padding:15px 44px;min-width:250px;border-radius:14px;' +
+      'border:2px solid #c8a24a;background:#1d2431;color:#ffe9b0;cursor:pointer;';
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); setSprache(lang); });
+    return b;
+  };
+  ov.appendChild(mk('🇩🇪  Deutsch', 'de'));
+  ov.appendChild(mk('🇬🇧  English', 'en'));
+  (document.body || document.documentElement).appendChild(ov);
+}
 // ===============================================================================
 
 // Begehbares Gitter: Spieldiamant 0..15 + ein Ring (−1 und 16) rundherum, damit
@@ -37,6 +66,8 @@ const SPIELER_H = 88;   // Spieler ~65% größer als zuvor
 const BETTLER_H = 82;   // Bettler entsprechend größer
 const RAEUBER_H = 84;   // Räuber etwa Spielergröße
 document.addEventListener('DOMContentLoaded', () => {
+  // Erststart: Sprachwahl vor allem anderen einblenden
+  if (ersteSprachwahlNoetig()) zeigeSprachwahl();
   const st = document.querySelector('.subtitle');
   if (st) st.textContent = 'Arbeitslos zum Millionär — ' + BUILD_MARKE;
   console.log('[Sozialbetrug] script.js BUILD', BUILD_MARKE);
