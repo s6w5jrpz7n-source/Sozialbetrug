@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v133 – Glow wieder da, Klick-Toleranz';
+const BUILD_MARKE = 'v134 – Sockel-Ebene: Vorflächen unter Spieler (keine Ecken-Verdeckung)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -6025,6 +6025,14 @@ const BUILDING_SPRITES = {
 // schon auf dem Vorplatz ein statt erst an der Aufbau-Ecke. Belegt per Sprite-Analyse.
 const GEB_TIEFE_FRAKTION = { arbeitsamt: 0.53 };
 
+// Gebäude, deren Sprite in Aufbau + flachen Sockel gesplittet wurde (aus der
+// Magenta/Grün-Markierung, Dateien in assets/buildings/split/). Der Sockel wird
+// UNTER dem Spieler gezeichnet (kann ihn nie verdecken), der Aufbau (inkl. grüner
+// Hecken) auf Gebäude-Tiefe (verdeckt korrekt). 'dealer' = Park.
+const GEB_MIT_SOCKEL = new Set(['villa','kiosk','wohnung','bank','supermarkt','kirche',
+  'sportverein','arbeitsamt','kasino','loanshark','schattenbank','pawn','arztpraxis','baustelle']);
+const SOCKEL_TIEFE = -10;   // über Stadtboden(-25)/Umgebung(-20), immer unter Figuren
+
 // ================================================================
 // HAUPTAUFRUF
 // ================================================================
@@ -6198,6 +6206,10 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // Linie (GEB_TIEFE_FRAKTION), damit „hinter" erst an der Aufbau-Ecke einschaltet
     // und nicht schon auf dem Vorplatz.
     const baseY = y + h * (GEB_TIEFE_FRAKTION[o.id] ?? 0.85);
+    // Flacher Sockel (falls gesplittet) UNTER dem Spieler → verdeckt nie.
+    if (scene.textures.exists('sok_' + o.id)) {
+      scene.add.image(x, y, 'sok_' + o.id).setOrigin(0, 0).setDisplaySize(w, h).setDepth(SOCKEL_TIEFE);
+    }
     const img = scene.add.image(x, y, key).setOrigin(0, 0).setDisplaySize(w, h).setDepth(baseY);
     if (o.type === 'building' && orte[o.id]) {
       // Anklickbar (pixelgenau) → Spieler läuft hin und interagiert
@@ -6236,6 +6248,12 @@ function wendeLayoutAn(scene, layout, tileW, tileH, offsetX, offsetY, feldW, fel
     // Park-Grafik (Boden-Diamant im Bild = 1320 px breit) skaliert.
     if (scene.textures.exists('park')) {
       const sc = (tileW * PARK_KACHELN) / 1320;
+      // Park-Sockel (Innenfläche) UNTER dem Spieler → verdeckt nie; Randbäume/Hecken
+      // sind im Aufbau ('park') und verdecken weiterhin korrekt.
+      if (scene.textures.exists('sok_dealer')) {
+        scene.add.image(pos.x + PARK_DX, pos.y + PARK_DY, 'sok_dealer')
+          .setOrigin(0.4992, 0.5616).setDisplaySize(1322 * sc, 755 * sc).setDepth(SOCKEL_TIEFE);
+      }
       const parkImg = scene.add.image(pos.x + PARK_DX, pos.y + PARK_DY, 'park')
         .setOrigin(0.4992, 0.5616).setDisplaySize(1322 * sc, 755 * sc)
         .setDepth(pos.y - 0.5);   // Boden-Deko (knapp hinter dem Dealer)
@@ -7015,7 +7033,8 @@ class SpielSzene extends Phaser.Scene {
     // damit er unten hinter den Häusern verschwindet (nicht auf den Dächern läuft).
     this.load.image('umgebung_front', 'assets/umgebung_front.png');
     // Park-Grafik + animierter Dealer (7 Frames)
-    this.load.image('park', 'assets/park.png');
+    this.load.image('park', 'assets/buildings/split/dealer_aufbau.png');   // Park-Aufbau (Randbäume/Hecken)
+    this.load.image('sok_dealer', 'assets/buildings/split/dealer_sockel.png'); // Park-Sockel (Innenfläche, unter Spieler)
     this.load.spritesheet('dealer', 'assets/dealer.png', { frameWidth: 96, frameHeight: 141 });
     // Räuber-Walkcycle (16 Frames, kopf-zentriert)
     this.load.spritesheet('raeuber', 'assets/raeuber.png', { frameWidth: 104, frameHeight: 151 });
@@ -7023,7 +7042,13 @@ class SpielSzene extends Phaser.Scene {
     this.load.image('fog', 'assets/fog.png');
     // Bild-Gebäude laden (siehe BUILDING_SPRITES)
     for (const id in BUILDING_SPRITES) {
-      this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
+      if (GEB_MIT_SOCKEL.has(id)) {
+        // Aufbau (ohne Sockel) als Gebäude-Textur + separater Sockel
+        this.load.image('geb_' + id, 'assets/buildings/split/' + id + '_aufbau.png');
+        this.load.image('sok_' + id, 'assets/buildings/split/' + id + '_sockel.png');
+      } else {
+        this.load.image('geb_' + id, BUILDING_SPRITES[id].file);
+      }
     }
     // (Natur-Props werden derzeit nicht verwendet → nicht laden; sie liegen für den
     //  Layout-Editor weiterhin in assets/props/, sind aber nicht im App-Build.)
