@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v137 – Schlafen/ALG/Räuber/Klick-Fixes';
+const BUILD_MARKE = 'v138 – Bettler-Raster-Fix + Sportverein-Sperre';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -7861,7 +7861,7 @@ class SpielSzene extends Phaser.Scene {
     if (this._bettlerExists || gameState.gameOver) return;
     let best = null, bestD = -1;
     for (let i = 0; i < 40; i++) {
-      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+      const c = Phaser.Math.Between(0, 47), r = Phaser.Math.Between(0, 47);
       if (!this.begehbar(c, r)) continue;
       const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
       const d = Phaser.Math.Distance.Between(p.x, p.y, this.spielerX, this.spielerY);
@@ -7893,7 +7893,7 @@ class SpielSzene extends Phaser.Scene {
   neuesWanderZiel() {
     this._bettlerPfad = null; this._bettlerRepath = 0;   // Pfad zum neuen Ziel neu berechnen
     for (let i = 0; i < 40; i++) {
-      const c = Phaser.Math.Between(0, 15), r = Phaser.Math.Between(0, 15);
+      const c = Phaser.Math.Between(0, 47), r = Phaser.Math.Between(0, 47);
       if (!this.begehbar(c, r)) continue;
       const p = isoToScreen(c + 0.5, r + 0.5, this.tileW, this.tileH, this.offsetX, this.offsetY);
       this._bettlerZielX = p.x; this._bettlerZielY = p.y; return;
