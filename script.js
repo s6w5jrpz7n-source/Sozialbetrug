@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v135 – Senkrechte Streifen-Tiefe (Ecken korrekt) + Sockel';
+const BUILD_MARKE = 'v136 – Streifen-Tiefe an Standlinie verankert (vorne+Ecken)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
