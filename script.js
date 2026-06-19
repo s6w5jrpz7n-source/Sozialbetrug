@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v146 – Einliegerwhg. läuft trotz Prüfung weiter';
+const BUILD_MARKE = 'v147 – KdU-Masche über Schattenbank neu aufsetzbar';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -508,6 +508,7 @@ const ORTE_CONFIG = [
       { label: T('🌍  Unterhalts-Tarnung (Auslands-Kindergeld behalten)', '🌍 Support cover-up (keep foreign child benefit)'),        id: 'unterhalts_tarnung' },
       { label: T('🏘️  Immobilie kaufen (40.000 € EK + Rate)', '🏘️ Buy property (40,000 € down + installments)'),                    id: 'immo_kaufen'   },
       { label: T('🔑  Immobilie: Eigennutzung ⇄ Vermieten', '🔑 Property: own use ⇄ rent out'),                      id: 'immo_modus'    },
+      { label: T('🤝  KdU-Masche neu aufsetzen (neuer Strohmann, 2.000 €)', '🤝 Re-establish housing-cost scam (new straw man, 2,000 €)'), id: 'kdu_neu' },
       { label: T('🏦  Immobilie sofort abbezahlen (Restschuld tilgen)', '🏦 Pay off property now (clear balance)'),          id: 'immo_tilgen'   },
       { label: T('💰  Immobilie verkaufen (Wert − Restschuld → Schwarzkasse)', '💰 Sell property (value − balance → slush fund)'),   id: 'immo_verkaufen'},
       { label: T('📈  Depot verschleiern (für Amt unsichtbar, 5%/Monat)', '📈 Hide portfolio (invisible to office, 5%/mo)'),        id: 'depot_verschleiern' }
@@ -3812,6 +3813,32 @@ function aktionAusfuehren(ortId, aktionsId) {
 
   // --- SCHATTENBANK ---
   if (ortId === 'schattenbank') {
+    if (aktionsId === 'kdu_neu') {
+      const KOSTEN = 2000;
+      if (!gs.immobilie || gs.immobilie.modus !== 'eigen') {
+        oeffneModal(T('🤝 KdU-Masche', '🤝 Housing-cost scam'),
+          T('Dafür brauchst du eine <strong>selbst genutzte</strong> Immobilie. Kaufe erst eine Villa (Eigennutzung).',
+            'You need a <strong>self-used</strong> property for this. Buy a villa first (own use).'), []); return;
+      }
+      if (!gs.kduMascheGestoppt) {
+        oeffneModal(T('🤝 Läuft bereits', '🤝 Already running'),
+          T('Die KdU-Masche läuft bereits – das Amt zahlt die Villa-Miete.', 'The housing-cost scam is already running – the office pays the villa rent.'), []); return;
+      }
+      if (gs.schwarzeKasse + gs.kontostand < KOSTEN) {
+        oeffneModal(T('💸 Zu wenig Geld', '💸 Not enough money'),
+          T(`Neuer Strohmann + gefälschter Mietvertrag kosten <strong>${formatEuro(KOSTEN)}</strong> (Schwarzkasse/Konto).`,
+            `A new straw man + forged lease cost <strong>${formatEuro(KOSTEN)}</strong> (slush fund/account).`), []); return;
+      }
+      let r = KOSTEN; const ausSK = Math.min(r, gs.schwarzeKasse); gs.schwarzeKasse -= ausSK; r -= ausSK; gs.kontostand -= r;
+      gs.kduMascheGestoppt = false;
+      gs.risikoRaster = clamp(gs.risikoRaster + 25, 0, 100);
+      logEvent(T('🤝 KdU-Masche neu aufgesetzt – Amt zahlt wieder die Villa-Miete. Risiko +25.', '🤝 Housing-cost scam re-established – office pays the villa rent again. Risk +25.'), 'warn');
+      oeffneModal(T('🤝 KdU-Masche neu aufgesetzt', '🤝 Scam re-established'),
+        T(`Über einen neuen Strohmann läuft die Masche wieder: Das Amt zahlt ab dem nächsten Monat erneut <strong>${formatEuro(gs.immobilie.miete)}/Monat</strong> in deine Schwarzkasse.<br><br>⚠️ Frisch geflaggt → <strong>Risiko +25</strong>, höhere Prüfgefahr.`,
+          `Through a new straw man the scam runs again: from next month the office pays <strong>${formatEuro(gs.immobilie.miete)}/month</strong> into your slush fund again.<br><br>⚠️ Freshly flagged → <strong>risk +25</strong>, higher audit chance.`), []);
+      updateHUD();
+      return;
+    }
     if (aktionsId === 'alles_sichern') {
       if (gs.losesBargeld <= 0) { logEvent(T('⚠️ Kein Bargeld zum Sichern.', '⚠️ No cash to secure.'), 'warn'); return; }
       const betrag = gs.losesBargeld;
