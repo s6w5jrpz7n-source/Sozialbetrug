@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v140 – Titel-Banner (kein Doppel-Menü) + Splash füllend';
+const BUILD_MARKE = 'v141 – Räuber überfällt beim Erreichen';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -8156,13 +8156,13 @@ class SpielSzene extends Phaser.Scene {
     const dx = this.spielerX - this._raeuberX, dy = this.spielerY - this._raeuberY;
     const dist = Math.hypot(dx, dy);
 
-    // Überfall, sobald er nah genug ist (und etwas zu holen ist)
-    if (dist < 28 && this._raeuberCooldown <= 0) {   // muss dicht dran sein (Körperkontakt)
-      if (gameState.losesBargeld >= 20) { this.ueberfall(); return; }
-    }
-
     // Hat den Spieler erreicht → stehen bleiben (nicht weiter/überlaufen).
-    this._raeuberSteht = dist < 34;
+    this._raeuberSteht = dist < 40;
+    // Überfall, sobald er den Spieler ERREICHT hat (steht) – nicht erst bei
+    // engerem Abstand, sonst bleibt er davor stehen ohne anzugreifen.
+    if (this._raeuberSteht && this._raeuberCooldown <= 0 && gameState.losesBargeld >= 20) {
+      this.ueberfall(); return;
+    }
     // Erreicht, aber nichts zu holen (zu wenig Bargeld oder Sperre nach Überfall)
     // → kurz stehen bleiben, dann abziehen (statt den Spieler endlos zu verfolgen).
     if (this._raeuberSteht && (this._raeuberCooldown > 0 || gameState.losesBargeld < 20)) {
