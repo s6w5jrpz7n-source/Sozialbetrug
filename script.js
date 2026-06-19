@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v144 – Villa bleibt immer im Besitz';
+const BUILD_MARKE = 'v145 – KdU-Masche: Amt stoppt Miete, Villa bleibt';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -198,6 +198,7 @@ const gameState = {
   ernaehrungFake: false,    // true wenn Attest gefälscht → Jobcenter-Prüfrisiko
   ernaehrungAttest: false,  // echtes Attest vom Arzt vorhanden (Voraussetzung fürs Amt)
   einstiegsgeldMonate: 0,   // verbleibende Monate mit +338 (Gründerbonus)
+  kduMascheGestoppt: false, // true wenn KdU-Masche aufgeflog → Amt zahlt keine Villa-Miete mehr
 
   // ---- Minijob (Supermarkt) – legales Einkommen mit Freibetrag ----
   minijobLohn: 0,           // 0 = kein Job, sonst Bruttolohn/Monat
@@ -3865,6 +3866,7 @@ function aktionAusfuehren(ortId, aktionsId) {
       gs.schwarzeKasse -= IMMO_EIGENKAPITAL;
       const restSchuld = IMMO_KAUFPREIS - IMMO_EIGENKAPITAL;
       gs.immobilie = { wert: IMMO_KAUFPREIS, miete: IMMO_MIETE, modus: 'eigen', restSchuld };
+      gs.kduMascheGestoppt = false;   // frische Immobilie → Masche wieder möglich
       oeffneModal(T('🏘️ Immobilie gekauft!', '🏘️ Property bought!'),
         T(`Über einen Strohmann erworben. Anzahlung: <strong>${formatEuro(IMMO_EIGENKAPITAL)}</strong>.<br><br>`
         + `Restschuld <strong>${formatEuro(restSchuld)}</strong> → Rate <strong>${formatEuro(IMMO_RATE)}/Monat</strong> über ${IMMO_LAUFZEIT} Monate (jederzeit sofort tilgbar).<br><br>`
@@ -4708,8 +4710,10 @@ function monatsAbschluss() {
   if (gs.immobilie) {
     let einnahme = 0;
     if (gs.immobilie.modus === 'eigen') {
-      // Amt zahlt KdU an den Strohmann – nur im Bürgergeld-Modus
-      if (gs.status === 'ALG2') einnahme = gs.immobilie.miete;
+      // Amt zahlt KdU an den Strohmann – nur im Bürgergeld-Modus, und nur solange
+      // die Masche nicht aufgeflogen ist. Aufgeflogen → Amt zahlt nichts mehr
+      // (Villa bleibt aber dein Besitz/Zuhause).
+      if (gs.status === 'ALG2' && !gs.kduMascheGestoppt) einnahme = gs.immobilie.miete;
     } else {
       einnahme = gs.immobilie.miete; // echte Mieteinnahmen
     }
@@ -4839,10 +4843,10 @@ function monatsAbschluss() {
           gestrichen.push(T('Schein-WG (Hausbesuch!)', 'fake flat-share (home visit!)'));
         }
         if (gs.immobilie && gs.immobilie.modus === 'eigen' && gs.status === 'ALG2') {
-          rueck += gs.immobilie.miete;   // letzte Amts-Miete zurückgefordert
-          // Villa BLEIBT in deinem Besitz (Eigennutzung) – Strafe ist nur die
-          // Rückforderung + Risiko, du verlierst die Villa NICHT.
-          gestrichen.push(T('Immobilien-KdU – Miete zurückgefordert (Villa bleibt dein)', 'property housing cost – rent reclaimed (villa stays yours)'));
+          rueck += gs.immobilie.miete;          // letzte Amts-Miete zurückgefordert
+          gs.kduMascheGestoppt = true;          // Amt zahlt ab jetzt keine Miete mehr …
+          // … aber die Villa BLEIBT in deinem Besitz/Zuhause (kein Zwangs-Vermieten).
+          gestrichen.push(T('KdU-Masche aufgeflogen – Amt zahlt keine Miete mehr (Villa bleibt dein)', 'Housing-cost scam exposed – office stops paying rent (villa stays yours)'));
         }
         if (gs.einliegerVermietet) {
           rueck += EINLIEGER_MIETE;
