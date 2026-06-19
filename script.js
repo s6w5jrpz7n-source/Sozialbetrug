@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v141 – Räuber überfällt beim Erreichen';
+const BUILD_MARKE = 'v142 – Räuber-Revier deckt Schattenbank/links ab';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -8081,7 +8081,9 @@ class SpielSzene extends Phaser.Scene {
     this._revier = {
       cx: (pa.x + pb.x) / 2, cy: (pa.y + pb.y) / 2,
       // Radius gedeckelt → bleibt ein Viertel, nicht die halbe Karte
-      r: Math.min(Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 110, 300),
+      // Radius muss BEIDE definierenden Gebäude (Schattenbank/Arztpraxis) abdecken
+      // (je ~385 px vom Mittelpunkt) + etwas Roam-Rand → Cap 460 statt 300.
+      r: Math.min(Phaser.Math.Distance.Between(pa.x, pa.y, pb.x, pb.y) / 2 + 120, 460),
       minY: isFinite(minY) ? minY : -Infinity,
     };
   }
