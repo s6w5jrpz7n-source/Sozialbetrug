@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v142 – Räuber-Revier deckt Schattenbank/links ab';
+const BUILD_MARKE = 'v143 – Villa bleibt bei Haft (Masche pausiert)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -198,6 +198,7 @@ const gameState = {
   ernaehrungFake: false,    // true wenn Attest gefälscht → Jobcenter-Prüfrisiko
   ernaehrungAttest: false,  // echtes Attest vom Arzt vorhanden (Voraussetzung fürs Amt)
   einstiegsgeldMonate: 0,   // verbleibende Monate mit +338 (Gründerbonus)
+  immoMascheSperreBis: 0,   // bis zu diesem Monat ruht die KdU-Masche (nach Haft)
 
   // ---- Minijob (Supermarkt) – legales Einkommen mit Freibetrag ----
   minijobLohn: 0,           // 0 = kein Job, sonst Bruttolohn/Monat
@@ -1558,17 +1559,21 @@ function sozialbetrugErwischt() {
     gs.unterhaltsTarnung = false;
     gs.scheinWG = false;
     gs.einliegerVermietet = false;
-    if (gs.immobilie && gs.immobilie.modus === 'eigen') gs.immobilie.modus = 'vermietet';
+    // Villa bleibt dein Zuhause (modus unverändert) – aber die Eigennutzungs-/
+    // KdU-Masche (Amt zahlt Miete) ruht nach der Haft 3 Monate (steht unter Beobachtung).
+    if (gs.immobilie && gs.immobilie.modus === 'eigen') gs.immoMascheSperreBis = gs.monat + 3;
     soundAlarm && soundAlarm();
     logEvent(T('🔒 Gefängnis! 3 Monate Haft, Schwarzgeld konfisziert.', '🔒 Prison! 3 months behind bars, dirty money confiscated.'), 'danger');
     setTimeout(() => oeffneModal(T('🔒 Gefängnis – Sozialbetrug', '🔒 Prison – Welfare Fraud'),
       T(`Das Gericht verurteilt dich zu <strong>${haftMonate} Monaten Haft</strong>.<br><br>`
       + `Konfisziert: <strong>${formatEuro(konfisziert)}</strong> (loses Bargeld + Schwarzkasse).<br>`
-      + 'Gesundheit −20, Partnerlaune −30. Alle laufenden Maschen sind aufgeflogen.<br><br>'
+      + 'Gesundheit −20, Partnerlaune −30. Alle laufenden Maschen sind aufgeflogen.<br>'
+      + 'Deine <strong>Villa behältst du</strong> – aber die KdU-Masche (Amt zahlt Miete) <strong>ruht 3 Monate</strong>.<br><br>'
       + '⚠️ Als Vorbestrafter gilt: Wirst du <strong>noch einmal</strong> erwischt, ist es vorbei.',
       `The court sentences you to <strong>${haftMonate} months in prison</strong>.<br><br>`
       + `Confiscated: <strong>${formatEuro(konfisziert)}</strong> (loose cash + slush fund).<br>`
-      + 'Health −20, Partner mood −30. All your running scams have been blown.<br><br>'
+      + 'Health −20, Partner mood −30. All your running scams have been blown.<br>'
+      + 'You <strong>keep your villa</strong> – but the housing-cost scam (office pays rent) is <strong>suspended for 3 months</strong>.<br><br>'
       + '⚠️ As a repeat offender: if you get caught <strong>one more time</strong>, it is over.'), []), 1700);
     updateHUD();
     return;
@@ -4705,9 +4710,13 @@ function monatsAbschluss() {
   // ---- Immobilie: Mieteinnahmen / KdU-Masche + Wertsteigerung ----
   if (gs.immobilie) {
     let einnahme = 0;
+    const mascheGesperrt = gs.immoMascheSperreBis && gs.monat <= gs.immoMascheSperreBis;
     if (gs.immobilie.modus === 'eigen') {
-      // Amt zahlt KdU an den Strohmann – nur im Bürgergeld-Modus
-      if (gs.status === 'ALG2') einnahme = gs.immobilie.miete;
+      // Amt zahlt KdU an den Strohmann – nur im Bürgergeld-Modus, und nicht während
+      // der Nach-Haft-Sperre (Masche ruht, Villa bleibt aber dein Zuhause).
+      if (gs.status === 'ALG2' && !mascheGesperrt) einnahme = gs.immobilie.miete;
+      else if (gs.status === 'ALG2' && mascheGesperrt)
+        meldungen.push(T('🏘️ Villa: KdU-Masche nach der Haft ausgesetzt (Amt beobachtet) – kein Amts-Mietgeld diesen Monat.', '🏘️ Villa: housing-cost scam suspended after prison (office watching) – no office rent this month.'));
     } else {
       einnahme = gs.immobilie.miete; // echte Mieteinnahmen
     }
