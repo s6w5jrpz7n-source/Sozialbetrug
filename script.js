@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v145 – KdU-Masche: Amt stoppt Miete, Villa bleibt';
+const BUILD_MARKE = 'v146 – Einliegerwhg. läuft trotz Prüfung weiter';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -4848,11 +4848,8 @@ function monatsAbschluss() {
           // … aber die Villa BLEIBT in deinem Besitz/Zuhause (kein Zwangs-Vermieten).
           gestrichen.push(T('KdU-Masche aufgeflogen – Amt zahlt keine Miete mehr (Villa bleibt dein)', 'Housing-cost scam exposed – office stops paying rent (villa stays yours)'));
         }
-        if (gs.einliegerVermietet) {
-          rueck += EINLIEGER_MIETE;
-          gs.einliegerVermietet = false;
-          gestrichen.push(T('Einliegerwohnung-Schwarzvermietung', 'granny-flat under-the-table rental'));
-        }
+        // Einliegerwohnungs-Vermietung läuft trotz Prüfung WEITER (separate
+        // Vermietung, nicht Teil der KdU-Masche) → wird nicht aufgedeckt/gestoppt.
         gs.kontostand   = Math.max(0, gs.kontostand - rueck);
         staatGibt(-rueck);   // Rückzahlung → "Vom Staat kassiert" sinkt
         gs.risikoRaster = clamp(gs.risikoRaster + 30, 0, 100);
