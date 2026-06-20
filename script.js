@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v147 – KdU-Masche über Schattenbank neu aufsetzbar';
+const BUILD_MARKE = 'v148 – Risiko-Balancing (monatliche Quellen runter)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -139,7 +139,7 @@ const gameState = {
   bankEinzahlungDieseWoche: 0,  // Reset jede Spielwoche
 
   // ---- Kindergeld-System ----
-  // Array von Kindernamen (max. 4). Jedes Kind = +300€/Monat aufs Konto, Risiko +5/Monat.
+  // Array von Kindernamen (max. 4). Jedes Kind = +300€/Monat aufs Konto, Risiko +3/Monat.
   kindergeldKinder: [],     // z.B. ['Kwame', 'Amara', ...]
   razziaChanceAktuell: 0,  // Wird von updateHUD gesetzt, von tickRazziaTimer genutzt
 
@@ -601,7 +601,7 @@ const cheatDefinitions = {
 //   Schritt 1: Fliege nach Afrika (kostet 1.000 € + 50 Energie)
 //   Schritt 2: Kind auswählen und Mutter bestechen
 //   Schritt 3: Kind wird zu kindergeldKinder[] hinzugefügt
-//   Max. 4 Kinder. Jedes Kind = +300 €/Monat aufs Konto, Risiko +5/Monat.
+//   Max. 4 Kinder. Jedes Kind = +300 €/Monat aufs Konto, Risiko +3/Monat.
 // ================================================================
 
 // Zufällige afrikanische Kindernamen für den Spielwitz
@@ -644,7 +644,7 @@ function oeffneAfrikaReiseModal() {
     `Du planst eine "humanitäre Reise" nach Westafrika.<br><br>
      <strong>Kosten:</strong> 1.000 € (Flug + Bestechung der Mutter)<br>
      <strong>Energie:</strong> −50 (lange Reise)<br>
-     <strong>Ertrag:</strong> +300 €/Monat auf Konto, Risiko +5/Monat<br><br>
+     <strong>Ertrag:</strong> +300 €/Monat auf Konto, Risiko +3/Monat<br><br>
      Du hast bereits <strong>${kinderAnzahl}/4</strong> Kinder angemeldet.<br>
      ${kinderAnzahl > 0 ? `Aktuell: ${gs.kindergeldKinder.join(', ')}<br><br>` : ''}
      <span style="color:var(--text-dim); font-size:0.62rem;">
@@ -694,7 +694,7 @@ function verarbeiteAfrikaReise() {
   gs.kindergeldKinder.push(name);
   gs.risikoRaster = clamp(gs.risikoRaster + 5, 0, 100);
 
-  logEvent(T(`✈️ Zurück aus Afrika. ${name} angemeldet. +300€/Monat, Risiko +5.`, `✈️ Back from Africa. ${name} registered. +€300/month, Risk +5.`), 'warn');
+  logEvent(T(`✈️ Zurück aus Afrika. ${name} angemeldet. +300€/Monat, Risiko +3.`, `✈️ Back from Africa. ${name} registered. +€300/month, Risk +3.`), 'warn');
   updateHUD();
 
   // Ergebnis-Modal
@@ -706,7 +706,7 @@ function verarbeiteAfrikaReise() {
      📋 Alle angemeldeten Kinder (${anzahl}/4):<br>
      <strong>${gs.kindergeldKinder.join(', ')}</strong><br><br>
      💰 Monatliche Kindergeld-Einnahmen: <strong>+${formatEuro(anzahl * 300)}</strong> aufs Konto<br>
-     ⚠️ Risikoaufschlag: <strong>+${anzahl * 5}%/Monat</strong><br><br>
+     ⚠️ Risikoaufschlag: <strong>+${anzahl * 3}%/Monat</strong><br><br>
      ${anzahl < 4
        ? `<span style="color:var(--accent2);">Du kannst noch ${4 - anzahl} weitere Kinder anmelden.</span>`
        : '<span style="color:var(--danger);">Maximum von 4 Kindern erreicht!</span>'
@@ -715,7 +715,7 @@ function verarbeiteAfrikaReise() {
      📋 All registered children (${anzahl}/4):<br>
      <strong>${gs.kindergeldKinder.join(', ')}</strong><br><br>
      💰 Monthly child benefit income: <strong>+${formatEuro(anzahl * 300)}</strong> into your account<br>
-     ⚠️ Risk surcharge: <strong>+${anzahl * 5}%/month</strong><br><br>
+     ⚠️ Risk surcharge: <strong>+${anzahl * 3}%/month</strong><br><br>
      ${anzahl < 4
        ? `<span style="color:var(--accent2);">You can still register ${4 - anzahl} more children.</span>`
        : '<span style="color:var(--danger);">Maximum of 4 children reached!</span>'
@@ -4209,7 +4209,7 @@ function aktionAusfuehren(ortId, aktionsId) {
           + `<strong>${formatEuro(EINLIEGER_MIETE)}/mo</strong> in cash and live `
           + 'in luxury in the villa yourself.<br><br>The rent flows monthly into the '
           + 'slush fund. Risk +5 – it can be exposed during the Job Center audit if you are unlucky.'), []);
-        logEvent(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)}/M. Risiko +5.`, `🚪 Granny flat rented off the books: +${formatEuro(EINLIEGER_MIETE)}/mo. Risk +5.`), 'warn');
+        logEvent(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)}/M. Risiko +3.`, `🚪 Granny flat rented off the books: +${formatEuro(EINLIEGER_MIETE)}/mo. Risk +3.`), 'warn');
       }
     }
   }
@@ -4747,9 +4747,9 @@ function monatsAbschluss() {
     if (einnahme > 0) {
       gs.schwarzeKasse += einnahme;
       if (gs.immobilie.modus === 'eigen') staatGibt(einnahme); // KdU kommt vom Amt
-      gs.risikoRaster   = clamp(gs.risikoRaster + 6, 0, 100);
+      gs.risikoRaster   = clamp(gs.risikoRaster + 4, 0, 100);
       const quelle = gs.immobilie.modus === 'eigen' ? T('Amt-Miete (KdU-Masche)', 'office rent (housing-cost scam)') : T('Mieteinnahmen', 'rental income');
-      meldungen.push(T(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +6.`, `🏘️ Property – ${quelle}: +${formatEuro(einnahme)} slush fund. Risk +6.`));
+      meldungen.push(T(`🏘️ Immobilie – ${quelle}: +${formatEuro(einnahme)} Schwarzkasse. Risiko +4.`, `🏘️ Property – ${quelle}: +${formatEuro(einnahme)} slush fund. Risk +4.`));
       logEvent(T(`🏘️ Immobilie +${formatEuro(einnahme)} Schwarzkasse.`, `🏘️ Property +${formatEuro(einnahme)} slush fund.`), 'warn');
     }
     // Ratenzahlung (Schwarzkasse zuerst, dann Konto)
@@ -4773,8 +4773,8 @@ function monatsAbschluss() {
   // Nur sinnvoll, wenn du selbst in der Villa wohnst (Immobilie auf Eigennutzung).
   if (gs.einliegerVermietet && gs.immobilie && gs.immobilie.modus === 'eigen') {
     gs.schwarzeKasse += EINLIEGER_MIETE;
-    gs.risikoRaster   = clamp(gs.risikoRaster + 4, 0, 100);
-    meldungen.push(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse. Risiko +4.`, `🚪 Granny flat rented under the table: +${formatEuro(EINLIEGER_MIETE)} slush fund. Risk +4.`));
+    gs.risikoRaster   = clamp(gs.risikoRaster + 3, 0, 100);
+    meldungen.push(T(`🚪 Einliegerwohnung schwarz vermietet: +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse. Risiko +3.`, `🚪 Granny flat rented under the table: +${formatEuro(EINLIEGER_MIETE)} slush fund. Risk +3.`));
     logEvent(T(`🚪 Einliegerwohnung +${formatEuro(EINLIEGER_MIETE)} Schwarzkasse.`, `🚪 Granny flat +${formatEuro(EINLIEGER_MIETE)} slush fund.`), 'warn');
   } else if (gs.einliegerVermietet) {
     // Villa nicht mehr selbst bewohnt → Masche entfällt automatisch
@@ -4814,8 +4814,8 @@ function monatsAbschluss() {
   if (gs.loanSharkSchuld > 0) {
     const zinsen = Math.round(gs.loanSharkSchuld * 0.10);
     gs.loanSharkSchuld += zinsen;
-    gs.risikoRaster     = clamp(gs.risikoRaster + 5, 0, 100);
-    meldungen.push(T(`🦈 Kredithai-Zinsen: +${formatEuro(zinsen)} → Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}. Risiko +5.`, `🦈 Loan-shark interest: +${formatEuro(zinsen)} → debt now ${formatEuro(gs.loanSharkSchuld)}. Risk +5.`));
+    gs.risikoRaster     = clamp(gs.risikoRaster + 3, 0, 100);
+    meldungen.push(T(`🦈 Kredithai-Zinsen: +${formatEuro(zinsen)} → Schulden jetzt ${formatEuro(gs.loanSharkSchuld)}. Risiko +3.`, `🦈 Loan-shark interest: +${formatEuro(zinsen)} → debt now ${formatEuro(gs.loanSharkSchuld)}. Risk +3.`));
     logEvent(T(`🦈 Zinsen +${formatEuro(zinsen)}. Schulden: ${formatEuro(gs.loanSharkSchuld)}.`, `🦈 Interest +${formatEuro(zinsen)}. Debt: ${formatEuro(gs.loanSharkSchuld)}.`), 'danger');
   }
 
@@ -4829,8 +4829,8 @@ function monatsAbschluss() {
       const tarnGebuehr = Math.round(zahlung * 0.10);   // Schattenbank nimmt 10% der Kindergeld-Summe
       gs.kontostand  += zahlung; staatGibt(zahlung);
       gs.kontostand  -= tarnGebuehr;
-      gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 5, 0, 100);
-      meldungen.push(T(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)}, Tarnungs-Gebühr -${formatEuro(tarnGebuehr)} (10%). Risiko +${anzahl * 5}.`, `👶 Foreign child benefit (disguised): +${formatEuro(zahlung)}, cover-up fee -${formatEuro(tarnGebuehr)} (10%). Risk +${anzahl * 5}.`));
+      gs.risikoRaster = clamp(gs.risikoRaster + anzahl * 3, 0, 100);
+      meldungen.push(T(`👶 Auslands-Kindergeld (getarnt): +${formatEuro(zahlung)}, Tarnungs-Gebühr -${formatEuro(tarnGebuehr)} (10%). Risiko +${anzahl * 3}.`, `👶 Foreign child benefit (disguised): +${formatEuro(zahlung)}, cover-up fee -${formatEuro(tarnGebuehr)} (10%). Risk +${anzahl * 3}.`));
       logEvent(T(`👶 Kindergeld +${formatEuro(zahlung)} (Tarnung -${formatEuro(tarnGebuehr)}).`, `👶 Child benefit +${formatEuro(zahlung)} (cover-up -${formatEuro(tarnGebuehr)}).`), 'warn');
     } else {
       meldungen.push(T(`👶 Auslands-Kindergeld ${formatEuro(zahlung)} fließt, wird aber voll als Einkommen angerechnet → netto 0 €. Tipp: Unterhalts-Tarnung in der Schattenbank.`, `👶 Foreign child benefit ${formatEuro(zahlung)} comes in but is fully counted as income → net 0 €. Tip: alimony cover-up at the shadow bank.`));
