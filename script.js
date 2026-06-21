@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v149 – Kurz-Tutorial nach Neuem Spiel';
+const BUILD_MARKE = 'v150 – Erst-Besuch-Tipps an Gebäuden';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3068,10 +3068,39 @@ function oeffneGoldVerkaufMenu() {
   oeffneModal(T('🥇 Goldbarren verkaufen', '🥇 Sell Gold Bars'), T(`Im Garten vergraben: <strong>${gs.goldBarren} Barren</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`, `Buried in the garden: <strong>${gs.goldBarren} bars</strong> (${formatEuro(gs.goldBarren * GOLD_PREIS)}).`), aktionen);
 }
 
+// Kurze Erst-Besuch-Tipps pro Ort (einmal pro Spiel). Funktionen, damit T() die
+// aktuelle Sprache nimmt. Orte ohne Eintrag zeigen keinen Tipp.
+const ORTS_TIPPS = {
+  arbeitsamt:  () => T('Hier ziehst du eine <strong>Wartenummer</strong> und stellst <strong>Anträge</strong> (Mehrbedarfe, Kur, Einstiegsgeld). <strong>Verpasste Termine</strong> sperren dein ALG – also Aufrufe im Blick behalten!', 'Pull a <strong>queue number</strong> and file <strong>applications</strong> (extra needs, spa cure, start-up grant). <strong>Missed appointments</strong> suspend your benefits – watch the calls!'),
+  supermarkt:  () => T('Kauf hier <strong>Essen</strong> (Vorrat für mehrere Tage). Ohne Vorrat verlierst du täglich Energie/Gesundheit/Laune. Außerdem: <strong>Minijob</strong> und <strong>Geschenke</strong> für die Partnerin.', 'Buy <strong>food</strong> here (a stock for several days). Without it you lose energy/health/mood daily. Also: a <strong>minijob</strong> and <strong>gifts</strong> for your partner.'),
+  bank:        () => T('<strong>Loses Bargeld einzahlen</strong> (sicher vor Räuber & Razzia), in <strong>Wertpapiere</strong> anlegen (Depot) oder einen Kredit aufnehmen.', '<strong>Deposit loose cash</strong> (safe from robbers & raids), invest in <strong>securities</strong> (portfolio) or take out a loan.'),
+  schattenbank:() => T('Die <strong>Schattenbank</strong>: Geld in der <strong>Schwarzkasse</strong> verstecken (zählt nicht beim Amt), <strong>Immobilien</strong> kaufen und Maschen auf-/neu aufsetzen. Shady, aber mächtig.', 'The <strong>shadow bank</strong>: hide money in the <strong>slush fund</strong> (invisible to the office), buy <strong>property</strong> and (re)start scams. Shady but powerful.'),
+  loanshark:   () => T('Schnelles Bargeld vom <strong>Kredithai</strong> – aber <strong>10 % Zinsen/Monat</strong> und Risiko. Nicht (oder zu spät) zurückzahlen = Ärger.', 'Quick cash from the <strong>loan shark</strong> – but <strong>10 % interest/month</strong> and risk. Don\'t repay (or pay late) = trouble.'),
+  kasino:      () => T('<strong>Glücksspiel</strong>: schnelles Geld oder schneller Verlust. Reine Simulation, <strong>kein Echtgeld</strong>.', '<strong>Gambling</strong>: quick money or quick loss. Pure simulation, <strong>no real money</strong>.'),
+  wohnung:     () => T('Dein <strong>Zuhause</strong>: <strong>schlafen</strong> (Energie auffüllen), Geld verstecken, Anschaffungen – und das <strong>„Sozialbetrug"-Menü</strong> für die illegalen Maschen.', 'Your <strong>home</strong>: <strong>sleep</strong> (restore energy), stash money, buy things – and the <strong>"welfare fraud" menu</strong> for the illegal scams.'),
+  pawn:        () => T('Gegenstände <strong>verpfänden</strong> für schnelles Geld (später teurer auslösen). Hier verkaufst du auch <strong>Gold</strong>.', '<strong>Pawn</strong> items for quick cash (redeem later at a premium). You can also sell <strong>gold</strong> here.'),
+  arztpraxis:  () => T('<strong>Atteste</strong> (für Mehrbedarf/Kur), Behandlung und <strong>Sucht-Entzug</strong>. Manches lässt sich… kreativ ausstellen.', '<strong>Medical certificates</strong> (for extra needs/spa), treatment and <strong>rehab</strong>. Some things can be… creatively issued.'),
+  sportverein: () => T('Für <strong>Gesundheit</strong> und Fitness. <strong>Kampfsport</strong> hilft dir, bei einem Überfall zu gewinnen.', 'For <strong>health</strong> and fitness. <strong>Martial arts</strong> help you win a mugging.'),
+  kirche:      () => T('<strong>Sündenerlass</strong> (Risiko halbieren) und <strong>Beichte</strong> (Trost) – jeweils alle 3 Monate. Gut gegen zu hohes Risiko.', '<strong>Absolution</strong> (halve your risk) and <strong>confession</strong> (comfort) – each every 3 months. Great against high risk.'),
+  baustelle:   () => T('<strong>Schwarzarbeit</strong>: bringt Bargeld, kostet aber Energie und ist riskant (nicht gemeldet).', '<strong>Off-the-books work</strong>: brings cash but costs energy and is risky (undeclared).'),
+  amuesier:    () => T('<strong>Amüsierbetrieb</strong>: hebt die <strong>Laune</strong> – kostet aber Geld und etwas Gesundheit.', '<strong>Nightclub</strong>: lifts your <strong>mood</strong> – but costs money and a bit of health.'),
+  dealer:      () => T('Im Park lungert ein <strong>Dealer</strong>. Schnelles Geld mit Drogen, aber <strong>hohes Risiko</strong>. Reine Satire.', 'A <strong>dealer</strong> hangs around the park. Quick money with drugs, but <strong>high risk</strong>. Pure satire.'),
+};
+
 function interact(ortId) {
   const ort = ORTE_CONFIG.find(o => o.id === ortId);
   if (!ort) return;
   const gs = gameState;
+
+  // Erst-Besuch-Tipp (einmal pro Spiel & Ort) → danach „Weiter" öffnet das Menü.
+  if (!gs.tipps) gs.tipps = {};
+  if (!gs.tipps[ortId] && ORTS_TIPPS[ortId]) {
+    gs.tipps[ortId] = true;
+    oeffneModal('💡 ' + ort.name, ORTS_TIPPS[ortId](), [
+      { label: T('Weiter ▶', 'Continue ▶'), primary: true, callback: () => interact(ortId) },
+    ]);
+    return;
+  }
 
   // Arbeitsamt: erst Wartenummer ziehen / dran sein, bevor das Menü aufgeht.
   if (ortId === 'arbeitsamt') {
@@ -6980,7 +7009,7 @@ class StartSzene extends Phaser.Scene {
         depotVerschleiert: false, vomStaatGesamt: 0, strafStufe: 0,
         sachbearbeiterBestochen: false, suchtStufe: 0, kleeblatt: false,
         suendenerlassCooldownMonat: 0, beichteCooldownMonat: 0,
-        kduMascheGestoppt: false, _zeigeTutorial: true,
+        kduMascheGestoppt: false, _zeigeTutorial: true, tipps: {},
       });
       this.scene.start('SpielSzene');
     });
