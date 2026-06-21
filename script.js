@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v150 – Erst-Besuch-Tipps an Gebäuden';
+const BUILD_MARKE = 'v151 – Risiko-/Laune-Warnpopups, Casino 70-120%';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -831,6 +831,79 @@ function zeigeTutorial() {
   oeffneModal(T('📖 Kurz-Anleitung', '📖 Quick guide'), txt, [
     { label: T('👍 Los geht\'s!', '👍 Let\'s go!'), primary: true, callback: () => {} },
   ]);
+}
+
+// Einmaliger Hinweis, wenn das Risiko erstmals über 50 steigt.
+function zeigeRisikoTipp() {
+  const txt = T(
+    '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+    'Dein <strong>🎲 Risiko ist über 50</strong> gestiegen. Steigt es <strong>über 70</strong>, drohen <strong>Razzien</strong> (loses Bargeld & Schwarzkasse weg) – bei Eskalation sogar das <strong>Spielende</strong>.<br><br>' +
+    '<strong>So senkst du das Risiko wieder:</strong><br>' +
+    '• ⚽ <strong>Sportverein</strong> – soziale Tätigkeit: <strong>−23</strong> (kostet Energie + 1 Tag) – am stärksten<br>' +
+    '• ⛪ <strong>Kirche</strong> – Sündenerlass: <strong>halbiert</strong> dein Risiko (alle 3 Monate)<br>' +
+    '• 📝 <strong>Arbeitsamt</strong> – Scheinbewerbung: <strong>−5</strong> (etwas Energie)<br>' +
+    '• 🦈 <strong>Schulden beim Kredithai zurückzahlen</strong>: <strong>−10</strong><br><br>' +
+    '<span style="color:#9aa6b4;">Tipp: Maschen dosiert einsetzen und zwischendurch gegensteuern.</span>' +
+    '</span>',
+    '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+    'Your <strong>🎲 risk has risen above 50</strong>. If it goes <strong>above 70</strong>, you face <strong>raids</strong> (loose cash & slush fund gone) – and on escalation even <strong>game over</strong>.<br><br>' +
+    '<strong>How to lower your risk again:</strong><br>' +
+    '• ⚽ <strong>Sports club</strong> – volunteer work: <strong>−23</strong> (costs energy + 1 day) – strongest<br>' +
+    '• ⛪ <strong>Church</strong> – absolution: <strong>halves</strong> your risk (every 3 months)<br>' +
+    '• 📝 <strong>Job Center</strong> – fake application: <strong>−5</strong> (a bit of energy)<br>' +
+    '• 🦈 <strong>Repay the loan shark</strong>: <strong>−10</strong><br><br>' +
+    '<span style="color:#9aa6b4;">Tip: use scams in moderation and counter-steer in between.</span>' +
+    '</span>');
+  oeffneModal(T('🎲 Achtung – Risiko steigt!', '🎲 Watch out – risk rising!'), txt, [
+    { label: T('Verstanden', 'Got it'), primary: true, callback: () => {} },
+  ]);
+}
+
+// Einmaliger Hinweis bei niedriger Laune (Spieler bzw. Partner) unter 50.
+function zeigeLauneTipp(wer) {
+  let titel, txt;
+  if (wer === 'partner') {
+    titel = T('💔 Partner-Laune sinkt!', '💔 Partner mood dropping!');
+    txt = T(
+      '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+      'Die <strong>Laune deiner Partnerin</strong> ist unter 50 gefallen. Das wird ernst:<br><br>' +
+      '• Unter <strong>30</strong> beginnt eine <strong>Ehe-Krise</strong> (Quest-Reihe, die du lösen musst).<br>' +
+      '• Unter <strong>20</strong> <strong>zieht sie aus</strong> – und du riskierst das <strong>Sorgerecht</strong> (= Spielende).<br><br>' +
+      '<strong>So hebst du ihre Laune:</strong><br>' +
+      '• 🎁 <strong>Geschenke</strong> kaufen (Supermarkt)<br>' +
+      '• 🍸 <strong>Gäste empfangen</strong> (Villa)<br>' +
+      '• Genug Geld & wenig Stress im Haushalt halten.' +
+      '</span>',
+      '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+      'Your <strong>partner\'s mood</strong> has dropped below 50. This gets serious:<br><br>' +
+      '• Below <strong>30</strong> a <strong>marriage crisis</strong> begins (a quest you must solve).<br>' +
+      '• Below <strong>20</strong> <strong>she moves out</strong> – and you risk <strong>custody</strong> (= game over).<br><br>' +
+      '<strong>How to lift her mood:</strong><br>' +
+      '• 🎁 Buy <strong>gifts</strong> (supermarket)<br>' +
+      '• 🍸 <strong>Host guests</strong> (villa)<br>' +
+      '• Keep enough money and low household stress.' +
+      '</span>');
+  } else {
+    titel = T('🙁 Deine Laune sinkt!', '🙁 Your mood is dropping!');
+    txt = T(
+      '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+      'Deine <strong>🙂 Laune</strong> ist unter 50 gefallen. Bei schlechter Laune <strong>schläfst du schlechter</strong> (kein Erholungs-Bonus), Events laufen mieser und das Wohlbefinden leidet.<br><br>' +
+      '<strong>So hebst du deine Laune:</strong><br>' +
+      '• 🥂 <strong>Amüsierbetrieb</strong> (Abend genießen)<br>' +
+      '• 🏊 <strong>Villa</strong>: Pool & Sauna / Gäste<br>' +
+      '• 🕯️ <strong>Kirche</strong>: Beichte<br>' +
+      '• 🥗 Gutes Essen & kleine Genüsse (Kiosk)' +
+      '</span>',
+      '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
+      'Your <strong>🙂 mood</strong> has dropped below 50. With low mood you <strong>sleep worse</strong> (no recovery bonus), events go badly and your wellbeing suffers.<br><br>' +
+      '<strong>How to lift your mood:</strong><br>' +
+      '• 🥂 <strong>Nightclub</strong> (enjoy the evening)<br>' +
+      '• 🏊 <strong>Villa</strong>: pool & sauna / guests<br>' +
+      '• 🕯️ <strong>Church</strong>: confession<br>' +
+      '• 🥗 Good food & small treats (kiosk)' +
+      '</span>');
+  }
+  oeffneModal(titel, txt, [{ label: T('Verstanden', 'Got it'), primary: true, callback: () => {} }]);
 }
 
 // ================================================================
@@ -4315,9 +4388,9 @@ function aktionAusfuehren(ortId, aktionsId) {
         logEvent(T(`⚠️ Nicht genug loses Bargeld. Vorhanden: ${formatEuro(gs.losesBargeld)}`, `⚠️ Not enough loose cash. Available: ${formatEuro(gs.losesBargeld)}`), 'warn');
         return;
       }
-      // Rückzahlung: gleichmäßig verteilt zwischen 50% und 120%
-      // Erwartungswert: 85% → Kasino behält im Schnitt 15% als Provision
-      const faktor    = 0.50 + Math.random() * 0.70;  // 0.50 – 1.20
+      // Rückzahlung: gleichmäßig verteilt zwischen 70% und 120%
+      // Erwartungswert: 95% → Kasino behält im Schnitt ~5% (realistischer Hausvorteil)
+      const faktor    = 0.70 + Math.random() * 0.50;  // 0.70 – 1.20
       const rueckgabe = Math.round(betrag * faktor);
       const diff      = rueckgabe - betrag;  // positiv = Gewinn, negativ = Verlust
 
@@ -7010,6 +7083,7 @@ class StartSzene extends Phaser.Scene {
         sachbearbeiterBestochen: false, suchtStufe: 0, kleeblatt: false,
         suendenerlassCooldownMonat: 0, beichteCooldownMonat: 0,
         kduMascheGestoppt: false, _zeigeTutorial: true, tipps: {},
+        _risiko50Tipp: false, _launeSpielerTipp: false, _launePartnerTipp: false,
       });
       this.scene.start('SpielSzene');
     });
@@ -7561,6 +7635,18 @@ class SpielSzene extends Phaser.Scene {
 
   update(time, delta) {
     if (gameState.gameOver) return;
+    // Risiko-Aufklärung: einmalig, wenn das Risiko erstmals über 50 steigt und
+    // gerade kein Modal/Menü offen ist (stört keinen Aktions-Dialog).
+    if (!gameState._risiko50Tipp && gameState.risikoRaster >= 50 && !modalOffen && !this._menuAktiv) {
+      gameState._risiko50Tipp = true;
+      zeigeRisikoTipp();
+    } else if (!gameState._launeSpielerTipp && gameState.happinessSpieler < 50 && !modalOffen && !this._menuAktiv) {
+      gameState._launeSpielerTipp = true;
+      zeigeLauneTipp('spieler');
+    } else if (!gameState._launePartnerTipp && gameState.happinessPartner < 50 && !modalOffen && !this._menuAktiv) {
+      gameState._launePartnerTipp = true;
+      zeigeLauneTipp('partner');
+    }
     try {
     const dt = delta / 1000;
     // Zeitraffer: 1× / 2× / 4× beschleunigt nur den Spiel-Kalender & periodische
