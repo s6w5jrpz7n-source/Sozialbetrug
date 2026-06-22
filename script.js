@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v157 – Risiko blinkt (ab 50), stark ab 60';
+const BUILD_MARKE = 'v158 – Casino-Tipp: Geldwäsche → Bankkonto';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3218,7 +3218,7 @@ const ORTS_TIPPS = {
   bank:        () => T('<strong>Loses Bargeld einzahlen</strong> (sicher vor Räuber & Razzia), in <strong>Wertpapiere</strong> anlegen (Depot) oder einen Kredit aufnehmen.', '<strong>Deposit loose cash</strong> (safe from robbers & raids), invest in <strong>securities</strong> (portfolio) or take out a loan.'),
   schattenbank:() => T('Die <strong>Schattenbank</strong>: Geld in der <strong>Schwarzkasse</strong> verstecken (zählt nicht beim Amt), <strong>Immobilien</strong> kaufen und Maschen auf-/neu aufsetzen. Shady, aber mächtig.', 'The <strong>shadow bank</strong>: hide money in the <strong>slush fund</strong> (invisible to the office), buy <strong>property</strong> and (re)start scams. Shady but powerful.'),
   loanshark:   () => T('Schnelles Bargeld vom <strong>Kredithai</strong> – aber <strong>10 % Zinsen/Monat</strong> und Risiko. Nicht (oder zu spät) zurückzahlen = Ärger.', 'Quick cash from the <strong>loan shark</strong> – but <strong>10 % interest/month</strong> and risk. Don\'t repay (or pay late) = trouble.'),
-  kasino:      () => T('<strong>Glücksspiel</strong>: schnelles Geld oder schneller Verlust. Reine Simulation, <strong>kein Echtgeld</strong>.', '<strong>Gambling</strong>: quick money or quick loss. Pure simulation, <strong>no real money</strong>.'),
+  kasino:      () => T('Hier <strong>wäschst du loses Bargeld</strong>: einsetzen → es kommt <strong>legal aufs Bankkonto</strong> (im Schnitt ~95 %, mal mehr, mal weniger). So wird Schwarzgeld zu sauberem Kontogeld. Reine Simulation, kein Echtgeld.', 'Here you <strong>launder loose cash</strong>: stake it → it comes back <strong>legally into your bank account</strong> (~95 % on average, sometimes more, sometimes less). Turns dirty cash into clean account money. Pure simulation, no real money.'),
   wohnung:     () => T('Dein <strong>Zuhause</strong>: <strong>schlafen</strong> (Energie auffüllen), Geld verstecken, Anschaffungen – und das <strong>„Sozialbetrug"-Menü</strong> für die illegalen Maschen.', 'Your <strong>home</strong>: <strong>sleep</strong> (restore energy), stash money, buy things – and the <strong>"welfare fraud" menu</strong> for the illegal scams.'),
   pawn:        () => T('Gegenstände <strong>verpfänden</strong> für schnelles Geld (später teurer auslösen). Hier verkaufst du auch <strong>Gold</strong>.', '<strong>Pawn</strong> items for quick cash (redeem later at a premium). You can also sell <strong>gold</strong> here.'),
   arztpraxis:  () => T('<strong>Atteste</strong> (für Mehrbedarf/Kur), Behandlung und <strong>Sucht-Entzug</strong>. Manches lässt sich… kreativ ausstellen.', '<strong>Medical certificates</strong> (for extra needs/spa), treatment and <strong>rehab</strong>. Some things can be… creatively issued.'),
