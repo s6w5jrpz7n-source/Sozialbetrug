@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v153 – Sportverein-Tipp nennt Risiko-Senkung';
+const BUILD_MARKE = 'v154 – Sportverein in Start-Kurzanleitung';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -814,7 +814,7 @@ function zeigeTutorial() {
     '<strong>🎯 Ziel:</strong> Vom Arbeitslosen zum Millionär – <strong>100.000 € vom Staat</strong> kassieren ODER <strong>1.000.000 €</strong> Gesamtvermögen.<br><br>' +
     '<strong>🕹️ Steuerung:</strong> Tippe, wohin du laufen willst. Auf ein <strong>Gebäude tippen</strong> = hinlaufen, <strong>Doppeltippen</strong> = Menü öffnen.<br><br>' +
     '<strong>📊 Werte (oben):</strong> ⚡ Energie (zum Schlafen heim), ❤️ Gesundheit, 🙂 Laune – fallen mit der Zeit, halte sie oben. Im Supermarkt <strong>Essen</strong> kaufen, sonst Hunger!<br><br>' +
-    '<strong>🎲 Risiko:</strong> Jede Masche erhöht es. Zu hoch (>70) → <strong>Razzia</strong>! Senken: Kirche (Sündenerlass), Scheinbewerbungen.<br><br>' +
+    '<strong>🎲 Risiko:</strong> Jede Masche erhöht es. Zu hoch (>70) → <strong>Razzia</strong>! Senken: ⚽ Sportverein (am stärksten), ⛪ Kirche (Sündenerlass), 📝 Scheinbewerbungen.<br><br>' +
     '<strong>💶 Loses Bargeld</strong> schnell sichern (Bank/Schattenbank) – sonst holt es sich der <strong>Räuber</strong> oder die Razzia.<br><br>' +
     '<strong>🏢 Orte:</strong> Arbeitsamt (Anträge/ALG), Bank, Kredithai, Schattenbank (Geld verstecken, Immobilien), Casino, Wohnung/Villa (schlafen + „Sozialbetrug"-Menü).<br><br>' +
     '<span style="color:#9aa6b4;">Am Monatsende kommt die Abrechnung. Alles nochmal nachlesbar unter den Reitern oben (⚖️ Hinweis).</span>' +
@@ -823,7 +823,7 @@ function zeigeTutorial() {
     '<strong>🎯 Goal:</strong> From jobless to millionaire – milk <strong>€100,000 from the state</strong> OR reach <strong>€1,000,000</strong> total assets.<br><br>' +
     '<strong>🕹️ Controls:</strong> Tap where you want to walk. <strong>Tap a building</strong> = walk there, <strong>double-tap</strong> = open its menu.<br><br>' +
     '<strong>📊 Stats (top):</strong> ⚡ Energy (sleep at home), ❤️ Health, 🙂 Mood – they drop over time, keep them up. Buy <strong>food</strong> at the supermarket or you go hungry!<br><br>' +
-    '<strong>🎲 Risk:</strong> Every scam raises it. Too high (>70) → <strong>raid</strong>! Lower it: church (absolution), fake job applications.<br><br>' +
+    '<strong>🎲 Risk:</strong> Every scam raises it. Too high (>70) → <strong>raid</strong>! Lower it: ⚽ sports club (strongest), ⛪ church (absolution), 📝 fake job applications.<br><br>' +
     '<strong>💶 Loose cash:</strong> secure it fast (bank/shadow bank) – otherwise the <strong>robber</strong> or a raid grabs it.<br><br>' +
     '<strong>🏢 Places:</strong> Job Center (applications/welfare), bank, loan shark, shadow bank (hide money, property), casino, apartment/villa (sleep + "welfare fraud" menu).<br><br>' +
     '<span style="color:#9aa6b4;">Month-end brings the reckoning. Everything is also under the tabs up top (⚖️ Notice).</span>' +
