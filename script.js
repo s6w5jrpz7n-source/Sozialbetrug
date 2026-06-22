@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v151 – Risiko-/Laune-Warnpopups, Casino 70-120%';
+const BUILD_MARKE = 'v152 – Erklär-Popups (Gesundheit/Energie/Essen/Amt/Pleite) + Villa-Schlaf +5';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -866,28 +866,27 @@ function zeigeLauneTipp(wer) {
     titel = T('💔 Partner-Laune sinkt!', '💔 Partner mood dropping!');
     txt = T(
       '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
-      'Die <strong>Laune deiner Partnerin</strong> ist unter 50 gefallen. Das wird ernst:<br><br>' +
-      '• Unter <strong>30</strong> beginnt eine <strong>Ehe-Krise</strong> (Quest-Reihe, die du lösen musst).<br>' +
-      '• Unter <strong>20</strong> <strong>zieht sie aus</strong> – und du riskierst das <strong>Sorgerecht</strong> (= Spielende).<br><br>' +
+      'Die <strong>Laune deiner Partnerin</strong> ist unter 50 gefallen. Was passiert:<br><br>' +
+      '• Unter <strong>40</strong>: du <strong>schläfst schlechter</strong> → <strong>−5 Energie</strong> pro Nacht.<br>' +
+      '• Unter <strong>20</strong>: sie <strong>zieht aus</strong> → <strong>1.000 €/Monat Unterhalt</strong>. Sie kommt zurück, wenn du <strong>Geschenke für 1.000 €</strong> gekauft hast.<br><br>' +
       '<strong>So hebst du ihre Laune:</strong><br>' +
       '• 🎁 <strong>Geschenke</strong> kaufen (Supermarkt)<br>' +
-      '• 🍸 <strong>Gäste empfangen</strong> (Villa)<br>' +
-      '• Genug Geld & wenig Stress im Haushalt halten.' +
+      '• 🍸 <strong>Gäste empfangen</strong> (Villa)' +
       '</span>',
       '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
-      'Your <strong>partner\'s mood</strong> has dropped below 50. This gets serious:<br><br>' +
-      '• Below <strong>30</strong> a <strong>marriage crisis</strong> begins (a quest you must solve).<br>' +
-      '• Below <strong>20</strong> <strong>she moves out</strong> – and you risk <strong>custody</strong> (= game over).<br><br>' +
+      'Your <strong>partner\'s mood</strong> has dropped below 50. What happens:<br><br>' +
+      '• Below <strong>40</strong>: you <strong>sleep worse</strong> → <strong>−5 energy</strong> per night.<br>' +
+      '• Below <strong>20</strong>: she <strong>moves out</strong> → <strong>1,000 €/month alimony</strong>. She returns once you have bought <strong>gifts worth 1,000 €</strong>.<br><br>' +
       '<strong>How to lift her mood:</strong><br>' +
       '• 🎁 Buy <strong>gifts</strong> (supermarket)<br>' +
-      '• 🍸 <strong>Host guests</strong> (villa)<br>' +
-      '• Keep enough money and low household stress.' +
+      '• 🍸 <strong>Host guests</strong> (villa)' +
       '</span>');
   } else {
     titel = T('🙁 Deine Laune sinkt!', '🙁 Your mood is dropping!');
     txt = T(
       '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
-      'Deine <strong>🙂 Laune</strong> ist unter 50 gefallen. Bei schlechter Laune <strong>schläfst du schlechter</strong> (kein Erholungs-Bonus), Events laufen mieser und das Wohlbefinden leidet.<br><br>' +
+      'Deine <strong>🙂 Laune</strong> ist unter 50 gefallen. Auswirkung:<br><br>' +
+      '• Über <strong>60</strong> Laune: <strong>+10 Energie</strong> beim Schlafen. Darunter <strong>entfällt</strong> dieser Erholungs-Bonus, außerdem laufen Events mieser.<br><br>' +
       '<strong>So hebst du deine Laune:</strong><br>' +
       '• 🥂 <strong>Amüsierbetrieb</strong> (Abend genießen)<br>' +
       '• 🏊 <strong>Villa</strong>: Pool & Sauna / Gäste<br>' +
@@ -895,13 +894,73 @@ function zeigeLauneTipp(wer) {
       '• 🥗 Gutes Essen & kleine Genüsse (Kiosk)' +
       '</span>',
       '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' +
-      'Your <strong>🙂 mood</strong> has dropped below 50. With low mood you <strong>sleep worse</strong> (no recovery bonus), events go badly and your wellbeing suffers.<br><br>' +
+      'Your <strong>🙂 mood</strong> has dropped below 50. Effect:<br><br>' +
+      '• Above <strong>60</strong> mood: <strong>+10 energy</strong> when sleeping. Below that this recovery bonus is <strong>lost</strong>, and events go worse.<br><br>' +
       '<strong>How to lift your mood:</strong><br>' +
       '• 🥂 <strong>Nightclub</strong> (enjoy the evening)<br>' +
       '• 🏊 <strong>Villa</strong>: pool & sauna / guests<br>' +
       '• 🕯️ <strong>Church</strong>: confession<br>' +
       '• 🥗 Good food & small treats (kiosk)' +
       '</span>');
+  }
+  oeffneModal(titel, txt, [{ label: T('Verstanden', 'Got it'), primary: true, callback: () => {} }]);
+}
+
+// Einmalige Erklär-Popups für kritische Werte (Gesundheit, Energie, Essen, Amtstermin).
+function zeigeWarnTipp(art) {
+  const wrap = (de, en) => T(
+    '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' + de + '</span>',
+    '<span style="display:block;font-size:13px;line-height:1.65;color:#e3dcc6;text-align:left;">' + en + '</span>');
+  let titel, txt;
+  if (art === 'gesundheit') {
+    titel = T('🏥 Gesundheit niedrig!', '🏥 Health low!');
+    txt = wrap(
+      'Deine <strong>❤️ Gesundheit</strong> ist unter 50. Wird sie zu niedrig, droht Gefahr:<br><br>' +
+      '• Unter <strong>20</strong>: Zwangs-<strong>Krankenhaus (20.000 €)</strong> – kannst du das nicht zahlen, ist das Spiel vorbei.<br>' +
+      '• Bei <strong>0</strong>: <strong>Spielende</strong>.<br><br>' +
+      '<strong>So hebst du sie:</strong> 🩺 <strong>Arztpraxis</strong> (Behandlung +30, 500 €), 🥗 <strong>gutes Essen</strong> (Bio-Qualität), Sport im Verein.',
+      'Your <strong>❤️ health</strong> is below 50. If it drops too low, danger looms:<br><br>' +
+      '• Below <strong>20</strong>: forced <strong>hospital (20,000 €)</strong> – if you can\'t pay, it\'s game over.<br>' +
+      '• At <strong>0</strong>: <strong>game over</strong>.<br><br>' +
+      '<strong>Raise it:</strong> 🩺 <strong>medical practice</strong> (treatment +30, 500 €), 🥗 <strong>good food</strong> (organic), sports club.');
+  } else if (art === 'energie') {
+    titel = T('😴 Energie niedrig!', '😴 Energy low!');
+    txt = wrap(
+      'Deine <strong>⚡ Energie</strong> ist unter 25. Bei <strong>0</strong> kannst du <strong>nur noch schlafen</strong> – sonst gar nichts mehr.<br><br>' +
+      '<strong>Schlafen</strong> (Wohnung/Villa) füllt auf: <strong>+25</strong> Energie (Villa <strong>+5</strong>, gute Laune über 60 nochmal +10). Geh rechtzeitig heim!',
+      'Your <strong>⚡ energy</strong> is below 25. At <strong>0</strong> you can <strong>only sleep</strong> – nothing else.<br><br>' +
+      '<strong>Sleeping</strong> (home/villa) restores it: <strong>+25</strong> energy (villa <strong>+5</strong>, good mood over 60 another +10). Head home in time!');
+  } else if (art === 'essen') {
+    titel = T('🍽️ Vorrat fast leer!', '🍽️ Food nearly gone!');
+    txt = wrap(
+      'Dein <strong>Essensvorrat</strong> reicht nur noch <strong>weniger als 3 Tage</strong>. Läuft er <strong>leer</strong>, verlierst du <strong>täglich Gesundheit, Energie und Laune</strong> (Hunger).<br><br>' +
+      'Kauf rechtzeitig im 🛒 <strong>Supermarkt</strong> nach – Vorrat bis <strong>7 Tage</strong> (mit großem Kühlschrank <strong>14</strong>).',
+      'Your <strong>food stock</strong> lasts <strong>less than 3 days</strong>. If it runs <strong>empty</strong>, you lose <strong>health, energy and mood every day</strong> (hunger).<br><br>' +
+      'Restock in time at the 🛒 <strong>supermarket</strong> – up to <strong>7 days</strong> (with a large fridge <strong>14</strong>).');
+  } else if (art === 'amt') {
+    titel = T('🏛️ Amtstermin bald!', '🏛️ Office appointment soon!');
+    txt = wrap(
+      'In <strong>weniger als 4 Tagen</strong> ist dein <strong>Termin beim Arbeitsamt</strong>. Geh hin und <strong>zieh eine Wartenummer</strong>!<br><br>' +
+      '<strong>Verpasst</strong> du den Termin, wird dein <strong>ALG/Bürgergeld gesperrt</strong> – kein Geld mehr, bis du es beim Amt klärst.',
+      'Your <strong>Job Center appointment</strong> is in <strong>less than 4 days</strong>. Go there and <strong>pull a queue number</strong>!<br><br>' +
+      'If you <strong>miss</strong> it, your <strong>benefits get suspended</strong> – no money until you sort it out at the office.');
+  } else { // pleite
+    titel = T('💸 Pleite – kein Geld mehr!', '💸 Broke – out of money!');
+    txt = wrap(
+      'Kein Geld mehr (Konto, Schwarzkasse und Bargeld leer). <strong>So kommst du (schnell) an Geld:</strong><br><br>' +
+      '• 🔧 <strong>Schwarzarbeit</strong> auf der <strong>Baustelle</strong> – sofort Bargeld (kostet Energie + Risiko)<br>' +
+      '• 💼 <strong>Minijob</strong> im <strong>Supermarkt</strong> – legales Einkommen<br>' +
+      '• 📉 <strong>Wertpapiere verkaufen</strong> (Bank/Depot), falls vorhanden<br>' +
+      '• 🥇 <strong>Gold ausgraben & verkaufen</strong> / 💍 <strong>Sachen verpfänden</strong> (Pfandleiher)<br>' +
+      '• 🦈 <strong>Kredit</strong> beim <strong>Kredithai</strong> (teuer, riskant)<br>' +
+      '• 💶 Dein <strong>ALG/Bürgergeld</strong> kommt automatisch am Monatsende',
+      'No money left (account, slush fund and cash empty). <strong>How to get money (fast):</strong><br><br>' +
+      '• 🔧 <strong>Off-the-books work</strong> at the <strong>construction site</strong> – instant cash (costs energy + risk)<br>' +
+      '• 💼 <strong>Minijob</strong> at the <strong>supermarket</strong> – legal income<br>' +
+      '• 📉 <strong>Sell securities</strong> (bank/portfolio), if you have any<br>' +
+      '• 🥇 <strong>Dig up & sell gold</strong> / 💍 <strong>pawn items</strong> (pawnshop)<br>' +
+      '• 🦈 <strong>Loan</strong> from the <strong>loan shark</strong> (expensive, risky)<br>' +
+      '• 💶 Your <strong>welfare</strong> arrives automatically at month-end');
   }
   oeffneModal(titel, txt, [{ label: T('Verstanden', 'Got it'), primary: true, callback: () => {} }]);
 }
@@ -3466,6 +3525,11 @@ function aktionAusfuehren(ortId, aktionsId) {
       let energieGewinn = 25;
       let schlafMeldung = T('💤 Geschlafen. ', '💤 Slept. ');
 
+      // Villa: komfortabler → man schläft besser (+5 Energie, nur beim Schlafen)
+      if (ortId === 'villa') {
+        energieGewinn += 5;
+        schlafMeldung += T('+5 Bonus (Villa-Komfort). ', '+5 bonus (villa comfort). ');
+      }
       // Bonus: Eigene Stimmung hoch → man schläft besser
       if (gs.happinessSpieler > 60) {
         energieGewinn += 10;
@@ -7084,6 +7148,8 @@ class StartSzene extends Phaser.Scene {
         suendenerlassCooldownMonat: 0, beichteCooldownMonat: 0,
         kduMascheGestoppt: false, _zeigeTutorial: true, tipps: {},
         _risiko50Tipp: false, _launeSpielerTipp: false, _launePartnerTipp: false,
+        _gesundheitTipp: false, _energieTipp: false, _essenTipp: false, _amtTipp: false,
+        _pleiteTipp: false,
       });
       this.scene.start('SpielSzene');
     });
@@ -7637,15 +7703,27 @@ class SpielSzene extends Phaser.Scene {
     if (gameState.gameOver) return;
     // Risiko-Aufklärung: einmalig, wenn das Risiko erstmals über 50 steigt und
     // gerade kein Modal/Menü offen ist (stört keinen Aktions-Dialog).
-    if (!gameState._risiko50Tipp && gameState.risikoRaster >= 50 && !modalOffen && !this._menuAktiv) {
-      gameState._risiko50Tipp = true;
-      zeigeRisikoTipp();
-    } else if (!gameState._launeSpielerTipp && gameState.happinessSpieler < 50 && !modalOffen && !this._menuAktiv) {
-      gameState._launeSpielerTipp = true;
-      zeigeLauneTipp('spieler');
-    } else if (!gameState._launePartnerTipp && gameState.happinessPartner < 50 && !modalOffen && !this._menuAktiv) {
-      gameState._launePartnerTipp = true;
-      zeigeLauneTipp('partner');
+    // Einmalige Erklär-Popups, sobald ein Wert erstmals kritisch wird (nur wenn
+    // gerade kein Modal/Menü offen ist → stört keinen Dialog; max. eins pro Frame).
+    const _amtTage = Math.round(gameState.naechsterAmtsBesuch * 7 - (gameState.tag - 1));
+    if (!modalOffen && !this._menuAktiv) {
+      if (!gameState._risiko50Tipp && gameState.risikoRaster >= 50) {
+        gameState._risiko50Tipp = true; zeigeRisikoTipp();
+      } else if (!gameState._launeSpielerTipp && gameState.happinessSpieler < 50) {
+        gameState._launeSpielerTipp = true; zeigeLauneTipp('spieler');
+      } else if (!gameState._launePartnerTipp && gameState.happinessPartner < 50) {
+        gameState._launePartnerTipp = true; zeigeLauneTipp('partner');
+      } else if (!gameState._gesundheitTipp && gameState.gesundheit < 50) {
+        gameState._gesundheitTipp = true; zeigeWarnTipp('gesundheit');
+      } else if (!gameState._energieTipp && gameState.energie < 25) {
+        gameState._energieTipp = true; zeigeWarnTipp('energie');
+      } else if (!gameState._essenTipp && gameState.lebensmittelTageRest < 3) {
+        gameState._essenTipp = true; zeigeWarnTipp('essen');
+      } else if (!gameState._amtTipp && _amtTage < 4 && _amtTage >= 0 && !gameState.algGesperrt) {
+        gameState._amtTipp = true; zeigeWarnTipp('amt');
+      } else if (!gameState._pleiteTipp && gameState.kontostand <= 0 && gameState.losesBargeld <= 0 && gameState.schwarzeKasse <= 0) {
+        gameState._pleiteTipp = true; zeigeWarnTipp('pleite');
+      }
     }
     try {
     const dt = delta / 1000;
