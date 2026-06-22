@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v154 – Sportverein in Start-Kurzanleitung';
+const BUILD_MARKE = 'v155 – Schwarzarbeit 500/250';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -386,8 +386,8 @@ const ORTE_CONFIG = [
     farbe: 0x8c5a1a, dachFarbe: 0xbb8a40,
     beschreibung: T('Schwarzarbeit. Einnahmen landen als LOSES BARGELD – Transport-Risiko!', 'Off-the-books work. Earnings come as LOOSE CASH – risky to carry!'),
     aktionen: [
-      { label: T('⛏️  Ganzer Tag  (Loses Bargeld +300, Risiko +12, E -20)', '⛏️ Full day (Loose cash +300, Risk +12, E -20)'), id: 'schwarzarbeit' },
-      { label: T('🔧  Halber Tag  (Loses Bargeld +120, Risiko  +5, E  -8)', '🔧 Half day (Loose cash +120, Risk +5, E -8)'), id: 'halbertag' }
+      { label: T('⛏️  Ganzer Tag  (Loses Bargeld +500, Risiko +12, E -20)', '⛏️ Full day (Loose cash +500, Risk +12, E -20)'), id: 'schwarzarbeit' },
+      { label: T('🔧  Halber Tag  (Loses Bargeld +250, Risiko  +5, E  -8)', '🔧 Half day (Loose cash +250, Risk +5, E -8)'), id: 'halbertag' }
     ]
   },
   {
@@ -3829,20 +3829,20 @@ function aktionAusfuehren(ortId, aktionsId) {
   // --- BAUSTELLE --- NEU v3: Einnahmen gehen in losesBargeld, nicht schwarzeKasse
   if (ortId === 'baustelle') {
     if (aktionsId === 'schwarzarbeit') {
-      gs.losesBargeld += 300;
+      gs.losesBargeld += 500;
       gs.risikoRaster  = clamp(gs.risikoRaster + 12, 0, 100);
       gs.energie       = clamp(gs.energie - 20, 0, 100);
       gs.hatSchwarzgearbeitet = true;
       verbraucheTag(1);
-      logEvent(T('⛏️ +300 € loses Bargeld. Risiko +12, E -20. 1 Tag vergangen.', '⛏️ +300 € loose cash. Risk +12, E -20. 1 day passed.'), 'warn');
+      logEvent(T('⛏️ +500 € loses Bargeld. Risiko +12, E -20. 1 Tag vergangen.', '⛏️ +500 € loose cash. Risk +12, E -20. 1 day passed.'), 'warn');
     }
     if (aktionsId === 'halbertag') {
-      gs.losesBargeld += 120;
+      gs.losesBargeld += 250;
       gs.risikoRaster  = clamp(gs.risikoRaster + 5, 0, 100);
       gs.energie       = clamp(gs.energie - 8, 0, 100);
       gs.hatSchwarzgearbeitet = true;
       // Halber Tag = kein ganzer Tagesverbrauch
-      logEvent(T('🔧 +120 € loses Bargeld. Risiko +5, E -8.', '🔧 +120 € loose cash. Risk +5, E -8.'), 'warn');
+      logEvent(T('🔧 +250 € loses Bargeld. Risiko +5, E -8.', '🔧 +250 € loose cash. Risk +5, E -8.'), 'warn');
     }
   }
 
