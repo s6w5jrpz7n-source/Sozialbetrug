@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v155 – Schwarzarbeit 500/250';
+const BUILD_MARKE = 'v156 – Monatsabschluss: Summe vom Staat kassiert';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -4821,6 +4821,7 @@ function monatsAbschluss() {
   gs.monat++;
   let meldungen = [];
   const warAlg1 = gs.status === 'ALG1';   // für ALG I → II Umstellungs-Hinweis
+  const vomStaatStart = gs.vomStaatGesamt || 0;   // für Monats-Delta „vom Staat kassiert"
 
   // Hilfsfunktion: nicht zahlbarer Betrag → Zahlungsrückstand
   const fehlt = (betrag, was) => {
@@ -5326,6 +5327,15 @@ function monatsAbschluss() {
       '• NEW: <strong>asset limit 50,000 €</strong> – account + visible portfolio, checked every 3 months. Above it, no money that month.<br>' +
       '• Tip: hidden wealth (slush fund, gold, disguised portfolio) does not count.'
     ));
+  }
+  // Gesamt-Bilanz „vom Staat kassiert" (Ziel 100.000 €) + Delta dieses Monats.
+  {
+    const gesamt = gs.vomStaatGesamt || 0;
+    const delta  = Math.round(gesamt - vomStaatStart);
+    const deltaStr = (delta >= 0 ? '+' : '') + formatEuro(delta);
+    meldungen.push(T(
+      `🏛️ <strong>Vom Staat kassiert:</strong> ${deltaStr} diesen Monat · <strong>gesamt ${formatEuro(gesamt)}</strong> / 100.000 € Ziel`,
+      `🏛️ <strong>Milked from the state:</strong> ${deltaStr} this month · <strong>total ${formatEuro(gesamt)}</strong> / €100,000 goal`));
   }
   oeffneModal(T(`📅 Monatsabschluss – Monat ${gs.monat}`, `📅 Month-end report – Month ${gs.monat}`), meldungen.join('<br><br>'), summaryAktionen);
   pruefeGameOverBedingungen();
