@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v152 – Erklär-Popups (Gesundheit/Energie/Essen/Amt/Pleite) + Villa-Schlaf +5';
+const BUILD_MARKE = 'v153 – Sportverein-Tipp nennt Risiko-Senkung';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3212,7 +3212,7 @@ const ORTS_TIPPS = {
   wohnung:     () => T('Dein <strong>Zuhause</strong>: <strong>schlafen</strong> (Energie auffüllen), Geld verstecken, Anschaffungen – und das <strong>„Sozialbetrug"-Menü</strong> für die illegalen Maschen.', 'Your <strong>home</strong>: <strong>sleep</strong> (restore energy), stash money, buy things – and the <strong>"welfare fraud" menu</strong> for the illegal scams.'),
   pawn:        () => T('Gegenstände <strong>verpfänden</strong> für schnelles Geld (später teurer auslösen). Hier verkaufst du auch <strong>Gold</strong>.', '<strong>Pawn</strong> items for quick cash (redeem later at a premium). You can also sell <strong>gold</strong> here.'),
   arztpraxis:  () => T('<strong>Atteste</strong> (für Mehrbedarf/Kur), Behandlung und <strong>Sucht-Entzug</strong>. Manches lässt sich… kreativ ausstellen.', '<strong>Medical certificates</strong> (for extra needs/spa), treatment and <strong>rehab</strong>. Some things can be… creatively issued.'),
-  sportverein: () => T('Für <strong>Gesundheit</strong> und Fitness. <strong>Kampfsport</strong> hilft dir, bei einem Überfall zu gewinnen.', 'For <strong>health</strong> and fitness. <strong>Martial arts</strong> help you win a mugging.'),
+  sportverein: () => T('Soziale/ehrenamtliche Tätigkeit <strong>senkt dein Risiko stark (−23)</strong> (kostet Energie + 1 Tag) – der beste Risiko-Senker. Außerdem <strong>Gesundheit</strong>/Fitness und <strong>Kampfsport</strong> (hilft bei einem Überfall).', 'Community/volunteer work <strong>lowers your risk a lot (−23)</strong> (costs energy + 1 day) – the best risk reducer. Also <strong>health</strong>/fitness and <strong>martial arts</strong> (helps in a mugging).'),
   kirche:      () => T('<strong>Sündenerlass</strong> (Risiko halbieren) und <strong>Beichte</strong> (Trost) – jeweils alle 3 Monate. Gut gegen zu hohes Risiko.', '<strong>Absolution</strong> (halve your risk) and <strong>confession</strong> (comfort) – each every 3 months. Great against high risk.'),
   baustelle:   () => T('<strong>Schwarzarbeit</strong>: bringt Bargeld, kostet aber Energie und ist riskant (nicht gemeldet).', '<strong>Off-the-books work</strong>: brings cash but costs energy and is risky (undeclared).'),
   amuesier:    () => T('<strong>Amüsierbetrieb</strong>: hebt die <strong>Laune</strong> – kostet aber Geld und etwas Gesundheit.', '<strong>Nightclub</strong>: lifts your <strong>mood</strong> – but costs money and a bit of health.'),
