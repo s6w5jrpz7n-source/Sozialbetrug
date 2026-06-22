@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v156 – Monatsabschluss: Summe vom Staat kassiert';
+const BUILD_MARKE = 'v157 – Risiko blinkt (ab 50), stark ab 60';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -2815,6 +2815,16 @@ function updateHUD() {
   warnPill('tb-amt',     amtTage             <= 3);
   warnPill('tb-konto',   gs.kontostand       <= 500);
   warnPill('tb-essen',   essenTage           <= 3);
+  // Risiko: ab 50 blinken, ab 60 BESONDERS stark (Razzia-Schwelle 70 naht)
+  {
+    const rEl = document.getElementById('tb-risiko');
+    const rPill = rEl && rEl.closest && rEl.closest('.tb-pill');
+    if (rPill) {
+      const r = gs.risikoRaster;
+      rPill.classList.toggle('warn', r >= 50 && r < 60);
+      rPill.classList.toggle('warn-stark', r >= 60);
+    }
+  }
 
   // ---- Zeit (Monat / Woche / Tag) ----
   const zeitEl = document.getElementById('hud-zeit');

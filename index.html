@@ -154,6 +154,14 @@
     }
     .tb-pill.warn span { color: #ff5b74 !important; }
     @keyframes tbblink { 50% { border-color:#4a0810 !important; box-shadow:0 0 2px #4a0810; } }
+    /* Starkes Blinken (z. B. Risiko ab 60) – schneller, intensiver */
+    .tb-pill.warn-stark {
+      border-color: #ff1744 !important;
+      box-shadow: 0 0 12px #ff1744, 0 0 26px rgba(255,23,68,0.85);
+      animation: tbblinkfast 0.32s steps(1) infinite;
+    }
+    .tb-pill.warn-stark span { color: #ff7b8e !important; }
+    @keyframes tbblinkfast { 50% { border-color:#2a0406 !important; box-shadow:0 0 2px #2a0406; opacity:0.55; } }
     .tb-line {
       font-family: var(--mono); font-size: 0.62rem; font-weight: bold;
       letter-spacing: 1px; color: #9fb0d8;
