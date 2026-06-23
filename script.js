@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v160 – Penner/Spenden-Popup zweisprachig';
+const BUILD_MARKE = 'v161 – i18n-Cleanup (Razzia, Cheats, Afrika, HUD-Labels)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -83,7 +83,32 @@ document.addEventListener('DOMContentLoaded', () => {
       'pointer-events:none;letter-spacing:.5px;';
     document.body.appendChild(b);
   }
+  lokalisiereStatischeUI();
 });
+
+// Übersetzt die statisch in index.html stehenden Detail-Panel-Labels etc. ins
+// Englische (nur wenn SPRACHE==='en'; per Text-Mapping, keine IDs nötig).
+function lokalisiereStatischeUI() {
+  if (SPRACHE !== 'en') return;
+  const map = {
+    '🏦 Konto': '🏦 Account', '🔒 Schwarzkasse': '🔒 Slush fund', '⚠ Loses €': '⚠ Loose €',
+    '📈 Depot': '📈 Portfolio', '🦈 Schulden': '🦈 Debt', '🥇 Gold': '🥇 Gold',
+    '💑 Partnerin': '💑 Partner', '🎭 Cheat-Extra': '🎭 Cheat extra',
+    '⚡ Energie': '⚡ Energy', '😊 Ich': '😊 Me', '💑 Partner': '💑 Partner',
+    '🏛️ Amt': '🏛️ Office', '❤️ Gesund.': '❤️ Health', '🛒 Essen': '🛒 Food',
+  };
+  document.querySelectorAll('.mlabel, .slabel').forEach(el => {
+    const t = el.textContent.trim();
+    if (map[t]) el.textContent = map[t];
+  });
+  const gn = document.querySelector('.grenze-note');
+  if (gn && /ALG2-Grenze/.test(gn.textContent)) gn.textContent = 'ALG II limit: 50,000 € (account + portfolio, checked every 3 mo.)';
+  const wt = document.querySelector('.win-tag');
+  if (wt) wt.textContent = 'From jobless to millionaire — and off abroad. 🏆';
+  document.querySelectorAll('#event-log .log-entry').forEach(el => {
+    if (el.textContent.includes('Spiel gestartet')) el.textContent = '▶ Game started.';
+  });
+}
 
 // ================================================================
 // ABSCHNITT 1: SPIEL-ZUSTAND  (Single Source of Truth)
@@ -555,31 +580,31 @@ const PFAND_ITEMS = {
 // ================================================================
 const cheatDefinitions = {
   'Scheinbewerbung': {
-    label: '📝 Scheinbewerbung', kosten: { energie: 5 },
-    beschreibung: 'Gefälschte Bewerbung – senkt Risiko.',
+    label: T('📝 Scheinbewerbung', '📝 Fake application'), kosten: { energie: 5 },
+    beschreibung: T('Gefälschte Bewerbung – senkt Risiko.', 'Forged job application – lowers risk.'),
     sofortEffekt(gs) { gs.risikoRaster = clamp(gs.risikoRaster - 5, 0, 100); gs.scheinbewerbungen++; },
-    logText: '📝 Scheinbewerbung. Risiko -5.'
+    logText: T('📝 Scheinbewerbung. Risiko -5.', '📝 Fake application. Risk -5.')
   },
   'Schwarzarbeit': {
-    label: '⛏️ Schwarzarbeit', kosten: { energie: 0 },
-    beschreibung: 'Geh zur Baustelle und arbeite schwarz – kostet einen Tag.',
+    label: T('⛏️ Schwarzarbeit', '⛏️ Off-the-books work'), kosten: { energie: 0 },
+    beschreibung: T('Geh zur Baustelle und arbeite schwarz – kostet einen Tag.', 'Go to the construction site and work off the books – costs a day.'),
     gehZu: 'baustelle',
-    logText: '⛏️ Du machst dich auf den Weg zur Baustelle …'
+    logText: T('⛏️ Du machst dich auf den Weg zur Baustelle …', '⛏️ Heading to the construction site …')
   },
   'Kindergeld-Trick': {
-    label: '👶 Kindergeld-Trick', kosten: { energie: 50 },
-    beschreibung: 'Fliege nach Afrika, bestich eine Mutter (1.000 €). +300 €/Monat pro Kind (max. 4).',
+    label: T('👶 Kindergeld-Trick', '👶 Child-benefit trick'), kosten: { energie: 50 },
+    beschreibung: T('Fliege nach Afrika, bestich eine Mutter (1.000 €). +300 €/Monat pro Kind (max. 4).', 'Fly to Africa, bribe a mother (1,000 €). +300 €/month per child (max 4).'),
     sofortEffekt(gs) {
       // Wird von oeffneAfrikaReiseModal() übernommen – kein direkter Effekt hier
       oeffneAfrikaReiseModal();
     },
-    logText: '✈️ Afrika-Reise gebucht...'
+    logText: T('✈️ Afrika-Reise gebucht...', '✈️ Africa trip booked...')
   },
 
   // ---- Spende: Risiko sofort halbieren, kostet Geld vom Konto ----
   'Spende': {
-    label: '🎗️ Spende (Risiko -50%)', kosten: { energie: 0 },
-    beschreibung: 'Zahle 10% deines Kontos (mind. 1.000 €) – Risikoraster halbiert sich sofort.',
+    label: T('🎗️ Spende (Risiko -50%)', '🎗️ Donation (Risk -50%)'), kosten: { energie: 0 },
+    beschreibung: T('Zahle 10% deines Kontos (mind. 1.000 €) – Risikoraster halbiert sich sofort.', 'Pay 10% of your account (min. 1,000 €) – the risk meter is halved instantly.'),
     sofortEffekt(gs) {
       const spende = Math.max(1000, Math.floor(gs.kontostand * 0.10));
       if (gs.kontostand < spende) {
@@ -591,7 +616,7 @@ const cheatDefinitions = {
       gs.risikoRaster = Math.floor(gs.risikoRaster * 0.5);
       logEvent(T(`🎗️ Spende ${formatEuro(spende)}: Risiko halbiert auf ${gs.risikoRaster}%.`, `🎗️ Donation ${formatEuro(spende)}: Risk halved to ${gs.risikoRaster}%.`), 'good');
     },
-    logText: '🎗️ Spende: Risiko -50%.'
+    logText: T('🎗️ Spende: Risiko -50%.', '🎗️ Donation: Risk -50%.')
   }
 };
 
@@ -625,10 +650,13 @@ function oeffneAfrikaReiseModal() {
   // Maximale Anzahl erreicht?
   if (gs.kindergeldKinder.length >= 4) {
     oeffneModal(
-      '👶 Limit erreicht',
-      `Du hast bereits <strong>4 Kinder</strong> angemeldet – das Maximum.<br><br>
+      T('👶 Limit erreicht', '👶 Limit reached'),
+      T(`Du hast bereits <strong>4 Kinder</strong> angemeldet – das Maximum.<br><br>
        Aktuell: ${gs.kindergeldKinder.join(', ')}<br><br>
        Das Finanzamt würde bei mehr Kindern misstrauisch.`,
+        `You have already registered <strong>4 children</strong> – the maximum.<br><br>
+       Currently: ${gs.kindergeldKinder.join(', ')}<br><br>
+       The tax office would get suspicious with more children.`),
       []
     );
     return;
@@ -640,8 +668,8 @@ function oeffneAfrikaReiseModal() {
   for (let i = 0; i < Math.min(3, neueKinder); i++) vorschau.push(zufaelligerKindername());
 
   oeffneModal(
-    '✈️ Schritt 1: Flug nach Afrika',
-    `Du planst eine "humanitäre Reise" nach Westafrika.<br><br>
+    T('✈️ Schritt 1: Flug nach Afrika', '✈️ Step 1: Flight to Africa'),
+    T(`Du planst eine "humanitäre Reise" nach Westafrika.<br><br>
      <strong>Kosten:</strong> 1.000 € (Flug + Bestechung der Mutter)<br>
      <strong>Energie:</strong> −50 (lange Reise)<br>
      <strong>Ertrag:</strong> +300 €/Monat auf Konto, Risiko +3/Monat<br><br>
@@ -650,9 +678,18 @@ function oeffneAfrikaReiseModal() {
      <span style="color:var(--text-dim); font-size:0.62rem;">
        Mögliche neue Kinder: ${vorschau.join(', ')}…
      </span>`,
+      `You're planning a "humanitarian trip" to West Africa.<br><br>
+     <strong>Cost:</strong> 1,000 € (flight + bribing the mother)<br>
+     <strong>Energy:</strong> −50 (long trip)<br>
+     <strong>Income:</strong> +300 €/month into your account, Risk +3/month<br><br>
+     You have already registered <strong>${kinderAnzahl}/4</strong> children.<br>
+     ${kinderAnzahl > 0 ? `Currently: ${gs.kindergeldKinder.join(', ')}<br><br>` : ''}
+     <span style="color:var(--text-dim); font-size:0.62rem;">
+       Possible new children: ${vorschau.join(', ')}…
+     </span>`),
     [
       {
-        label:   '✈️ Jetzt fliegen (−1.000 € · −50 Energie)',
+        label:   T('✈️ Jetzt fliegen (−1.000 € · −50 Energie)', '✈️ Fly now (−1,000 € · −50 energy)'),
         primary: true,
         callback: () => verarbeiteAfrikaReise()
       }
@@ -665,7 +702,7 @@ function verarbeiteAfrikaReise() {
 
   // Checks
   if (gs.kindergeldKinder.length >= 4) {
-    logEvent('⚠️ Bereits 4 Kinder angemeldet – Maximum erreicht.', 'warn'); return;
+    logEvent(T('⚠️ Bereits 4 Kinder angemeldet – Maximum erreicht.', '⚠️ Already 4 children registered – maximum reached.'), 'warn'); return;
   }
   if (gs.kontostand < 1000) {
     oeffneModal(T('❌ Nicht genug Geld', '❌ Not enough money'),
@@ -1552,39 +1589,49 @@ function ausloesenRazziaV3() {
   logEvent(T('🚨 RAZZIA-PRÜFUNG! Wähle sofort eine Ausrede!', '🚨 RAID AUDIT! Pick an excuse right now!'), 'danger');
 
   modalOffen = true;
-  document.getElementById('modal-title').textContent = '🚨 RAZZIA!';
+  document.getElementById('modal-title').textContent = T('🚨 RAZZIA!', '🚨 RAID!');
 
   const body = document.getElementById('modal-body');
-  body.innerHTML = `
+  body.innerHTML = T(`
     <p style="color:var(--danger); font-size:0.7rem; margin-bottom:8px;">
       ⚡ SOFORTENTSCHEIDUNG ERFORDERLICH
     </p>
     <p>Behörden stehen vor der Tür! Du hast Sekunden, um zu reagieren.</p>
     <p style="margin-top:8px; color:var(--text-dim); font-size:0.65rem;">
-      Aktuell: Loses Bargeld ${formatEuro(gs.losesBargeld)} · 
-      Schwarzkasse ${formatEuro(gs.schwarzeKasse)} · 
+      Aktuell: Loses Bargeld ${formatEuro(gs.losesBargeld)} ·
+      Schwarzkasse ${formatEuro(gs.schwarzeKasse)} ·
       Risiko ${Math.round(gs.risikoRaster)}%
     </p>
-  `;
+  `, `
+    <p style="color:var(--danger); font-size:0.7rem; margin-bottom:8px;">
+      ⚡ IMMEDIATE DECISION REQUIRED
+    </p>
+    <p>The authorities are at your door! You have seconds to react.</p>
+    <p style="margin-top:8px; color:var(--text-dim); font-size:0.65rem;">
+      Now: loose cash ${formatEuro(gs.losesBargeld)} ·
+      slush fund ${formatEuro(gs.schwarzeKasse)} ·
+      risk ${Math.round(gs.risikoRaster)}%
+    </p>
+  `);
 
   // Ausrede A: Bargeld zeigen, zahlen
   const btnA = document.createElement('button');
   btnA.className   = 'action-btn';
-  btnA.textContent = '💸 Bestechung (-300 € Bargeld, Risiko -20)';
+  btnA.textContent = T('💸 Bestechung (-300 € Bargeld, Risiko -20)', '💸 Bribe (-300 € cash, Risk -20)');
   btnA.onclick     = () => verarbeiteRazzia('bestechung');
   body.appendChild(btnA);
 
   // Ausrede B: Lügen (riskant, aber gratis)
   const btnB = document.createElement('button');
   btnB.className   = 'action-btn primary';
-  btnB.textContent = '🙂 Glaubwürdige Ausrede erfinden (50/50 Chance)';
+  btnB.textContent = T('🙂 Glaubwürdige Ausrede erfinden (50/50 Chance)', '🙂 Make up a credible excuse (50/50 chance)');
   btnB.onclick     = () => verarbeiteRazzia('ausrede');
   body.appendChild(btnB);
 
   // Keine Ausrede → maximale Strafe
   const btnC = document.createElement('button');
   btnC.className   = 'action-btn danger-btn';
-  btnC.textContent = '😶 Keine Ausrede – alles zugeben (Schwarzkasse = 0, Risiko 95)';
+  btnC.textContent = T('😶 Keine Ausrede – alles zugeben (Schwarzkasse = 0, Risiko 95)', '😶 No excuse – confess everything (slush fund = 0, Risk 95)');
   btnC.onclick     = () => verarbeiteRazzia('kapitulation');
   body.appendChild(btnC);
 
@@ -1821,7 +1868,7 @@ function verarbeiteRazzia(wahl) {
 
   const closeBtn = document.createElement('button');
   closeBtn.className   = 'action-btn primary';
-  closeBtn.textContent = '✅ Verstanden';
+  closeBtn.textContent = T('✅ Verstanden', '✅ Got it');
   closeBtn.onclick     = () => {
     schliesseModal();
     if (erwischt) setTimeout(() => sozialbetrugErwischt(), 300);
@@ -2875,8 +2922,8 @@ function updateHUD() {
     // Auch Label-Text aktualisieren
     const amtLabel = document.getElementById('label-amtsbesuch');
     if (amtLabel) amtLabel.textContent = verbleibendeTage <= 0
-      ? '🏛️ Amt ⚠️'
-      : `🏛️ Amt`;
+      ? T('🏛️ Amt ⚠️', '🏛️ Office ⚠️')
+      : T('🏛️ Amt', '🏛️ Office');
   }
 
   // ---- Depot-Wert ----
@@ -2931,11 +2978,11 @@ function updateHUD() {
       const farbe = lm === 'gut' ? '#4be87a' : lm === 'billig' ? '#e87a4b' : '#e8b84b';
       const ico   = lm === 'gut' ? '🥗' : lm === 'billig' ? '🍟' : '🥙';
       lmBar.style.background = farbe;
-      lmVal.textContent = `${ico} ${tage} Tg`;
+      lmVal.textContent = `${ico} ${tage} ${T('Tg', 'd')}`;
       lmVal.style.color = tage <= 3 ? '#e8924b' : farbe;
     } else {
       lmBar.style.width = '0%'; lmBar.style.background = '#e84b4b';
-      lmVal.textContent = '⚠️ Leer!'; lmVal.style.color = '#e84b4b';
+      lmVal.textContent = T('⚠️ Leer!', '⚠️ Empty!'); lmVal.style.color = '#e84b4b';
     }
   }
 
@@ -2977,10 +3024,10 @@ function updateHUD() {
   const badge = document.getElementById('status-badge');
   if (badge) {
     if (gs.status === 'ALG2') {
-      badge.textContent = '💶 Bürgergeld';
+      badge.textContent = T('💶 Bürgergeld', '💶 Welfare II');
       badge.className   = 'badge-alg2';
     } else {
-      badge.textContent = 'ALG I';
+      badge.textContent = T('ALG I', 'Welfare I');
       badge.className   = 'badge-alg1';
     }
   }
@@ -4802,7 +4849,7 @@ function aktuelisiereDepotKurse() {
     pos.aktuellerKurs = Math.max(0.01, pos.aktuellerKurs * (1 + rendite));
     const pct   = (rendite >= 0 ? '+' : '') + (rendite * 100).toFixed(1);   // "+" bei Gewinn
     const pfeil = rendite >= 0 ? '▲' : '▼';
-    meldungen.push(`${pfeil} ${pos.name}: ${pct}% → Kurs ${formatEuro(pos.aktuellerKurs)}`);
+    meldungen.push(`${pfeil} ${pos.name}: ${pct}% → ${T('Kurs', 'price')} ${formatEuro(pos.aktuellerKurs)}`);
     logEvent(T(`📊 ${pos.name} ${pfeil}${pct}%`, `📊 ${pos.name} ${pfeil}${pct}%`), rendite < 0 ? 'danger' : 'good');
   });
 
