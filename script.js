@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v158 – Casino-Tipp: Geldwäsche → Bankkonto';
+const BUILD_MARKE = 'v159 – Info-Reiter Header zweisprachig';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -1100,8 +1100,8 @@ const INFO_TEXTE = {
 function oeffneInfo(tab) {
   tab = tab || 'story';
   const tabs = [
-    ['story', '📖 Story'], ['ziel', '🎯 Ziel'], ['amt', '🏛️ Amt'],
-    ['essen', '🛒 Essen'], ['npc', '👥 Leute'], ['gebaeude', '🏢 Orte'], ['disclaimer', '⚖️ Hinweis'],
+    ['story', T('📖 Story', '📖 Story')], ['ziel', T('🎯 Ziel', '🎯 Goal')], ['amt', T('🏛️ Amt', '🏛️ Office')],
+    ['essen', T('🛒 Essen', '🛒 Food')], ['npc', T('👥 Leute', '👥 People')], ['gebaeude', T('🏢 Orte', '🏢 Places')], ['disclaimer', T('⚖️ Hinweis', '⚖️ Notice')],
   ];
   const nav = tabs.map(([k, l]) =>
     `<button class="info-tab${k === tab ? ' aktiv' : ''}" onclick="oeffneInfo('${k}')">${l}</button>`).join('');
@@ -1110,7 +1110,7 @@ function oeffneInfo(tab) {
   const titleEl = document.getElementById('modal-title');
   const body = document.getElementById('modal-body');
   if (!body) return;
-  if (titleEl) titleEl.textContent = 'ℹ️ Info & Anleitung';
+  if (titleEl) titleEl.textContent = T('ℹ️ Info & Anleitung', 'ℹ️ Info & Guide');
   body.innerHTML =
     `<div class="info-nav">${nav}</div>` +
     `<div class="info-body">${INFO_TEXTE[tab] || ''}</div>` +
