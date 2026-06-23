@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v159 – Info-Reiter Header zweisprachig';
+const BUILD_MARKE = 'v160 – Penner/Spenden-Popup zweisprachig';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -3136,13 +3136,18 @@ function oeffneSpendenModal() {
     `onerror="this.style.display='none';var f=document.getElementById('bettler-fallback');if(f)f.style.display='block';">` +
     `<span id="bettler-fallback" style="display:none;font-size:72px;text-align:center;">🧎</span>` +
     `<span style="display:block;text-align:center;font-size:13px;line-height:1.55;color:#d6ceb4;">` +
-    `Dieses Spiel ist <b>komplett kostenlos</b> und kommt ganz ohne Werbung aus.<br>` +
-    `Es lebt nur von freiwilligen Spenden. Schon <b>50 Cent</b> helfen – ` +
-    `aber natürlich freut sich der Bettler über jeden Betrag. ` +
-    `Das tut keinem weh und hält das Projekt am Leben. Danke! ❤️</span>`;
-  oeffneModal("Haste ma 'n Euro?", html, [
-    { label: '❤️  Spenden', primary: true, callback: () => oeffneSpende() },
-    { label: 'Nicht mehr fragen', callback: () => { gameState.bettlerAus = true; try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
+    T(`Dieses Spiel ist <b>komplett kostenlos</b> und kommt ganz ohne Werbung aus.<br>` +
+      `Es lebt nur von freiwilligen Spenden. Schon <b>50 Cent</b> helfen – ` +
+      `aber natürlich freut sich der Bettler über jeden Betrag. ` +
+      `Das tut keinem weh und hält das Projekt am Leben. Danke! ❤️`,
+      `This game is <b>completely free</b> and has no ads whatsoever.<br>` +
+      `It survives only on voluntary donations. Even <b>50 cents</b> help – ` +
+      `but of course the beggar is happy about any amount. ` +
+      `It doesn't hurt anyone and keeps the project alive. Thank you! ❤️`) +
+    `</span>`;
+  oeffneModal(T("Haste ma 'n Euro?", "Got a spare quid?"), html, [
+    { label: T('❤️  Spenden', '❤️ Donate'), primary: true, callback: () => oeffneSpende() },
+    { label: T('Nicht mehr fragen', "Don't ask again"), callback: () => { gameState.bettlerAus = true; try { localStorage.setItem('spende_aus', '1'); } catch (e) {} } },
   ]);
 }
 
