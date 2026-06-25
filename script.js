@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v162 – Sieg bei 100k vom Staat';
+const BUILD_MARKE = 'v163 – Fetziger Gewinn-Screen (Konfetti/Strahlen)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -314,13 +314,33 @@ function zeigeGewonnen(vermoegen, modus) {
     ? T(`Du hast dem Staat <strong>${formatEuro(vermoegen)}</strong> abgeknöpft! 🎯<br>Vom Arbeitslosen zum Sozialbetrug-Champion – Ziel erreicht. 🏆`, `You milked <strong>${formatEuro(vermoegen)}</strong> out of the state! 🎯<br>From jobless to welfare-fraud champion – goal reached. 🏆`)
     : T(`Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`, `With <strong>${formatEuro(vermoegen)}</strong> you have slipped away to the sunny abroad.<br>No office, no raid, no prison – just beach. The state has lost. 🍹`);
   if (el) {
+    const we = el.querySelector('.win-emoji'); if (we) we.textContent = (modus === 'staat') ? '🏆 🤑 💶' : '🏝️ ✈️ 🍹';
     const wt = el.querySelector('.win-title'); if (wt) wt.textContent = T('GEWONNEN!', 'YOU WON!');
     const wb = el.querySelector('.win-btn');   if (wb) wb.textContent = T('🔄 Neues Spiel', '🔄 New game');
-    el.classList.add('show'); return;
+    el.classList.add('show');
+    spawnKonfetti();
+    return;
   }
   // Fallback
   oeffneModal(T('🏆 Gewonnen!', '🏆 You won!'), T(`Ausgewandert mit ${formatEuro(vermoegen)}!`, `Emigrated with ${formatEuro(vermoegen)}!`), [
     { label: T('🔄 Neues Spiel', '🔄 New game'), primary: true, callback: () => window.location.reload() }]);
+}
+
+// Konfetti-/Geldregen für den Sieg-Screen (kurzer Burst).
+function spawnKonfetti() {
+  const emojis = ['💶', '🥇', '💰', '🤑', '🎉', '🎊', '⭐', '✨', '💵', '🏆'];
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'win-confetti';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = (Math.random() * 100) + 'vw';
+    const dur = 3 + Math.random() * 3.5;
+    s.style.animationDuration = dur + 's';
+    s.style.animationDelay = (Math.random() * 2.8) + 's';
+    s.style.fontSize = (1.1 + Math.random() * 2) + 'rem';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), (dur + 3) * 1000);
+  }
 }
 
 // Bettler dauerhaft abgeschaltet? (Spielstand-Flag + localStorage-Kompatibilität)

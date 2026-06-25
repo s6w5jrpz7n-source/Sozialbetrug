@@ -753,27 +753,57 @@
       padding: 14px 28px; cursor: pointer; box-shadow: 0 0 18px rgba(255,31,61,0.6);
     }
     @keyframes goPulse { 50% { transform: scale(1.07); opacity: 0.82; } }
-    /* Sieg – Vollbild, golden */
+    /* Sieg – Vollbild, golden, FETZIG */
     #win-screen {
       display: none; position: fixed; inset: 0; z-index: 99999;
-      background: radial-gradient(circle at 50% 38%, #1a2a10 0%, #0a160a 70%, #000 100%);
+      background: radial-gradient(circle at 50% 38%, #2a3a14 0%, #14210c 60%, #000 100%);
       flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 24px;
+      text-align: center; padding: 24px; overflow: hidden;
     }
     #win-screen.show { display: flex; }
-    #win-screen .win-emoji { font-size: clamp(1.8rem, 8vw, 3.4rem); margin-bottom: 6px; }
+    /* rotierender goldener Strahlenkranz hinter dem Titel */
+    #win-screen::before {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 160vmax; height: 160vmax;
+      transform: translate(-50%, -50%);
+      background: repeating-conic-gradient(from 0deg, rgba(255,215,0,0.10) 0deg 10deg, transparent 10deg 20deg);
+      animation: winRays 18s linear infinite; pointer-events: none;
+    }
+    @keyframes winRays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    #win-screen > * { position: relative; z-index: 2; }
+    #win-screen .win-emoji {
+      font-size: clamp(2.2rem, 10vw, 4.2rem); margin-bottom: 6px;
+      animation: winEmoji 1.4s ease-in-out infinite;
+    }
+    @keyframes winEmoji { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.12); } }
     #win-screen .win-title {
       font-family: var(--mono); font-weight: 900; color: #ffd700;
-      font-size: clamp(2.6rem, 15vw, 8rem); letter-spacing: 0.05em; line-height: 1;
-      text-shadow: 0 0 28px rgba(255,215,0,0.8), 0 5px 0 #6a5200;
-      animation: goPulse 1.1s ease-in-out infinite;
+      font-size: clamp(2.8rem, 16vw, 8.5rem); letter-spacing: 0.05em; line-height: 1;
+      text-shadow: 0 0 18px rgba(255,215,0,0.9), 0 0 40px rgba(255,140,0,0.7), 0 5px 0 #6a5200;
+      animation: winTitleIn 0.7s cubic-bezier(.2,1.6,.4,1) both, winShimmer 2.2s ease-in-out 0.7s infinite;
     }
-    #win-screen .win-sub { color: #eaf6d0; font-size: clamp(0.95rem, 4vw, 1.25rem); margin-top: 12px; max-width: 560px; line-height: 1.5; }
-    #win-screen .win-tag { color: #b9d89a; font-size: 0.85rem; margin-top: 12px; }
+    @keyframes winTitleIn { 0% { transform: scale(0.2) rotate(-8deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    @keyframes winShimmer {
+      50% { transform: scale(1.06); text-shadow: 0 0 30px rgba(255,215,0,1), 0 0 70px rgba(255,140,0,0.95), 0 5px 0 #6a5200; }
+    }
+    #win-screen .win-sub { color: #eaf6d0; font-size: clamp(0.95rem, 4vw, 1.25rem); margin-top: 12px; max-width: 560px; line-height: 1.5; animation: winFadeUp 0.6s ease-out 0.5s both; }
+    #win-screen .win-tag { color: #ffe9a0; font-size: 0.85rem; margin-top: 12px; animation: winFadeUp 0.6s ease-out 0.8s both; }
+    @keyframes winFadeUp { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
     #win-screen .win-btn {
-      margin-top: 26px; font-family: var(--mono); font-weight: bold; font-size: 1.05rem;
-      color: #0a0e1a; background: #ffd700; border: none; border-radius: 10px;
-      padding: 14px 28px; cursor: pointer; box-shadow: 0 0 18px rgba(255,215,0,0.6);
+      margin-top: 26px; font-family: var(--mono); font-weight: bold; font-size: 1.1rem;
+      color: #0a0e1a; background: linear-gradient(180deg,#ffe66a,#ffc400); border: none; border-radius: 12px;
+      padding: 15px 32px; cursor: pointer; box-shadow: 0 0 22px rgba(255,215,0,0.7);
+      animation: winBtn 1.3s ease-in-out infinite; animation-delay: 1s;
+    }
+    @keyframes winBtn { 50% { transform: scale(1.06); box-shadow: 0 0 34px rgba(255,215,0,0.95); } }
+    /* Konfetti-/Geldregen */
+    .win-confetti {
+      position: fixed; top: -8vh; z-index: 100001; pointer-events: none;
+      font-size: 1.8rem; will-change: transform, opacity;
+      animation: winFall linear forwards;
+    }
+    @keyframes winFall {
+      0%   { transform: translateY(-8vh) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(112vh) rotate(720deg); opacity: 0.85; }
     }
     @keyframes nieteStamp {
       0%   { transform: rotate(-12deg) scale(2.2); opacity: 0; }
