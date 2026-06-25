@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v161 – i18n-Cleanup (Razzia, Cheats, Afrika, HUD-Labels)';
+const BUILD_MARKE = 'v162 – Sieg bei 100k vom Staat';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -306,11 +306,13 @@ function staatGibt(betrag) {
   gameState.vomStaatGesamt = Math.max(0, (gameState.vomStaatGesamt || 0) + betrag);
 }
 
-// Voll-Bild-Siegesbildschirm (nur nach Auswandern).
-function zeigeGewonnen(vermoegen) {
+// Voll-Bild-Siegesbildschirm. modus: 'auswandern' (Standard) oder 'staat'.
+function zeigeGewonnen(vermoegen, modus) {
   const el = document.getElementById('win-screen');
   const sub = document.getElementById('win-sub');
-  if (sub) sub.innerHTML = T(`Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`, `With <strong>${formatEuro(vermoegen)}</strong> you have slipped away to the sunny abroad.<br>No office, no raid, no prison – just beach. The state has lost. 🍹`);
+  if (sub) sub.innerHTML = (modus === 'staat')
+    ? T(`Du hast dem Staat <strong>${formatEuro(vermoegen)}</strong> abgeknöpft! 🎯<br>Vom Arbeitslosen zum Sozialbetrug-Champion – Ziel erreicht. 🏆`, `You milked <strong>${formatEuro(vermoegen)}</strong> out of the state! 🎯<br>From jobless to welfare-fraud champion – goal reached. 🏆`)
+    : T(`Mit <strong>${formatEuro(vermoegen)}</strong> hast du dich ins sonnige Ausland abgesetzt.<br>Kein Amt, keine Razzia, kein Knast – nur Strand. Der Staat hat verloren. 🍹`, `With <strong>${formatEuro(vermoegen)}</strong> you have slipped away to the sunny abroad.<br>No office, no raid, no prison – just beach. The state has lost. 🍹`);
   if (el) {
     const wt = el.querySelector('.win-title'); if (wt) wt.textContent = T('GEWONNEN!', 'YOU WON!');
     const wb = el.querySelector('.win-btn');   if (wb) wb.textContent = T('🔄 Neues Spiel', '🔄 New game');
@@ -5408,6 +5410,15 @@ function pruefeGameOverBedingungen() {
   const gs = gameState;
   if (gs.gameOver) return;
 
+  // ---- SIEG: 100.000 € vom Staat kassiert ----
+  if ((gs.vomStaatGesamt || 0) >= 100000) {
+    gs.gameOver = true;
+    soundGut && soundGut();
+    logEvent(T('🏆 100.000 € vom Staat kassiert – gewonnen!', '🏆 100,000 € milked from the state – you won!'), 'good');
+    zeigeGewonnen(gs.vomStaatGesamt, 'staat');
+    return;
+  }
+
   // ---- Millionär? Noch KEIN Sieg – erst Auswandern gewinnt das Spiel ----
   const depotWert   = (gs.depot || []).reduce((s,p) => s + p.anteile * p.aktuellerKurs, 0);
   const gesamtLegal = gs.kontostand + depotWert;
@@ -7773,6 +7784,8 @@ class SpielSzene extends Phaser.Scene {
 
   update(time, delta) {
     if (gameState.gameOver) return;
+    // Sieg sofort prüfen (100.000 € vom Staat) – auch ohne weitere Aktion.
+    if ((gameState.vomStaatGesamt || 0) >= 100000) { pruefeGameOverBedingungen(); return; }
     // Risiko-Aufklärung: einmalig, wenn das Risiko erstmals über 50 steigt und
     // gerade kein Modal/Menü offen ist (stört keinen Aktions-Dialog).
     // Einmalige Erklär-Popups, sobald ein Wert erstmals kritisch wird (nur wenn
