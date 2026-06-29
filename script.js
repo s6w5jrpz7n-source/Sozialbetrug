@@ -6,7 +6,7 @@
 
 // Sichtbare Build-Marke: zeigt im Header "v7", sobald DIESE Datei geladen ist.
 // Bleibt im Header "v6" stehen, läuft noch eine alte (gecachte) script.js.
-const BUILD_MARKE = 'v163 – Fetziger Gewinn-Screen (Konfetti/Strahlen)';
+const BUILD_MARKE = 'v164 – Wilder Sieg (Fanfare/Geldscheine/Teilen)';
 // Nutzer-sichtbare App-Version (zur versionName im Play Store passend halten)
 const APP_VERSION = '1.0.0';
 
@@ -317,7 +317,20 @@ function zeigeGewonnen(vermoegen, modus) {
     const we = el.querySelector('.win-emoji'); if (we) we.textContent = (modus === 'staat') ? '🏆 🤑 💶' : '🏝️ ✈️ 🍹';
     const wt = el.querySelector('.win-title'); if (wt) wt.textContent = T('GEWONNEN!', 'YOU WON!');
     const wb = el.querySelector('.win-btn');   if (wb) wb.textContent = T('🔄 Neues Spiel', '🔄 New game');
+    // „Teilen"-Button (Social Media) – nur einmal anlegen, sonst Text/Handler aktualisieren
+    let shareBtn = document.getElementById('win-share-btn');
+    if (!shareBtn) {
+      shareBtn = document.createElement('button');
+      shareBtn.id = 'win-share-btn';
+      shareBtn.className = 'win-btn win-share';
+      const ref = el.querySelector('.win-btn');
+      if (ref && ref.parentNode) ref.parentNode.insertBefore(shareBtn, ref.nextSibling);
+      else el.appendChild(shareBtn);
+    }
+    shareBtn.textContent = T('📤 Teilen', '📤 Share');
+    shareBtn.onclick = () => teileSieg(vermoegen, modus);
     el.classList.add('show');
+    spielSiegFanfare();
     spawnKonfetti();
     return;
   }
@@ -340,6 +353,71 @@ function spawnKonfetti() {
     s.style.fontSize = (1.1 + Math.random() * 2) + 'rem';
     document.body.appendChild(s);
     setTimeout(() => s.remove(), (dur + 3) * 1000);
+  }
+  // Dazwischen echte „Geldscheine" regnen lassen (CSS-Banknoten)
+  for (let i = 0; i < 36; i++) {
+    const b = document.createElement('div');
+    b.className = 'win-bill';
+    b.textContent = '100 €';
+    b.style.left = (Math.random() * 100) + 'vw';
+    const dur = 3.5 + Math.random() * 3.5;
+    b.style.animationDuration = dur + 's';
+    b.style.animationDelay = (Math.random() * 3) + 's';
+    b.style.transform = 'rotate(' + (Math.random() * 60 - 30) + 'deg)';
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), (dur + 3) * 1000);
+  }
+}
+
+// Sieges-Fanfare: aufsteigendes Arpeggio + gehaltener Dur-Akkord + Glitzer.
+function spielSiegFanfare() {
+  initAudio();
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e) {} }
+  const t0 = audioCtx.currentTime + 0.04;
+  // Triumphales Arpeggio C5–E5–G5–C6
+  const arp = [523.3, 659.3, 784.0, 1046.5];
+  arp.forEach((f, i) => {
+    playTone(f, 'square',   t0 + i * 0.13, 0.18, 0.18, 0.01, 0.06);
+    playTone(f, 'triangle', t0 + i * 0.13, 0.18, 0.12, 0.01, 0.06);
+  });
+  // Gehaltener C-Dur-Akkord als Schlussklang
+  const akk = t0 + arp.length * 0.13;
+  [523.3, 659.3, 784.0, 1046.5].forEach(f =>
+    playTone(f, 'sine', akk, 1.4, 0.13, 0.02, 0.5));
+  playTone(261.6, 'triangle', akk, 1.4, 0.16, 0.02, 0.5); // Bass C4
+  // Glitzer-Funkeln obendrauf
+  for (let i = 0; i < 6; i++)
+    playTone(1568 + Math.round((i % 3) * 220), 'sine', akk + 0.1 + i * 0.12, 0.12, 0.07, 0.005, 0.06);
+}
+
+// Sieg in sozialen Netzwerken teilen (Web Share API, Fallback: Zwischenablage).
+function teileSieg(vermoegen, modus) {
+  const titel = T('Sozialbetrug: Arbeitslos zum Millionär', 'Welfare Fraud: Jobless to Millionaire');
+  const text = (modus === 'staat')
+    ? T(`Ich hab dem Staat ${formatEuro(vermoegen)} abgeknöpft und „Sozialbetrug" gewonnen! 🏆💶`,
+        `I milked ${formatEuro(vermoegen)} out of the state and won "Welfare Fraud"! 🏆💶`)
+    : T(`Mit ${formatEuro(vermoegen)} ausgewandert und „Sozialbetrug" gewonnen! 🏝️✈️`,
+        `Emigrated with ${formatEuro(vermoegen)} and won "Welfare Fraud"! 🏝️✈️`);
+  const url = 'https://play.google.com/store/apps/details?id=com.sozialbetrug.game';
+  if (navigator.share) {
+    navigator.share({ title: titel, text: text + ' ' + url }).catch(() => {});
+    return;
+  }
+  // Fallback: in Zwischenablage kopieren
+  const full = text + '\n' + url;
+  const fertig = () => {
+    const btn = document.getElementById('win-share-btn');
+    if (btn) { const alt = btn.textContent; btn.textContent = T('✅ Kopiert!', '✅ Copied!'); setTimeout(() => btn.textContent = alt, 1800); }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(full).then(fertig).catch(fertig);
+  } else {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = full; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove(); fertig();
+    } catch (e) {}
   }
 }
 
