@@ -1,0 +1,30 @@
+# --- Dart / Pub ---
+.dart_tool/
+.packages
+# Lockfile nur für Bibliotheks-Packages ignorieren (App committet ihr Lockfile)
+packages/**/pubspec.lock
+build/
+doc/api/
+*.g.dart.bak
+
+# --- Flutter ---
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+**/ios/Flutter/.last_build_id
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+**/ios/Pods/
+**/.symlinks/
+**/ephemeral/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- OS ---
+.DS_Store
+Thumbs.db

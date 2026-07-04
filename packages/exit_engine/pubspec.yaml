@@ -1,0 +1,14 @@
+name: exit_engine
+description: >-
+  Rechen-Engine des ExitKompass: Einkommensteuer (M1), Sozialversicherung (M2),
+  Abfindung/Fünftelregelung (M3) und ALG 1 (M4) für das Jahr 2026.
+  Reine Dart-Bibliothek ohne Flutter-Abhängigkeit; alle Beträge in Cent.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
