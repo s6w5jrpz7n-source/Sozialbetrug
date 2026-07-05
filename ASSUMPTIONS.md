@@ -47,4 +47,50 @@ Staat-Stratege“. Konsequenzen:
   (`params_sync_test.dart`) schlägt fehl, falls künftig `null`-TODOs in der
   Datei stehen, ohne dass sie hier gelistet sind.
 
+## A2 – M1 Einkommensteuer/Lohnsteuer
+
+- **A2.1 Vereinfachte Vorsorgepauschale:** M1 implementiert § 39b Abs. 2
+  S. 5 Nr. 3 EStG vereinfacht (Teilbeträge RV + KV + PV, jeweils auf volle
+  Euro aufgerundet; Mindestvorsorgepauschale 12 %, max. 1.900/3.000 €).
+  Nicht abgebildet: PKV-Basistarif-Bescheinigungen, Faktorverfahren,
+  Frei-/Hinzurechnungsbeträge, sonstige Bezüge/Einmalzahlungen im
+  Lohnsteuerabzug. Die Jahres-Lohnsteuer ist eine **Netto-Schätzung**,
+  keine zertifizierte PAP-Implementierung; Abweichungen zum
+  BMF-Rechner im niedrigen Euro-Bereich sind möglich.
+- **A2.2 Rundung:** zvE und Steuerbetrag werden auf volle Euro abgerundet
+  (§ 32a Abs. 1 EStG); Soli/KiSt auf volle Cent abgerundet (Bruchteile
+  eines Cents bleiben außer Ansatz). SV-Beiträge kaufmännisch auf Cent.
+- **A2.3 Splitting:** Steuerklasse III wird über den Splittingtarif auf das
+  eigene Brutto abgebildet (Alleinverdiener-Annahme); Einkommen des
+  Ehepartners ist kein Eingabeparameter von M1.
+- **A2.4 Kirchensteuer im LSt-Abzug:** Bemessungsgrundlage ist die fiktive
+  LSt mit Kinderfreibeträgen (§ 51a Abs. 2a EStG); Kappung und besonderes
+  Kirchgeld sind nicht abgebildet.
+
+## A3 – M2 Sozialversicherung
+
+- **A3.1 Personenkreis:** gesetzlich pflichtversicherter Arbeitnehmer.
+  Keine PKV, kein Midijob-Übergangsbereich (§ 20 Abs. 2a SGB IV), keine
+  Gleitzone, keine berufsständischen Versorgungswerke.
+- **A3.2 Jahresbetrachtung:** Beiträge werden auf das Jahresbrutto mit
+  Jahres-BBGs gerechnet (keine Monatsabrechnung mit anteiligen BBGs bei
+  unterjährigen Verläufen).
+- **A3.3 PV-Kinderabschlag:** Eingaben sind `anzahlKinder` (jemals,
+  für den Kinderlosenzuschlag) und `anzahlKinderUnter25` (für die
+  Abschläge Kind 2–5). Die Altersprüfung der Kinder übernimmt der Aufrufer.
+
+## A4 – M3 Abfindung
+
+- **A4.1 Formel:** § 34 Abs. 1 EStG:
+  `ESt_ermäßigt = ESt(zvE_rest) + 5 × (ESt(zvE_rest + A/5) − ESt(zvE_rest))`.
+  Die in CLAUDE.md referenzierte Formel lag nicht vor (siehe A0).
+- **A4.2 Zusammenballung:** Die Voraussetzung der „Zusammenballung von
+  Einkünften" (Abfindung > entgehende Einnahmen) prüft die Engine nicht;
+  der Aufrufer/die UI muss darauf hinweisen.
+- **A4.3 Flag `nurUeberVeranlagung`:** Seit VZ 2025 keine Fünftelregelung
+  mehr im Lohnsteuerabzug (Wachstumschancengesetz); das Flag ist `true`,
+  sobald eine Ersparnis > 0 existiert.
+- **A4.4 Sozialversicherung:** Echte Abfindungen sind beitragsfrei in der
+  SV; M3 rechnet daher nur die Steuer.
+
 _(wird fortlaufend gepflegt)_
