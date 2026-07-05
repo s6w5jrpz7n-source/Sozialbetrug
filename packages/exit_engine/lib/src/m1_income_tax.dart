@@ -137,10 +137,11 @@ int vorsorgepauschale({
   final basisRv = min(bruttoJahrCents, sv.bbgRvAvJahrCents);
   final basisKvPv = min(bruttoJahrCents, sv.bbgKvPvJahrCents);
 
-  final teilRv = _ceilEuro(basisRv * sv.rvAnAnteil);
-  final teilKv =
-      _ceilEuro(basisKvPv * krankenversicherungAnSatz(sv: sv, zusatzbeitragSatz: kvZusatzbeitragSatz));
-  final teilPv = _ceilEuro(basisKvPv *
+  final teilRv = anteilCeilEuro(basisRv, sv.rvAnAnteil);
+  final teilKv = anteilCeilEuro(
+      basisKvPv, krankenversicherungAnSatz(sv: sv, zusatzbeitragSatz: kvZusatzbeitragSatz));
+  final teilPv = anteilCeilEuro(
+      basisKvPv,
       pflegeversicherungAnSatz(
         sv: sv,
         alter: alter,
@@ -153,14 +154,10 @@ int vorsorgepauschale({
       ? p.lohnsteuer.mindestKvPvMaxStkl3Cents
       : p.lohnsteuer.mindestKvPvMaxCents;
   final mindestKvPv =
-      min(_ceilEuro(bruttoJahrCents * p.lohnsteuer.mindestKvPvSatz), maxMindest);
+      min(anteilCeilEuro(bruttoJahrCents, p.lohnsteuer.mindestKvPvSatz), maxMindest);
 
   return teilRv + max(teilKv + teilPv, mindestKvPv);
 }
-
-/// Auf volle Euro aufrunden (PAP-Konvention für die Teilbeträge der
-/// Vorsorgepauschale), Rückgabe in Cent.
-int _ceilEuro(double cents) => (cents / 100).ceil() * 100;
 
 /// Ergebnis der Jahres-Lohnsteuerberechnung (alle Beträge in Cent).
 class LohnsteuerErgebnis {

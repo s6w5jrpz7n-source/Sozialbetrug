@@ -93,4 +93,33 @@ Staat-Stratege“. Konsequenzen:
 - **A4.4 Sozialversicherung:** Echte Abfindungen sind beitragsfrei in der
   SV; M3 rechnet daher nur die Steuer.
 
+## A5 – M4 ALG 1
+
+- **A5.1 Fiktive Lohnsteuer:** § 153 SGB III verlangt die Lohnsteuer nach
+  dem BMF-Programmablaufplan „im Jahresdurchschnitt". M4 verwendet die
+  vereinfachte M1-Jahreslohnsteuer auf das (gedeckelte) Bemessungsentgelt;
+  kleine Abweichungen zum BA-Rechner sind möglich. Kirchensteuer wird –
+  wie im geltenden Recht – **nicht** abgezogen, Soli mit
+  Kinderfreibeträgen (§ 51a) schon.
+- **A5.2 Rundung:** Tageswerte werden durch Ganzzahldivision (÷365)
+  abgerundet, der Tagessatz ebenfalls; Monatsbetrag = 30 Tagessätze
+  (§ 154 SGB III). Die BA rundet teils anders (2 Nachkommastellen je
+  Rechenschritt); Abweichungen im Cent-Bereich sind möglich.
+- **A5.3 Sperrzeit-Minderung:** § 148 Abs. 1 Nr. 4 SGB III – Minderung um
+  die Sperrzeittage, bei 12 Wochen mindestens ein Viertel der
+  Anspruchsdauer. Bei nicht durch 4 teilbaren Anspruchsdauern (450 Tage)
+  wird abgerundet (450/4 → 112 Tage). Verkürzte Sperrzeiten (3/6 Wochen,
+  § 159 Abs. 3 S. 2) sind nicht abgebildet, ebenso keine Härtefallprüfung
+  („wichtiger Grund").
+- **A5.4 § 158-Ruhen:** Eingabe ist `fehlendeKuendigungsfristTage`
+  (Differenz tatsächliches Ende ↔ fiktives Ende der ordentlichen
+  Kündigungsfrist); die Bestimmung der maßgeblichen Kündigungsfrist
+  (inkl. Sonderfälle unkündbarer Arbeitsverhältnisse, § 158 Abs. 1
+  S. 3–4) übernimmt der Aufrufer. Während des Ruhens bleibt die
+  Anspruchsdauer erhalten (kein § 148-Verbrauch); Ruhen und Sperrzeit
+  laufen parallel, die Engine addiert sie nicht automatisch.
+- **A5.5 Anspruchsdauer:** Die Tabelle setzt Versicherungsmonate in der
+  auf 5 Jahre erweiterten Rahmenfrist voraus (Eingabe des Aufrufers);
+  Vordienstzeiten-Anrechnung nach § 147 Abs. 3/4 ist nicht abgebildet.
+
 _(wird fortlaufend gepflegt)_
