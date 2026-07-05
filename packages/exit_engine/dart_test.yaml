@@ -1,0 +1,8 @@
+tags:
+  unverified:
+    # Golden-Cases, deren Erwartungswerte aus der eigenen Engine-Berechnung
+    # stammen und noch nicht gegen BMF-/BA-Rechner abgeglichen wurden
+    # (Checkliste: VERIFY.md). Nach bestätigtem Abgleich wird das Tag
+    # entfernt. Ausführen/ausschließen mit:
+    #   dart test --tags unverified
+    #   dart test --exclude-tags unverified
